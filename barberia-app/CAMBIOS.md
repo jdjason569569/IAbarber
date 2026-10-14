@@ -68,3 +68,61 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **What was done**
 - Updated `.gitignore` to ignore everything in `.claude/` except `.claude/skills/`, so the skills can be committed while local Claude Code files (e.g. `settings.local.json`) stay out of the repo.
+
+---
+
+## 2026-10-09 · Project skill: no unit tests
+
+**What was done**
+- Added `.claude/skills/no-unit-tests/SKILL.md`: unit tests must not be implemented in this project unless the user explicitly asks for them.
+- Changes are validated with `npx ng build` instead of `ng test`.
+
+---
+
+## 2026-10-09 · Project skill: feature-based architecture
+
+**What was done**
+- Added `.claude/skills/feature-architecture/SKILL.md` with the folder structure (`core`, `shared`, `features/<name>`), dependency rules, Angular/Ionic best practices, data access and naming conventions.
+
+**Pending / notes**
+- The current project still has the default Ionic starter layout (`src/app/home`); it will be moved to `features/` when the first feature is implemented.
+
+---
+
+## 2026-10-13 · Appointments and Statistics sections
+
+**What was done**
+- Removed the starter `src/app/home` page.
+- Added a bottom tab layout: `src/app/core/layout/tabs.page.ts|html` with two tabs, Appointments and Statistics.
+- Added feature `src/app/features/appointments/` (list page with status filter, service, mock data, routes).
+- Added feature `src/app/features/statistics/` (totals, top services, barbers; service, mock data, routes).
+- Updated `src/app/app-routing.module.ts` to lazy-load both features under the tabs layout.
+
+**Current state**
+- App opens on Appointments; Statistics is one tab away. Data is mock only. `npx ng build` passes.
+- No interfaces/contracts were created on purpose (types are inferred from the mock data).
+
+**Pending / notes**
+- Add models/contracts and the real API abstraction when the NestJS backend is defined.
+
+---
+
+## 2026-10-13 · Android platform and device guide
+
+**What was done**
+- Added the Android platform (`android/` folder) with Capacitor.
+- Added `ANDROID.md`: one-time setup (SDK, `ANDROID_HOME`, `JAVA_HOME`, USB debugging), build/run commands and troubleshooting.
+
+**Current state**
+- The app builds with `./gradlew assembleDebug` and runs on a physical phone via `npx ionic capacitor run android`.
+
+**Pending / notes**
+- Capacitor 8 requires Java 21+; the system Java is 17, so `JAVA_HOME` points to Android Studio's bundled JBR.
+- `appId` is still `io.ionic.starter`.
+
+---
+
+## 2026-10-13 · ANDROID.md quick start
+
+**What was done**
+- Added a "Quick start (every time)" section at the top of `ANDROID.md` with the steps to relaunch the app on the phone.

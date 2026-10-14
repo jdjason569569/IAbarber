@@ -1,0 +1,33 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Appointments</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [value]="selectedFilter()" scrollable (ionChange)="onFilterChange($event.detail.value)">
+      @for (filter of filters; track filter) {
+        <ion-segment-button [value]="filter">
+          <ion-label>{{ filter }}</ion-label>
+        </ion-segment-button>
+      }
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-list>
+    @for (appointment of visibleAppointments(); track appointment.id) {
+      <ion-item>
+        <ion-label>
+          <h2>{{ appointment.client }}</h2>
+          <p>{{ appointment.service }} · {{ appointment.barber }}</p>
+          <p>{{ appointment.date }} · {{ appointment.time }}</p>
+        </ion-label>
+        <ion-badge slot="end" [color]="statusColor(appointment.status)">{{ appointment.status }}</ion-badge>
+      </ion-item>
+    } @empty {
+      <ion-item lines="none">
+        <ion-label class="ion-text-center">No appointments found</ion-label>
+      </ion-item>
+    }
+  </ion-list>
+</ion-content>
