@@ -126,3 +126,19 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **What was done**
 - Added a "Quick start (every time)" section at the top of `ANDROID.md` with the steps to relaunch the app on the phone.
+
+---
+
+## 2026-10-14 · Appointment entity
+
+**What was done**
+- Added `src/app/features/appointments/models/appointment.model.ts` (`Appointment`, `AppointmentStatus`) and `appointment-extra.model.ts` (`AppointmentExtra`).
+- `Appointment` fields: `id`, `clientName`, `date` (day), `time`, `service`, `barber`, `serviceCost`, `extras` (list of name + price), `status`.
+- Typed the mock data and `AppointmentService`; added `getTotal()` (service cost + extras).
+- The appointment list now shows service cost, extras and the total per appointment.
+
+**Current state**
+- `npx ng build` passes.
+
+**Pending / notes**
+- The `client` field was renamed to `clientName`; the backend (`barberia-api`) still uses `client` and has no cost or extras yet.

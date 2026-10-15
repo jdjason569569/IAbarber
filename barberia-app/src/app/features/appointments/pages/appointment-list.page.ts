@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { IonicModule } from '@ionic/angular/lazy';
+import { Appointment } from '../models/appointment.model';
 import { AppointmentService } from '../services/appointment.service';
 
 @Component({
@@ -20,6 +21,10 @@ export class AppointmentListPage {
     const filter = this.selectedFilter();
     return this.appointments().filter((a) => filter === 'all' || a.status === filter);
   });
+
+  protected total(appointment: Appointment): number {
+    return this.appointmentService.getTotal(appointment);
+  }
 
   protected statusColor(status: string): string {
     switch (status) {

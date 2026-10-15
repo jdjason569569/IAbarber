@@ -18,9 +18,14 @@
     @for (appointment of visibleAppointments(); track appointment.id) {
       <ion-item>
         <ion-label>
-          <h2>{{ appointment.client }}</h2>
+          <h2>{{ appointment.clientName }}</h2>
           <p>{{ appointment.service }} · {{ appointment.barber }}</p>
           <p>{{ appointment.date }} · {{ appointment.time }}</p>
+          <p>Service: ${{ appointment.serviceCost }}</p>
+          @for (extra of appointment.extras; track extra.name) {
+            <p>+ {{ extra.name }}: ${{ extra.price }}</p>
+          }
+          <p><strong>Total: ${{ total(appointment) }}</strong></p>
         </ion-label>
         <ion-badge slot="end" [color]="statusColor(appointment.status)">{{ appointment.status }}</ion-badge>
       </ion-item>
