@@ -1,26 +1,49 @@
 import { Injectable } from '@nestjs/common';
 import { Appointment } from '../../domain/entities/appointment.entity.js';
+import { AppointmentConflictError } from '../../domain/errors/appointment-conflict.error.js';
 import type { AppointmentRepository } from '../../domain/ports/appointment.repository.js';
 
 @Injectable()
 export class InMemoryAppointmentRepository implements AppointmentRepository {
-  private readonly items: Appointment[] = [
-    Appointment.restore({ id: 1, client: 'Michael Torres', service: 'Classic Haircut', barber: 'Carlos', date: '2026-10-13', time: '09:00', status: 'confirmed' }),
-    Appointment.restore({ id: 2, client: 'Daniel Rivera', service: 'Beard Trim', barber: 'Luis', date: '2026-10-13', time: '10:30', status: 'pending' }),
-    Appointment.restore({ id: 3, client: 'James Walker', service: 'Haircut + Beard', barber: 'Carlos', date: '2026-10-13', time: '12:00', status: 'completed' }),
-    Appointment.restore({ id: 4, client: 'Andrew Scott', service: 'Fade Haircut', barber: 'Luis', date: '2026-10-14', time: '11:00', status: 'confirmed' }),
-    Appointment.restore({ id: 5, client: 'Robert Hill', service: 'Classic Haircut', barber: 'Carlos', date: '2026-10-14', time: '16:30', status: 'cancelled' }),
-  ];
+  // Empty on purpose: data only exists while the process runs (used when Supabase is not configured).
+  private readonly items: Appointment[] = [];
 
   async findAll(): Promise<Appointment[]> {
     return [...this.items];
   }
 
-  async nextId(): Promise<number> {
-    return Math.max(0, ...this.items.map((a) => a.id)) + 1;
+  async findById(id: number): Promise<Appointment | null> {
+    return this.items.find((a) => a.id === id) ?? null;
   }
 
-  async save(appointment: Appointment): Promise<void> {
-    this.items.push(appointment);
+  async findActiveAt(date: string, time: string): Promise<Appointment | null> {
+    return this.items.find((a) => a.isActive && a.date === date && a.time === time) ?? null;
+  }
+
+  async save(appointment: Appointment): Promise<Appointment> {
+    const taken = appointment.isActive
+      ? await this.findActiveAt(appointment.date, appointment.time)
+      : null;
+    if (taken && taken.id !== appointment.id) {
+      throw new AppointmentConflictError('That date and time is already booked');
+    }
+    const index = this.items.findIndex((a) => a.id === appointment.id);
+    if (index >= 0) {
+      this.items[index] = appointment;
+      return appointment;
+    }
+    const nextId = Math.max(0, ...this.items.map((a) => a.id)) + 1;
+    const stored = Appointment.restore({
+      id: nextId,
+      client: appointment.client,
+      service: appointment.service,
+      date: appointment.date,
+      time: appointment.time,
+      serviceCost: appointment.serviceCost,
+      extras: appointment.extras,
+      status: appointment.status,
+    });
+    this.items.push(stored);
+    return stored;
   }
 }

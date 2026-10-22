@@ -4,6 +4,9 @@ export const APPOINTMENT_REPOSITORY = Symbol('APPOINTMENT_REPOSITORY');
 
 export interface AppointmentRepository {
   findAll(): Promise<Appointment[]>;
-  nextId(): Promise<number>;
-  save(appointment: Appointment): Promise<void>;
+  findById(id: number): Promise<Appointment | null>;
+  /** Active (not cancelled) appointment occupying the given date and time, if any. */
+  findActiveAt(date: string, time: string): Promise<Appointment | null>;
+  /** Inserts a new appointment (id unassigned) or updates an existing one; returns the stored copy. Throws `AppointmentConflictError` if the slot is taken. */
+  save(appointment: Appointment): Promise<Appointment>;
 }
