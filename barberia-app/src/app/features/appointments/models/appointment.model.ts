@@ -10,7 +10,6 @@ export interface Appointment {
   /** Appointment time, 24h format (HH:mm). */
   time: string;
   service: string;
-  barber: string;
   /** Base price of the service. */
   serviceCost: number;
   /** Additional items charged on top of the service. */

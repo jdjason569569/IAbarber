@@ -35,6 +35,6 @@ Append at the end of the file, separated by `---`:
 ## Rules
 - Never rewrite or delete previous entries; only append.
 - Use the real current date.
-- Write entries in English (see the `english-only` skill).
+- Write entries in English, as in the existing entries (a convention of this file, not enforced by `english-only`).
 - Keep entries short and factual; do not paste large code blocks.
 - If a task changed nothing, do not add an entry.

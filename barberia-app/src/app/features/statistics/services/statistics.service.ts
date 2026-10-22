@@ -1,10 +1,14 @@
-import { Injectable } from '@angular/core';
-import { STATISTICS_MOCK } from '../data/statistics.mock';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { Statistics } from '../models/statistics.model';
 
 @Injectable({ providedIn: 'root' })
 export class StatisticsService {
-  // Mock source until the NestJS API exists.
-  getStatistics() {
-    return STATISTICS_MOCK;
+  private readonly http = inject(HttpClient);
+
+  getStatistics(): Observable<Statistics> {
+    return this.http.get<Statistics>(`${environment.apiUrl}/statistics`);
   }
 }

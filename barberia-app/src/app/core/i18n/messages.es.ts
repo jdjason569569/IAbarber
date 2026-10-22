@@ -1,0 +1,68 @@
+/**
+ * Every text the user can see lives here (Spanish). Keys are English, grouped by feature.
+ * Use `{name}` placeholders for dynamic values. Never hardcode UI text in templates or components.
+ */
+export const MESSAGES_ES = {
+  // Tabs
+  'tabs.appointments': 'Citas',
+  'tabs.statistics': 'Estadísticas',
+  'tabs.settings': 'Configuración',
+
+  // Appointments
+  'appointments.title': 'Citas',
+  'appointments.loading': 'Cargando...',
+  'appointments.empty': 'No hay citas',
+  'appointments.loadError': 'No se pudieron cargar las citas',
+  'appointments.service': 'Servicio',
+  'appointments.total': 'Total',
+  'appointments.micLabel': 'Crear cita por voz',
+
+  // Appointment status
+  'status.pending': 'Pendiente',
+  'status.confirmed': 'Confirmada',
+  'status.completed': 'Completada',
+  'status.cancelled': 'Cancelada',
+
+  // Voice assistant
+  'assistant.connecting': 'Conectando con el asistente...',
+  'assistant.errors.permissionDenied':
+    'Permiso de micrófono denegado. Actívalo en los ajustes del teléfono.',
+  'assistant.errors.unavailable': 'El reconocimiento de voz no está disponible en este dispositivo.',
+  'assistant.errors.unsupported': 'Este navegador no soporta el reconocimiento de voz.',
+  'assistant.errors.noSpeech': 'No te he escuchado. Toca el micrófono para intentarlo de nuevo.',
+  'assistant.errors.server': 'No se pudo conectar con el asistente. Revisa tu conexión.',
+  'assistant.errors.generic': 'Algo salió mal. Toca el micrófono para intentarlo de nuevo.',
+
+  // Statistics
+  'statistics.title': 'Estadísticas',
+  'statistics.loading': 'Cargando...',
+  'statistics.loadError': 'No se pudieron cargar las estadísticas',
+  'statistics.topServices': 'Servicios más pedidos',
+  'statistics.totals.appointmentsThisMonth': 'Citas este mes',
+  'statistics.totals.revenueThisMonth': 'Ingresos este mes',
+  'statistics.totals.newClients': 'Clientes nuevos',
+  'statistics.totals.cancellationRate': 'Tasa de cancelación',
+
+  // Settings
+  'settings.title': 'Configuración',
+  'settings.services': 'Servicios',
+  'settings.servicesEmpty': 'Aún no hay servicios. Agrega el primero abajo.',
+  'settings.loading': 'Cargando...',
+  'settings.loadError': 'No se pudieron cargar los servicios',
+  'settings.addService': 'Agregar servicio',
+  'settings.name': 'Nombre',
+  'settings.namePlaceholder': 'Corte clásico',
+  'settings.price': 'Precio',
+  'settings.pricePlaceholder': '15',
+  'settings.deleteAria': 'Eliminar servicio',
+  'settings.deleteTitle': 'Eliminar servicio',
+  'settings.deleteMessage': '¿Eliminar "{name}"? Las citas existentes conservan sus datos.',
+  'settings.cancel': 'Cancelar',
+  'settings.delete': 'Eliminar',
+  'settings.errors.duplicate': 'Ese servicio ya existe.',
+  'settings.errors.invalid': 'Revisa el nombre y el precio.',
+  'settings.errors.notFound': 'El servicio ya no existe.',
+  'settings.errors.server': 'No se pudo conectar con el servidor.',
+} as const;
+
+export type MessageKey = keyof typeof MESSAGES_ES;

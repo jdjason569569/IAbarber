@@ -1,23 +1,24 @@
 ---
 name: english-only
-description: Everything generated for this project must be in English, never Spanish. Applies to all code, identifiers, comments, commit messages, documentation, UI text and file content. Use whenever writing or editing any file in this project.
+description: Write all source code in English: identifiers, file and folder names, code comments and docstrings. Use whenever writing or editing code in this project. It does not apply to the text shown to the user, which is Spanish and lives in the i18n catalog.
 ---
 
-# English only
+# Code in English
 
-The user talks to you in Spanish, but **everything you produce for the project must be in English**.
+The user talks to you in Spanish, but **the code you write must be in English**.
 
 ## Must be in English
-- Source code: variable, function, class, file and folder names
+- Variable, function, class, interface, type, enum and constant names
+- File and folder names
 - Code comments and docstrings
-- UI strings, labels, placeholders, error messages
-- Documentation and Markdown files (including `CAMBIOS.md`)
-- Commit messages and PR descriptions
-- Mock data (names of services, barbers, etc.)
+- Message catalog keys (for example `settings.errors.duplicate`)
+- Logs (`console.*`) and errors that are thrown but never shown to the user
 
-## Exception
-- Your chat replies to the user stay in Spanish.
+## Not covered by this skill
+- **Text shown to the user is Spanish.** It lives only in the i18n catalog (`src/app/core/i18n/messages.es.ts`); follow the `centralize-messages` skill. Never put it directly in templates or components.
+- Chat replies to the user (Spanish).
+- Documentation, `CAMBIOS.md` and commit messages: this skill does not require a language; keep the language the file already uses unless the user asks otherwise.
 
 ## Rules
-- Do not leave any Spanish word in files, not even in comments or TODOs.
-- If you touch a file that already contains Spanish, translate the parts you edit and mention it to the user.
+- Do not write Spanish identifiers or comments, even for domain terms: use the English equivalent (`appointment`, not `cita`).
+- If you touch code that has Spanish identifiers or comments, translate the parts you edit and mention it to the user.

@@ -33,7 +33,7 @@ Once the one-time setup below is done, this is all you need:
 Without live reload (for example, to install a fixed version that runs without the PC):
 
 ```bash
-npx ng build && npx ionic capacitor sync android && npx ionic capacitor run android
+npx ng build --configuration development && npx cap sync android && npx ionic capacitor run android --no-build
 ```
 
 ---

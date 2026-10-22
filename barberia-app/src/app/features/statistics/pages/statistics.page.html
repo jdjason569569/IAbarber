@@ -1,45 +1,38 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>Statistics</ion-title>
+    <ion-title>{{ 'statistics.title' | t }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
-  <ion-grid>
-    <ion-row>
-      @for (total of stats.totals; track total.label) {
-        <ion-col size="6">
-          <ion-card class="total-card">
-            <ion-card-header>
-              <ion-card-title>{{ total.value }}</ion-card-title>
-              <ion-card-subtitle>{{ total.label }}</ion-card-subtitle>
-            </ion-card-header>
-          </ion-card>
-        </ion-col>
+  @if (stats(); as stats) {
+    <ion-grid>
+      <ion-row>
+        @for (total of stats.totals; track total.key) {
+          <ion-col size="6">
+            <ion-card class="total-card">
+              <ion-card-header>
+                <ion-card-title>{{ total.value }}</ion-card-title>
+                <ion-card-subtitle>{{ totalLabel(total.key) }}</ion-card-subtitle>
+              </ion-card-header>
+            </ion-card>
+          </ion-col>
+        }
+      </ion-row>
+    </ion-grid>
+
+    <ion-list-header>{{ 'statistics.topServices' | t }}</ion-list-header>
+    <ion-list>
+      @for (service of stats.topServices; track service.name) {
+        <ion-item>
+          <ion-label>{{ service.name }}</ion-label>
+          <ion-note slot="end">{{ service.count }}</ion-note>
+        </ion-item>
       }
-    </ion-row>
-  </ion-grid>
-
-  <ion-list-header>Top services</ion-list-header>
-  <ion-list>
-    @for (service of stats.topServices; track service.name) {
-      <ion-item>
-        <ion-label>{{ service.name }}</ion-label>
-        <ion-note slot="end">{{ service.count }}</ion-note>
-      </ion-item>
-    }
-  </ion-list>
-
-  <ion-list-header>Barbers</ion-list-header>
-  <ion-list>
-    @for (barber of stats.barbers; track barber.name) {
-      <ion-item>
-        <ion-label>
-          <h2>{{ barber.name }}</h2>
-          <p>{{ barber.appointments }} appointments</p>
-        </ion-label>
-        <ion-note slot="end">{{ barber.revenue }}</ion-note>
-      </ion-item>
-    }
-  </ion-list>
+    </ion-list>
+  } @else {
+    <p class="ion-padding ion-text-center">
+      @if (loading()) { {{ 'statistics.loading' | t }} } @else { {{ error() }} }
+    </p>
+  }
 </ion-content>

@@ -3,7 +3,9 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false
+  production: false,
+  /** Base URL of the BarberIA API. On a physical device use the machine LAN IP. */
+  apiUrl: 'http://localhost:3000',
 };
 
 /*

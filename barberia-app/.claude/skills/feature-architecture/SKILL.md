@@ -15,11 +15,12 @@ src/app/
 │   ├── services/             # HTTP client wrapper, auth, storage
 │   ├── interceptors/
 │   ├── guards/
-│   └── config/               # API urls, constants
+│   ├── config/               # API urls, constants
+│   └── i18n/                 # Message catalog and I18nService (see centralize-messages)
 ├── shared/                   # Reusable, feature-agnostic code
 │   ├── components/
 │   ├── directives/
-│   ├── pipes/
+│   ├── pipes/                # TranslatePipe (`t`)
 │   ├── models/
 │   └── utils/
 ├── features/
@@ -71,4 +72,4 @@ src/app/
 2. Add `<name>.routes.ts` and lazy-load it from `app.routes.ts`.
 3. Generate files with the CLI using `--skip-tests` (see `no-unit-tests`).
 4. Log the change in `CAMBIOS.md` (see `log-changes`).
-5. Write everything in English (see `english-only`).
+5. Write all code in English (see `english-only`); user-visible text is Spanish and goes in the i18n catalog (see `centralize-messages`).

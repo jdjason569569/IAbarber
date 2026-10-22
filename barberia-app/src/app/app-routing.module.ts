@@ -16,6 +16,11 @@ const routes: Routes = [
         loadChildren: () =>
           import('./features/statistics/statistics.routes').then((m) => m.STATISTICS_ROUTES),
       },
+      {
+        path: 'settings',
+        loadChildren: () =>
+          import('./features/settings/settings.routes').then((m) => m.SETTINGS_ROUTES),
+      },
       { path: '', redirectTo: 'appointments', pathMatch: 'full' },
     ],
   },

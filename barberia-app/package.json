@@ -9,7 +9,23 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "android:add": "cap add android",
+    "android:sync": "ng build --configuration development && cap sync android",
+    "android:open": "npm run android:sync && CAPACITOR_ANDROID_STUDIO_PATH=${CAPACITOR_ANDROID_STUDIO_PATH:-/snap/android-studio/current/bin/studio.sh} cap open android",
+    "install_app": "ng build --configuration development && cap sync android && ionic capacitor run android --no-build"
+  },
+  "scripts-info": {
+    "ng": "Angular CLI passthrough: npm run ng -- <command>.",
+    "start": "Serves the app in the browser with live reload (development configuration).",
+    "build": "Production build into www/. It uses environment.prod.ts, so do not use it for device builds.",
+    "watch": "Rebuilds www/ on every change using the development configuration.",
+    "test": "Unused: this project does not implement unit tests.",
+    "lint": "Runs the Angular linter.",
+    "android:add": "Creates the android/ project. Only needed when the folder does not exist; never delete and re-add it, it holds manual changes (microphone permission, speech queries, cleartext).",
+    "android:sync": "Development build (apiUrl http://localhost:3000) and copy of www/ into android/. Run it after every front-end change, then press Run in Android Studio.",
+    "android:open": "Runs android:sync and opens the android/ project in Android Studio (snap path by default; override with CAPACITOR_ANDROID_STUDIO_PATH).",
+    "install_app": "Development build, sync and install on the USB phone without Android Studio (--no-build stops Ionic from rebuilding in production). Needs adb reverse tcp:3000 tcp:3000 and the backend running."
   },
   "private": true,
   "dependencies": {
@@ -20,6 +36,7 @@
     "@angular/platform-browser": "22.1.7",
     "@angular/platform-browser-dynamic": "22.1.7",
     "@angular/router": "22.1.7",
+    "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor/android": "8.5.3",
     "@capacitor/app": "8.1.2",
     "@capacitor/core": "8.5.3",

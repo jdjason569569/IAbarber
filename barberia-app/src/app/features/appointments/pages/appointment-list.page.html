@@ -1,38 +1,45 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>Appointments</ion-title>
-  </ion-toolbar>
-  <ion-toolbar>
-    <ion-segment [value]="selectedFilter()" scrollable (ionChange)="onFilterChange($event.detail.value)">
-      @for (filter of filters; track filter) {
-        <ion-segment-button [value]="filter">
-          <ion-label>{{ filter }}</ion-label>
-        </ion-segment-button>
-      }
-    </ion-segment>
+    <ion-title>{{ 'appointments.title' | t }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
   <ion-list>
-    @for (appointment of visibleAppointments(); track appointment.id) {
+    @for (appointment of appointments(); track appointment.id) {
       <ion-item>
         <ion-label>
           <h2>{{ appointment.clientName }}</h2>
-          <p>{{ appointment.service }} · {{ appointment.barber }}</p>
+          <p>{{ appointment.service }}</p>
           <p>{{ appointment.date }} · {{ appointment.time }}</p>
-          <p>Service: ${{ appointment.serviceCost }}</p>
+          <p>{{ 'appointments.service' | t }}: ${{ appointment.serviceCost }}</p>
           @for (extra of appointment.extras; track extra.name) {
             <p>+ {{ extra.name }}: ${{ extra.price }}</p>
           }
-          <p><strong>Total: ${{ total(appointment) }}</strong></p>
+          <p><strong>{{ 'appointments.total' | t }}: ${{ total(appointment) }}</strong></p>
         </ion-label>
-        <ion-badge slot="end" [color]="statusColor(appointment.status)">{{ appointment.status }}</ion-badge>
+        <ion-badge slot="end" [color]="statusColor(appointment.status)">{{ statusLabel(appointment.status) }}</ion-badge>
       </ion-item>
     } @empty {
       <ion-item lines="none">
-        <ion-label class="ion-text-center">No appointments found</ion-label>
+        <ion-label class="ion-text-center">
+          @if (loading()) { {{ 'appointments.loading' | t }} } @else if (error()) { {{ error() }} } @else { {{ 'appointments.empty' | t }} }
+        </ion-label>
       </ion-item>
     }
   </ion-list>
+
+  <ion-fab slot="fixed" vertical="bottom" horizontal="end">
+    <ion-fab-button [color]="listening() ? 'danger' : 'primary'" [attr.aria-label]="'appointments.micLabel' | t" (click)="onMicClick()">
+      <ion-icon [name]="listening() ? 'mic' : 'mic-outline'"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>
+
+@if (assistantReply()) {
+  <ion-footer>
+    <ion-toolbar>
+      <ion-text class="ion-padding assistant-reply">{{ assistantReply() }}</ion-text>
+    </ion-toolbar>
+  </ion-footer>
+}
