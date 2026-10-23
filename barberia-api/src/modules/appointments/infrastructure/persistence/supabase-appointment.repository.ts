@@ -4,7 +4,6 @@ import { SUPABASE_CLIENT } from '../../../../shared/supabase/supabase.provider.j
 import { Appointment, UNSAVED_APPOINTMENT_ID } from '../../domain/entities/appointment.entity.js';
 import type { AppointmentExtra } from '../../domain/entities/appointment.entity.js';
 import { AppointmentConflictError } from '../../domain/errors/appointment-conflict.error.js';
-import type { AppointmentStatus } from '../../domain/entities/appointment-status.js';
 import type { AppointmentRepository } from '../../domain/ports/appointment.repository.js';
 
 interface AppointmentRow {
@@ -15,7 +14,7 @@ interface AppointmentRow {
   time: string;
   service_cost: number;
   extras: AppointmentExtra[] | null;
-  status: AppointmentStatus;
+  cancelled: boolean;
 }
 
 const TABLE = 'appointments';
@@ -47,7 +46,7 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
       .select('*')
       .eq('date', date)
       .eq('time', time)
-      .neq('status', 'cancelled')
+      .eq('cancelled', false)
       .limit(1)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -62,7 +61,7 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
       time: appointment.time,
       service_cost: appointment.serviceCost,
       extras: appointment.extras,
-      status: appointment.status,
+      cancelled: appointment.cancelled,
     };
     const query =
       appointment.id === UNSAVED_APPOINTMENT_ID
@@ -89,6 +88,6 @@ function toEntity(row: AppointmentRow): Appointment {
     time: row.time.slice(0, 5),
     serviceCost: Number(row.service_cost),
     extras: row.extras ?? [],
-    status: row.status,
+    cancelled: row.cancelled,
   });
 }

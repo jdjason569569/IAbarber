@@ -7,6 +7,6 @@ export interface ScheduleAppointmentRequest {
   extras?: { name: string; price: number }[];
 }
 
-export interface UpdateStatusRequest {
-  status: string;
+export interface SetCancelledRequest {
+  cancelled: boolean;
 }

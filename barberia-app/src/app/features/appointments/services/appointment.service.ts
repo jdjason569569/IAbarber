@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { Appointment, AppointmentStatus } from '../models/appointment.model';
+import { Appointment } from '../models/appointment.model';
 import { AppointmentExtra } from '../models/appointment-extra.model';
 
 /** Shape returned by the NestJS API. */
@@ -14,7 +14,7 @@ interface AppointmentDto {
   time: string;
   serviceCost: number;
   extras: AppointmentExtra[];
-  status: AppointmentStatus;
+  cancelled: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -26,6 +26,13 @@ export class AppointmentService {
     return this.http
       .get<AppointmentDto[]>(this.url)
       .pipe(map((items) => items.map(toAppointment)));
+  }
+
+  /** Cancels (true) or reactivates (false) an appointment; the record is not deleted. */
+  setCancelled(id: number, cancelled: boolean): Observable<Appointment> {
+    return this.http
+      .patch<AppointmentDto>(`${this.url}/${id}/cancelled`, { cancelled })
+      .pipe(map(toAppointment));
   }
 
   getTotal(appointment: Appointment): number {

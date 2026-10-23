@@ -356,3 +356,67 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **What was done**
 - `package.json` cannot hold comments, so a `scripts-info` field (ignored by npm) now describes what each script does and when to use it.
+
+---
+
+## 2026-10-22 · Appointment list always refreshes
+
+**What was done**
+- The list loaded only once, when the page was created, so a failed first request (tunnel down, backend restarting) or appointments created elsewhere left it empty or stale until the app was restarted.
+- `AppointmentListPage` now reloads in `ionViewWillEnter` (every time the tab is shown) and supports pull-to-refresh (`ion-refresher`).
+
+**Current state**
+- `npx ng build --configuration development` passes and is synced to `android/`; needs a reinstall on the phone (Run in Android Studio or `npm run install_app`).
+
+---
+
+## 2026-10-22 · Today's appointments and a calendar
+
+**What was done**
+- The Appointments screen now lists only the appointments of the selected day (today by default, ordered by time) under the heading "Citas de hoy" / "Citas del {date}"; the empty state is "No hay citas este día".
+- New `features/appointments/components/appointment-calendar`: a month calendar (weeks start on Monday, previous/next month buttons). Days with at least one non-cancelled appointment are painted green, the selected day has a ring and today is underlined. Tapping a day selects it. Built by hand instead of `ion-datetime` because the selected-day style would hide the green mark.
+- `shared/utils/date.util.ts` (`toLocalIsoDate`, `parseIsoDate`) so "today" uses the device's local date, never UTC. `I18nService` exposes `locale`; new catalog keys under `appointments.*` (`today`, `onDate`, `emptyDay`, `calendar.*`; `appointments.empty` removed).
+- `REQUIREMENTS.md` FR-2 updated.
+
+**Current state**
+- `npx ng build --configuration development` passes and is synced to `android/`; needs a reinstall on the phone. The calendar date logic was checked with Node (month layouts, leap year, local vs UTC date).
+
+**Pending / notes**
+- If the app stays open past midnight, "today" is only recalculated after a restart.
+- Backend: the assistant prompt and statistics still use the UTC date.
+
+---
+
+## 2026-10-23 · Voice button under the list and a smaller calendar
+
+**What was done**
+- Removed the floating `ion-fab` microphone button, which covered the appointments (including the status badge). The button is now a round `ion-button` inside an `ion-footer` below the list, always visible and never overlapping; the assistant status text sits above it in the same footer.
+- `appointment-calendar` is more compact: max width 280px and centered, smaller day cells, gaps, header and weekday initials (about 270px tall instead of about 360px).
+
+**Current state**
+- `npx ng build --configuration development` passes and is synced to `android/`; needs a reinstall on the phone (Run in Android Studio or `npm run install_app`).
+
+---
+
+## 2026-10-23 · Only the list scrolls
+
+**What was done**
+- The whole Appointments screen scrolled, so the calendar moved out of view. The calendar and the day title now live in the fixed `ion-header` (extra toolbars); the `ion-content` holds only the appointment list, so only the list scrolls and the voice bar stays below it.
+
+**Current state**
+- `npx ng build --configuration development` passes and is synced to `android/`; needs a reinstall on the phone.
+
+**Pending / notes**
+- On small phones the fixed calendar leaves less room for the list; a collapsible calendar could be added if needed.
+
+---
+
+## 2026-10-23 · Cancel button with confirmation (flag, not delete)
+
+**What was done**
+- Each active appointment has a **Cancelar** button. It opens a confirmation alert; on confirm the app calls `PATCH /appointments/:id/cancelled` and updates the list in place. The appointment is not deleted: it stays in the list, dimmed and struck through, with a "Cancelada" badge (active ones show "Activa"). A toast reports a failure.
+- The model now has `cancelled: boolean` instead of `status`; removed the status labels and colours. The calendar marks only days with a non-cancelled appointment.
+- New catalog keys `appointments.state.*` and `appointments.cancel.*` (the `status.*` keys were removed). `REQUIREMENTS.md` updated (data model, FR-13, FR-14, FR-24).
+
+**Current state**
+- `npx ng build --configuration development` passes and is synced to `android/`; needs a reinstall on the phone, and the Supabase migration must be run first (see the API's `CAMBIOS.md`).

@@ -12,18 +12,18 @@ import {
 } from '@nestjs/common';
 import { ListAppointmentsUseCase } from '../../application/use-cases/list-appointments.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../application/use-cases/schedule-appointment.use-case.js';
-import { UpdateAppointmentStatusUseCase } from '../../application/use-cases/update-appointment-status.use-case.js';
+import { SetAppointmentCancelledUseCase } from '../../application/use-cases/set-appointment-cancelled.use-case.js';
 import { AppointmentConflictError } from '../../domain/errors/appointment-conflict.error.js';
 import { AppointmentNotFoundError } from '../../domain/errors/appointment-not-found.error.js';
 import { InvalidAppointmentError } from '../../domain/errors/invalid-appointment.error.js';
-import type { ScheduleAppointmentRequest, UpdateStatusRequest } from './schedule-appointment.request.js';
+import type { ScheduleAppointmentRequest, SetCancelledRequest } from './schedule-appointment.request.js';
 
 @Controller('appointments')
 export class AppointmentsController {
   constructor(
     private readonly listAppointments: ListAppointmentsUseCase,
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
-    private readonly updateStatus: UpdateAppointmentStatusUseCase,
+    private readonly setCancelled: SetAppointmentCancelledUseCase,
   ) {}
 
   @Get()
@@ -49,10 +49,13 @@ export class AppointmentsController {
     }
   }
 
-  @Patch(':id/status')
-  async changeStatus(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateStatusRequest) {
+  @Patch(':id/cancelled')
+  async changeCancelled(@Param('id', ParseIntPipe) id: number, @Body() body: SetCancelledRequest) {
+    if (typeof body?.cancelled !== 'boolean') {
+      throw new BadRequestException('cancelled must be true or false');
+    }
     try {
-      return await this.updateStatus.execute(id, String(body?.status ?? ''));
+      return await this.setCancelled.execute(id, body.cancelled);
     } catch (error) {
       throw this.toHttpError(error);
     }

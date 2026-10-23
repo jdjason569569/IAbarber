@@ -1,0 +1,34 @@
+<div class="calendar-header">
+  <ion-button fill="clear" size="small" [attr.aria-label]="'appointments.calendar.previousMonth' | t" (click)="previousMonth()">
+    <ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon>
+  </ion-button>
+  <strong>{{ monthTitle() }}</strong>
+  <ion-button fill="clear" size="small" [attr.aria-label]="'appointments.calendar.nextMonth' | t" (click)="nextMonth()">
+    <ion-icon slot="icon-only" name="chevron-forward-outline"></ion-icon>
+  </ion-button>
+</div>
+
+<div class="calendar-grid weekdays">
+  @for (weekday of weekdays; track $index) {
+    <span>{{ weekday }}</span>
+  }
+</div>
+
+<div class="calendar-grid">
+  @for (cell of cells(); track $index) {
+    @if (cell) {
+      <button
+        type="button"
+        class="day"
+        [class.has-appointments]="cell.hasAppointments"
+        [class.selected]="cell.selected"
+        [class.today]="cell.today"
+        [attr.aria-label]="dayLabel(cell)"
+        [attr.aria-pressed]="cell.selected"
+        (click)="select(cell)"
+      >{{ cell.day }}</button>
+    } @else {
+      <span></span>
+    }
+  }
+</div>

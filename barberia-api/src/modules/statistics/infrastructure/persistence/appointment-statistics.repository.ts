@@ -16,7 +16,7 @@ export class AppointmentStatisticsRepository implements StatisticsRepository {
     const all = await this.listAppointments.execute();
     const month = new Date().toISOString().slice(0, 7);
     const thisMonth = all.filter((a) => a.date.startsWith(month));
-    const active = thisMonth.filter((a) => a.status !== 'cancelled');
+    const active = thisMonth.filter((a) => !a.cancelled);
     const cancelled = thisMonth.length - active.length;
 
     const firstSeen = new Map<string, string>();

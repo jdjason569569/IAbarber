@@ -1,0 +1,53 @@
+:host {
+  display: block;
+  max-width: 280px;
+  margin: 0 auto;
+  padding-bottom: 4px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  font-size: 0.9rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  padding: 0 8px;
+  text-align: center;
+}
+
+.weekdays {
+  color: var(--ion-color-medium);
+  font-size: 0.7rem;
+}
+
+.day {
+  aspect-ratio: 1;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ion-text-color);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+
+  &.today {
+    font-weight: 700;
+    text-decoration: underline;
+  }
+
+  &.has-appointments {
+    background: var(--ion-color-success);
+    color: var(--ion-color-success-contrast);
+    font-weight: 700;
+  }
+
+  &.selected {
+    border-color: var(--ion-color-primary);
+  }
+}

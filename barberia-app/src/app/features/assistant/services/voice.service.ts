@@ -10,6 +10,7 @@ interface WebSpeechRecognition {
   onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
   onerror: ((event: { error: string }) => void) | null;
   start(): void;
+  stop(): void;
 }
 
 type WebSpeechRecognitionCtor = new () => WebSpeechRecognition;
@@ -17,6 +18,7 @@ type WebSpeechRecognitionCtor = new () => WebSpeechRecognition;
 @Injectable({ providedIn: 'root' })
 export class VoiceService {
   private readonly language = inject(I18nService).speechLocale;
+  private webRecognition: WebSpeechRecognition | null = null;
 
   /** Reads the text aloud and resolves when finished (or immediately if unsupported). */
   speak(text: string): Promise<void> {
@@ -43,6 +45,15 @@ export class VoiceService {
   /** Listens once and resolves with the transcript. Rejects if nothing was captured. */
   listen(): Promise<string> {
     return Capacitor.isNativePlatform() ? this.listenNative() : this.listenWeb();
+  }
+
+  /** Ends the current listening session early; the pending `listen()` resolves with what was heard. */
+  stop(): void {
+    if (Capacitor.isNativePlatform()) {
+      void SpeechRecognition.stop().catch(() => undefined);
+    } else {
+      this.webRecognition?.stop();
+    }
   }
 
   private async listenNative(): Promise<string> {
@@ -79,6 +90,7 @@ export class VoiceService {
     }
     return new Promise((resolve, reject) => {
       const recognition = new Ctor();
+      this.webRecognition = recognition;
       recognition.lang = this.language;
       recognition.interimResults = false;
       recognition.onresult = (event) => resolve(event.results[0][0].transcript);

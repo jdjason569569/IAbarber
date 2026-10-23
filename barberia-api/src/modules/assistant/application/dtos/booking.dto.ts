@@ -24,4 +24,6 @@ export interface BookingTurnResult {
   /** `asking` while data is missing; `created` once saved; `cancelled` if the user gave up. */
   status: 'asking' | 'created' | 'cancelled';
   appointment?: AppointmentDto;
+  /** Overrides the app's default listening window for the next answer. */
+  listenSeconds?: number;
 }

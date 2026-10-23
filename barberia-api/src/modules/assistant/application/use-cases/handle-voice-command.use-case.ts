@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ListAppointmentsUseCase } from '../../../appointments/application/use-cases/list-appointments.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../../appointments/application/use-cases/schedule-appointment.use-case.js';
-import { UpdateAppointmentStatusUseCase } from '../../../appointments/application/use-cases/update-appointment-status.use-case.js';
+import { SetAppointmentCancelledUseCase } from '../../../appointments/application/use-cases/set-appointment-cancelled.use-case.js';
 import type { AppointmentDto } from '../../../appointments/application/dtos/appointment.dto.js';
 import { AppointmentConflictError } from '../../../appointments/domain/errors/appointment-conflict.error.js';
 import { InvalidAppointmentError } from '../../../appointments/domain/errors/invalid-appointment.error.js';
@@ -57,7 +57,7 @@ export class HandleVoiceCommandUseCase {
     @Inject(LLM_PORT) private readonly llm: LlmPort,
     private readonly listAppointments: ListAppointmentsUseCase,
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
-    private readonly updateStatus: UpdateAppointmentStatusUseCase,
+    private readonly setCancelled: SetAppointmentCancelledUseCase,
     private readonly listServices: ListServicesUseCase,
   ) {}
 
@@ -151,7 +151,7 @@ export class HandleVoiceCommandUseCase {
 
   private async cancel(id: number): Promise<AssistantResult> {
     try {
-      const appointment = await this.updateStatus.execute(id, 'cancelled');
+      const appointment = await this.setCancelled.execute(id, true);
       return { reply: 'Cita cancelada.', action: 'appointment_cancelled', appointment };
     } catch (error) {
       if (error instanceof AppointmentNotFoundError) {
@@ -164,7 +164,7 @@ export class HandleVoiceCommandUseCase {
   private buildSystemPrompt(existing: AppointmentDto[], services: ServiceDto[]): string {
     const today = new Date().toISOString().slice(0, 10);
     const active = existing
-      .filter((a) => a.status !== 'cancelled' && a.status !== 'completed')
+      .filter((a) => !a.cancelled)
       .map((a) => `#${a.id} ${a.client} ${a.date} ${a.time} (${a.service})`)
       .join('\n');
     return [

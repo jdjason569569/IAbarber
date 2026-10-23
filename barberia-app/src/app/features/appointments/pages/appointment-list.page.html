@@ -1,13 +1,37 @@
+<!-- Fixed area: only the list below it scrolls. -->
 <ion-header>
   <ion-toolbar>
     <ion-title>{{ 'appointments.title' | t }}</ion-title>
   </ion-toolbar>
+  <ion-toolbar class="day-toolbar">
+    <div class="day-nav">
+      <ion-button fill="clear" size="small" [attr.aria-label]="'appointments.previousDay' | t" (click)="shiftDay(-1)">
+        <ion-icon slot="icon-only" name="chevron-back"></ion-icon>
+      </ion-button>
+      <div class="day-card">
+        <span class="day-card-number">{{ dayNumber() }}</span>
+        <span class="day-card-month">{{ monthLabel() }}</span>
+      </div>
+      <ion-button fill="clear" size="small" [attr.aria-label]="'appointments.nextDay' | t" (click)="shiftDay(1)">
+        <ion-icon slot="icon-only" name="chevron-forward"></ion-icon>
+      </ion-button>
+    </div>
+    <ion-buttons slot="end">
+      <ion-button size="small" (click)="showAvailability()">
+        {{ 'appointments.availability.button' | t }}
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
 </ion-header>
 
 <ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="onPullRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
   <ion-list>
-    @for (appointment of appointments(); track appointment.id) {
-      <ion-item>
+    @for (appointment of dayAppointments(); track appointment.id) {
+      <ion-item [class.cancelled]="appointment.cancelled">
         <ion-label>
           <h2>{{ appointment.clientName }}</h2>
           <p>{{ appointment.service }}</p>
@@ -18,28 +42,45 @@
           }
           <p><strong>{{ 'appointments.total' | t }}: ${{ total(appointment) }}</strong></p>
         </ion-label>
-        <ion-badge slot="end" [color]="statusColor(appointment.status)">{{ statusLabel(appointment.status) }}</ion-badge>
+        <div slot="end" class="row-actions">
+          <ion-badge [color]="appointment.cancelled ? 'danger' : 'success'">
+            {{ (appointment.cancelled ? 'appointments.state.cancelled' : 'appointments.state.active') | t }}
+          </ion-badge>
+          @if (!appointment.cancelled) {
+            <ion-button size="small" fill="outline" color="danger" (click)="confirmCancel(appointment)">
+              {{ 'appointments.cancel.button' | t }}
+            </ion-button>
+          }
+        </div>
       </ion-item>
     } @empty {
       <ion-item lines="none">
         <ion-label class="ion-text-center">
-          @if (loading()) { {{ 'appointments.loading' | t }} } @else if (error()) { {{ error() }} } @else { {{ 'appointments.empty' | t }} }
+          @if (loading()) { {{ 'appointments.loading' | t }} } @else if (error()) { {{ error() }} } @else { {{ 'appointments.emptyDay' | t }} }
         </ion-label>
       </ion-item>
     }
   </ion-list>
-
-  <ion-fab slot="fixed" vertical="bottom" horizontal="end">
-    <ion-fab-button [color]="listening() ? 'danger' : 'primary'" [attr.aria-label]="'appointments.micLabel' | t" (click)="onMicClick()">
-      <ion-icon [name]="listening() ? 'mic' : 'mic-outline'"></ion-icon>
-    </ion-fab-button>
-  </ion-fab>
 </ion-content>
 
-@if (assistantReply()) {
-  <ion-footer>
-    <ion-toolbar>
-      <ion-text class="ion-padding assistant-reply">{{ assistantReply() }}</ion-text>
-    </ion-toolbar>
-  </ion-footer>
-}
+<ion-footer>
+  <ion-toolbar>
+    <div class="assistant-bar">
+      @if (assistantReply()) {
+        <ion-text class="assistant-reply">{{ assistantReply() }}</ion-text>
+      }
+      @if (listening()) {
+        <ion-text class="countdown" color="danger">{{ countdown() }}</ion-text>
+      }
+      <ion-button
+        class="mic-button"
+        shape="round"
+        [color]="listening() ? 'danger' : 'primary'"
+        [attr.aria-label]="'appointments.micLabel' | t"
+        (click)="onMicClick()"
+      >
+        <ion-icon slot="icon-only" [name]="listening() ? 'mic' : 'mic-outline'"></ion-icon>
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

@@ -11,17 +11,33 @@ export const MESSAGES_ES = {
   // Appointments
   'appointments.title': 'Citas',
   'appointments.loading': 'Cargando...',
-  'appointments.empty': 'No hay citas',
+  'appointments.today': 'Citas de hoy',
+  'appointments.onDate': 'Citas del {date}',
+  'appointments.availability.button': 'Disponibilidad',
+  'appointments.availability.title': 'Horas disponibles hoy',
+  'appointments.availability.none': 'No quedan horas disponibles hoy.',
+  'appointments.availability.close': 'Cerrar',
+  'appointments.emptyDay': 'No hay citas este día',
+  'appointments.previousDay': 'Día anterior',
+  'appointments.nextDay': 'Día siguiente',
+  'appointments.calendar.previousMonth': 'Mes anterior',
+  'appointments.calendar.nextMonth': 'Mes siguiente',
+  'appointments.calendar.hasAppointments': 'con citas',
   'appointments.loadError': 'No se pudieron cargar las citas',
   'appointments.service': 'Servicio',
   'appointments.total': 'Total',
   'appointments.micLabel': 'Crear cita por voz',
 
-  // Appointment status
-  'status.pending': 'Pendiente',
-  'status.confirmed': 'Confirmada',
-  'status.completed': 'Completada',
-  'status.cancelled': 'Cancelada',
+  // Appointment state (cancelled flag) and cancel action
+  'appointments.state.active': 'Activa',
+  'appointments.state.cancelled': 'Cancelada',
+  'appointments.cancel.button': 'Cancelar',
+  'appointments.cancel.title': 'Cancelar cita',
+  'appointments.cancel.message':
+    '¿Seguro que quieres cancelar la cita de {client} el {date} a las {time}? La cita no se borra, queda marcada como cancelada.',
+  'appointments.cancel.no': 'No',
+  'appointments.cancel.confirm': 'Sí, cancelar',
+  'appointments.cancel.error': 'No se pudo cancelar la cita. Inténtalo de nuevo.',
 
   // Voice assistant
   'assistant.connecting': 'Conectando con el asistente...',

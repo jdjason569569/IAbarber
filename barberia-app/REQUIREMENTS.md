@@ -16,7 +16,7 @@ Every appointment must store:
 | `service` | string | yes | Service booked (for example "Classic Haircut"). |
 | `serviceCost` | number | yes | Base price of the service. Cannot be negative. |
 | `extras` | list of `{ name, price }` | no | Additional items charged on top of the service (for example hair wax). Empty by default. |
-| `status` | `pending` \| `confirmed` \| `completed` \| `cancelled` | yes | Starts as `pending`. |
+| `cancelled` | boolean | yes | Flag: `false` = active (default), `true` = cancelled. Cancelled appointments are kept, never deleted. |
 | `id` | number | generated | Unique identifier assigned by the database. |
 
 ### Total price
@@ -28,14 +28,14 @@ The total is calculated, never stored.
 ## 3. Functional requirements
 
 ### 3.1 List appointments
-- **FR-1** The app shows all appointments with: client name, service, date, time, service price, each extra with its price, total and status.
-- **FR-2** All appointments are shown in a single list, ordered as returned by the API; there are no status tabs. The status is shown as a badge on each appointment.
+- **FR-1** The app shows all appointments with: client name, service, date, time, service price, each extra with its price, total and whether it is active or cancelled.
+- **FR-2** The Appointments screen shows only the appointments of the selected day, today by default, ordered by time. A month calendar above the list marks every day that has at least one non-cancelled appointment in green; tapping a day shows that day's appointments. There are no status tabs; each appointment shows an Active or Cancelled badge, and cancelled ones are dimmed.
 - **FR-3** The list is loaded from the API and shows a loading state, an empty state and an error state.
 
 ### 3.2 Create an appointment
 - **FR-4** An appointment can be created from the app with the fields in section 2.
 - **FR-5** Validation: client name and service are required; `serviceCost` cannot be negative; `date` is a valid ISO date and `time` a valid `HH:mm`.
-- **FR-6** New appointments start with status `pending`.
+- **FR-6** New appointments start active (`cancelled` = `false`).
 
 ### 3.3 Create an appointment by voice
 - **FR-7** Pressing the microphone button starts a guided dialog: the assistant asks, one question at a time, for the client name, the date, the time and the service.
@@ -51,9 +51,10 @@ The total is calculated, never stored.
 - **FR-17** `date` must be a real calendar date and `time` a valid `HH:mm`.
 - **FR-18** In the voice dialog, a taken slot or a past date does not end the conversation: the assistant keeps the answers and asks again only for the time (or date).
 
-### 3.5 Change status
-- **FR-13** An appointment can be marked `confirmed`, `completed` or `cancelled` (API: `PATCH /appointments/:id/status`).
-- **FR-14** Cancelling by voice requires an explicit confirmation.
+### 3.5 Cancel an appointment
+- **FR-13** Every active appointment in the list has a **Cancel** button. Pressing it opens a confirmation popup ("are you sure?"); if the user declines, nothing changes.
+- **FR-14** On confirmation the appointment is **not deleted**: its `cancelled` flag becomes `true` (API: `PATCH /appointments/:id/cancelled` with `{ "cancelled": true }`; `false` reactivates it if its slot is still free, otherwise `409`). It stays in the list, dimmed, with a Cancelled badge, and its date and time become available again.
+- **FR-24** Cancelled appointments do not count as revenue or appointments in the statistics, and their day is not marked in the calendar unless another active appointment exists that day.
 
 ### 3.6 Settings (services)
 - **FR-19** The app has a **Settings** tab where the shop manages the services it offers (name and price).
@@ -73,7 +74,8 @@ The total is calculated, never stored.
 ## 5. Out of scope (for now)
 
 - User login and multiple barbershops.
-- Editing or deleting an appointment's data after creation.
+- Editing an appointment's data after creation, and permanently deleting appointments.
+- Appointment states other than active / cancelled (for example confirmed or completed).
 - Payments, reminders and notifications.
 - Several barbers (the shop has a single barber, so no barber is stored).
 - Opening hours and service duration (overlapping appointments).

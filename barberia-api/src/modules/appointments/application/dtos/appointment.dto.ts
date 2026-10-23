@@ -9,7 +9,7 @@ export interface AppointmentDto {
   time: string;
   serviceCost: number;
   extras: AppointmentExtra[];
-  status: string;
+  cancelled: boolean;
 }
 
 export interface ScheduleAppointmentInput {
@@ -30,6 +30,6 @@ export function toAppointmentDto(a: Appointment): AppointmentDto {
     time: a.time,
     serviceCost: a.serviceCost,
     extras: a.extras,
-    status: a.status,
+    cancelled: a.cancelled,
   };
 }

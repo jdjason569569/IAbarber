@@ -1,5 +1,4 @@
 import { InvalidAppointmentError } from '../errors/invalid-appointment.error.js';
-import type { AppointmentStatus } from './appointment-status.js';
 
 export interface AppointmentExtra {
   name: string;
@@ -14,7 +13,8 @@ export interface AppointmentProps {
   time: string;
   serviceCost: number;
   extras: AppointmentExtra[];
-  status: AppointmentStatus;
+  /** true = cancelled, false = active. Cancelled appointments are kept, never deleted. */
+  cancelled: boolean;
 }
 
 /** Id assigned to an appointment that has not been persisted yet. */
@@ -30,7 +30,7 @@ function isValidDate(value: string): boolean {
 export class Appointment {
   private constructor(private readonly props: AppointmentProps) {}
 
-  static create(props: Omit<AppointmentProps, 'id' | 'status'>): Appointment {
+  static create(props: Omit<AppointmentProps, 'id' | 'cancelled'>): Appointment {
     if (!props.client.trim()) {
       throw new InvalidAppointmentError('Client name is required');
     }
@@ -46,15 +46,15 @@ export class Appointment {
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(props.time)) {
       throw new InvalidAppointmentError(`Invalid time: ${props.time}`);
     }
-    return new Appointment({ ...props, id: UNSAVED_APPOINTMENT_ID, status: 'pending' });
+    return new Appointment({ ...props, id: UNSAVED_APPOINTMENT_ID, cancelled: false });
   }
 
   static restore(props: AppointmentProps): Appointment {
     return new Appointment(props);
   }
 
-  withStatus(status: AppointmentStatus): Appointment {
-    return new Appointment({ ...this.props, status });
+  withCancelled(cancelled: boolean): Appointment {
+    return new Appointment({ ...this.props, cancelled });
   }
 
   get id(): number { return this.props.id; }
@@ -64,7 +64,7 @@ export class Appointment {
   get time(): string { return this.props.time; }
   get serviceCost(): number { return this.props.serviceCost; }
   get extras(): AppointmentExtra[] { return this.props.extras; }
-  get status(): AppointmentStatus { return this.props.status; }
+  get cancelled(): boolean { return this.props.cancelled; }
 
-  get isActive(): boolean { return this.props.status !== 'cancelled'; }
+  get isActive(): boolean { return !this.props.cancelled; }
 }

@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ListAppointmentsUseCase } from '../../../appointments/application/use-cases/list-appointments.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../../appointments/application/use-cases/schedule-appointment.use-case.js';
 import { AppointmentConflictError } from '../../../appointments/domain/errors/appointment-conflict.error.js';
 import { AppointmentInPastError } from '../../../appointments/domain/errors/appointment-in-past.error.js';
@@ -16,6 +17,11 @@ import type {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_24H = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Shorter listening window when the user must repeat a rejected answer. */
+const RETRY_LISTEN_SECONDS = 7;
+
+const PAST_REPLY = 'Esa fecha ya pasó, no se puede agendar una cita en el pasado.';
 
 const NO_SERVICES_REPLY =
   'No hay servicios configurados. Agrégalos en la pestaña Settings de la app.';
@@ -59,6 +65,7 @@ export class HandleBookingTurnUseCase {
   constructor(
     @Inject(LLM_PORT) private readonly llm: LlmPort,
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
+    private readonly listAppointments: ListAppointmentsUseCase,
     private readonly listServices: ListServicesUseCase,
   ) {}
 
@@ -86,6 +93,21 @@ export class HandleBookingTurnUseCase {
       }
     }
 
+    if (draft.date && draft.date < localIsoDate(new Date())) {
+      return { reply: PAST_REPLY, draft: {}, status: 'cancelled' };
+    }
+
+    if (draft.client && draft.date && (await this.hasActiveClientOn(draft.client, draft.date))) {
+      // Ask for the name again: the app gives the user another listening window.
+      const { client: _taken, ...keep } = draft;
+      return {
+        reply: `Ya existe una cita a nombre de ${draft.client} ese día. Agrégale otro nombre o apellido, o dime un nombre distinto.`,
+        draft: keep,
+        status: 'asking',
+        listenSeconds: RETRY_LISTEN_SECONDS,
+      };
+    }
+
     const missing = nextStep(draft);
     if (missing) {
       const retry = text && missing === nextStep(sanitize(input.draft, services));
@@ -97,6 +119,14 @@ export class HandleBookingTurnUseCase {
       };
     }
     return this.create(draft, services);
+  }
+
+  private async hasActiveClientOn(client: string, date: string): Promise<boolean> {
+    const name = client.trim().toLowerCase();
+    const appointments = await this.listAppointments.execute();
+    return appointments.some(
+      (a) => a.date === date && !a.cancelled && a.client.trim().toLowerCase() === name,
+    );
   }
 
   private async create(draft: BookingDraft, services: ServiceDto[]): Promise<BookingTurnResult> {
@@ -127,12 +157,7 @@ export class HandleBookingTurnUseCase {
         };
       }
       if (error instanceof AppointmentInPastError) {
-        const { date: _past, time: _pastTime, ...keep } = draft;
-        return {
-          reply: 'Esa fecha y hora ya pasó. ¿Para qué fecha es la cita?',
-          draft: keep,
-          status: 'asking',
-        };
+        return { reply: PAST_REPLY, draft: {}, status: 'cancelled' };
       }
       if (error instanceof InvalidAppointmentError) {
         return { reply: error.message, draft: {}, status: 'cancelled' };
@@ -169,6 +194,13 @@ function sanitize(draft: BookingDraft, services: ServiceDto[]): BookingDraft {
   const service = services.find((s) => s.name === draft.service);
   if (service) result.service = service.name;
   return result;
+}
+
+/** `YYYY-MM-DD` in server local time, the same clock `ScheduleAppointmentUseCase` uses. */
+function localIsoDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 function pickDefined(args: Record<string, unknown>): BookingDraft {

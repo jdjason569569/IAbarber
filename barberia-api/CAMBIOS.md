@@ -198,3 +198,20 @@ This file records, in chronological order, every change made to the backend.
 
 **Pending / notes**
 - Run the migration statement in the Supabase SQL Editor to drop the column. Until then it is harmless: the column has a default `''` and the API no longer reads or writes it.
+
+---
+
+## 2026-10-23 · Cancel flag instead of status
+
+**What was done**
+- The appointment `status` (pending / confirmed / completed / cancelled) was replaced by the boolean flag `cancelled` (`true` = cancelled, `false` = active). Appointments are never deleted: cancelling only flips the flag.
+- `PATCH /appointments/:id/status` became `PATCH /appointments/:id/cancelled` with `{ "cancelled": boolean }` (`SetAppointmentCancelledUseCase`): idempotent, 404 for an unknown id, 400 for a non-boolean, 409 when reactivating into a slot that is taken. Cancelled appointments free their slot.
+- Updated the entity, DTO, in-memory and Supabase repositories (`findActiveAt` filters `cancelled = false`), statistics and the voice assistant. Removed `appointment-status.ts`.
+- `docs/schema.sql`: new table definition with `cancelled boolean not null default false`, the unique index now `where not cancelled`, and an idempotent migration block that converts `status` into `cancelled` and drops `status`.
+
+**Current state**
+- Build and lint pass. Verified in an in-memory instance: create, cancel (stays in the list with `true`), cancel twice, slot freed, reactivate into a taken slot (409), invalid value (400), unknown id (404) and statistics. Not run against Supabase yet.
+
+**Pending / notes**
+- **Run the migration block of `docs/schema.sql` in the Supabase SQL Editor before using the new backend**: until the `cancelled` column exists, creating and listing appointments against Supabase fails.
+- The states confirmed / completed no longer exist.

@@ -1,7 +1,5 @@
 import { AppointmentExtra } from './appointment-extra.model';
 
-export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
-
 export interface Appointment {
   id: number;
   clientName: string;
@@ -14,5 +12,6 @@ export interface Appointment {
   serviceCost: number;
   /** Additional items charged on top of the service. */
   extras: AppointmentExtra[];
-  status: AppointmentStatus;
+  /** true = cancelled, false = active. Cancelled appointments are kept, never deleted. */
+  cancelled: boolean;
 }

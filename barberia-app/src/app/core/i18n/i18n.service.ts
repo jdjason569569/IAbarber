@@ -6,8 +6,11 @@ export type MessageParams = Record<string, string | number>;
 /** Looks up UI texts in the message catalog. Today the app is Spanish only. */
 @Injectable({ providedIn: 'root' })
 export class I18nService {
-  /** Locale used for the catalog, speech recognition and speech synthesis. */
-  readonly speechLocale = 'es-ES';
+  /** Locale of the catalog; also used to format dates. */
+  readonly locale = 'es-ES';
+
+  /** Locale for speech recognition and speech synthesis. */
+  readonly speechLocale = this.locale;
 
   private readonly messages: Record<MessageKey, string> = MESSAGES_ES;
 
