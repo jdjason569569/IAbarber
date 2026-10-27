@@ -41,6 +41,10 @@ export const MESSAGES_ES = {
 
   // Voice assistant
   'assistant.connecting': 'Conectando con el asistente...',
+  'assistant.sending': 'Enviando respuesta...',
+  'assistant.sent': 'Respuesta enviada',
+  'assistant.retry.listen': 'No te escuché. {question}',
+  'assistant.retry.send': 'No se pudo enviar la respuesta. Reintentando ({attempt} de {max})...',
   'assistant.errors.permissionDenied':
     'Permiso de micrófono denegado. Actívalo en los ajustes del teléfono.',
   'assistant.errors.unavailable': 'El reconocimiento de voz no está disponible en este dispositivo.',

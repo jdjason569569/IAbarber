@@ -420,3 +420,49 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Current state**
 - `npx ng build --configuration development` passes and is synced to `android/`; needs a reinstall on the phone, and the Supabase migration must be run first (see the API's `CAMBIOS.md`).
+
+---
+
+## 2026-10-26 · Micrófono: reintento cuando el reconocedor nativo falla al instante
+
+**Qué se hizo**
+- Diagnóstico con `adb logcat` (teléfono y emulador): el permiso `RECORD_AUDIO` y el micrófono funcionan. El fallo venía del plugin `@capacitor-community/speech-recognition`: en cada `start()` destruye el reconocedor anterior y la desconexión del servicio de Google rechaza la sesión nueva en pocos milisegundos ("Didn't understand, please try again."), aunque el micrófono sigue abierto. La app lo trataba como `no-speech` y cortaba el diálogo.
+- `VoiceService.listenNative()` ahora detecta un rechazo en menos de 1 s, espera 500 ms y reintenta una vez (`startNative()`).
+
+**Pendiente / notas**
+- En el emulador hay que habilitar el micrófono del PC: Extended controls → Microphone → "Virtual microphone uses host audio input" (o `adb emu avd hostmicon`); se desactiva al reiniciar el emulador.
+- El paquete offline de voz en español no está instalado en los dispositivos probados; el reconocimiento depende de internet.
+
+---
+
+## 2026-10-26 · Barra de progreso al enviar cada respuesta del diálogo de voz
+
+**Qué se hizo**
+- Al enviar cada respuesta al asistente (`POST /assistant/booking`) se muestra en el pie una `ion-progress-bar` con el texto "Enviando respuesta... N %" (`assistant.sending`).
+- `AppointmentListPage.sendAnswer()`: la barra avanza de forma estimada hasta el 90 % mientras se espera la respuesta, llega al 100 % al recibirla, se mantiene 300 ms y se oculta. Si la petición falla, desaparece y se muestra el error habitual.
+
+**Pendiente / notas**
+- El porcentaje es estimado: una petición tan pequeña no informa de su progreso real.
+
+---
+
+## 2026-10-26 · Diálogo de voz: 2 reintentos por pregunta antes de cortar
+
+**Qué se hizo**
+- Antes, cualquier fallo a mitad del agendamiento (no se oyó la respuesta, error de red o timeout) cortaba el diálogo y había que empezar de nuevo.
+- `listenWithRetries()`: si no se escucha nada (`no-speech`), el asistente dice "No te escuché." y repite la misma pregunta, hasta 2 veces.
+- `withSendRetries()`: si el envío al servidor falla (`HttpErrorResponse` o timeout), muestra "Reintentando (n de 2)..." y reenvía la misma respuesta tras 1 s, hasta 2 veces. También se aplica a la primera llamada (útil si el servidor de Render está dormido).
+- En todos los reintentos se conservan los datos ya contestados (`draft`).
+- Los errores de permiso, dispositivo sin reconocimiento o navegador sin soporte siguen cortando de inmediato.
+- Textos nuevos: `assistant.retry.listen` y `assistant.retry.send`.
+
+---
+
+## 2026-10-26 · Nuevo diseño de la barra de envío
+
+**Qué se hizo**
+- La barra pasa a ser el componente `features/assistant/components/send-progress` (`<app-send-progress [progress]>`), en lugar de `ion-progress-bar` dentro de la página.
+- Diseño: tarjeta redondeada con un icono circular con degradado (avión de papel, que pasa a ✓ al terminar), texto "Enviando respuesta..." y el porcentaje grande a la derecha. Debajo, una barra gruesa redondeada con degradado primario → terciario y un brillo animado.
+- Al llegar al 100 % cambia a verde con el texto "Respuesta enviada" (`assistant.sent`).
+- Entra con una animación suave. Respeta `prefers-reduced-motion` y el modo oscuro, porque usa variables de color de Ionic.
+- `assistant.sending` ya no incluye el porcentaje; se muestra aparte.

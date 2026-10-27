@@ -1,0 +1,118 @@
+/* Card with a gradient bar that fills while an answer is sent to the assistant. */
+:host {
+  display: block;
+  width: 100%;
+}
+
+.send-progress {
+  --progress-color: var(--ion-color-primary);
+  --progress-color-end: var(--ion-color-tertiary);
+
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 14px 12px;
+  border-radius: 14px;
+  background: var(--ion-color-step-50, rgba(var(--ion-color-primary-rgb), 0.06));
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  animation: send-progress-in 220ms ease-out;
+
+  &.done {
+    --progress-color: var(--ion-color-success);
+    --progress-color-end: var(--ion-color-success-tint);
+    border-color: rgba(var(--ion-color-success-rgb), 0.35);
+  }
+}
+
+.send-progress__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.send-progress__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, var(--progress-color), var(--progress-color-end));
+  font-size: 15px;
+}
+
+.send-progress__label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+}
+
+.send-progress__percent {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--progress-color);
+}
+
+.send-progress__track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(var(--ion-color-medium-rgb), 0.2);
+}
+
+.send-progress__fill {
+  position: relative;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--progress-color), var(--progress-color-end));
+  transition: width 200ms linear;
+  overflow: hidden;
+
+  // Moving shine so the bar looks alive while waiting near the cap.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.45) 50%,
+      transparent 80%
+    );
+    transform: translateX(-100%);
+    animation: send-progress-shine 1.3s ease-in-out infinite;
+  }
+}
+
+.send-progress.done .send-progress__fill::after {
+  animation: none;
+}
+
+@keyframes send-progress-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes send-progress-shine {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .send-progress,
+  .send-progress__fill::after {
+    animation: none !important;
+  }
+}

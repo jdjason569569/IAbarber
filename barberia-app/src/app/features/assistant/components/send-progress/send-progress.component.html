@@ -1,0 +1,15 @@
+<div class="send-progress" [class.done]="progress() === 100" role="progressbar"
+     aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="progress()">
+  <div class="send-progress__header">
+    <span class="send-progress__icon">
+      <ion-icon [name]="progress() === 100 ? 'checkmark' : 'paper-plane'"></ion-icon>
+    </span>
+    <span class="send-progress__label">
+      {{ (progress() === 100 ? 'assistant.sent' : 'assistant.sending') | t }}
+    </span>
+    <span class="send-progress__percent">{{ progress() }}%</span>
+  </div>
+  <div class="send-progress__track">
+    <div class="send-progress__fill" [style.width.%]="progress()"></div>
+  </div>
+</div>

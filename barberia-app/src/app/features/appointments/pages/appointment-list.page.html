@@ -69,6 +69,9 @@
       @if (assistantReply()) {
         <ion-text class="assistant-reply">{{ assistantReply() }}</ion-text>
       }
+      @if (sendProgress() !== null) {
+        <app-send-progress [progress]="sendProgress()!" />
+      }
       @if (listening()) {
         <ion-text class="countdown" color="danger">{{ countdown() }}</ion-text>
       }

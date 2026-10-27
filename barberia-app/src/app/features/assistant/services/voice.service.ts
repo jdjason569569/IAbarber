@@ -15,6 +15,11 @@ interface WebSpeechRecognition {
 
 type WebSpeechRecognitionCtor = new () => WebSpeechRecognition;
 
+/** A native session rejected faster than this never really listened. */
+const NATIVE_EARLY_FAILURE_MS = 1000;
+/** Gives the speech service time to release the previous session before retrying. */
+const NATIVE_RETRY_DELAY_MS = 500;
+
 @Injectable({ providedIn: 'root' })
 export class VoiceService {
   private readonly language = inject(I18nService).speechLocale;
@@ -65,6 +70,22 @@ export class VoiceService {
     if (speechRecognition !== 'granted') {
       throw new VoiceError('permission-denied');
     }
+    // The plugin destroys the previous recognizer when a new session starts; that service disconnect
+    // can reject the new session instantly while the microphone keeps running. Retry once in that case.
+    let attempt = await this.startNative();
+    if (attempt.failedEarly) {
+      await new Promise((resolve) => setTimeout(resolve, NATIVE_RETRY_DELAY_MS));
+      attempt = await this.startNative();
+    }
+    if (!attempt.transcript) {
+      throw new VoiceError('no-speech');
+    }
+    return attempt.transcript;
+  }
+
+  /** Runs one native session; `failedEarly` flags a rejection too fast to be a real "no speech". */
+  private async startNative(): Promise<{ transcript?: string; failedEarly: boolean }> {
+    const startedAt = Date.now();
     // The plugin rejects with its own messages when nothing is heard; treat all of them as "no speech".
     const result = await SpeechRecognition.start({
       language: this.language,
@@ -72,11 +93,10 @@ export class VoiceService {
       popup: false,
       partialResults: false,
     }).catch(() => null);
-    const transcript = result?.matches?.[0];
-    if (!transcript) {
-      throw new VoiceError('no-speech');
-    }
-    return transcript;
+    return {
+      transcript: result?.matches?.[0],
+      failedEarly: !result && Date.now() - startedAt < NATIVE_EARLY_FAILURE_MS,
+    };
   }
 
   private listenWeb(): Promise<string> {

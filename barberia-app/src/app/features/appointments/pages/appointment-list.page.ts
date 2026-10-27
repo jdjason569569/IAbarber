@@ -9,7 +9,8 @@ import { I18nService } from '../../../core/i18n/i18n.service';
 import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { parseIsoDate, toLocalIsoDate } from '../../../shared/utils/date.util';
-import { BookingDraft } from '../../assistant/models/assistant.model';
+import { SendProgressComponent } from '../../assistant/components/send-progress/send-progress.component';
+import { BookingDraft, BookingTurnResult } from '../../assistant/models/assistant.model';
 import { VoiceError } from '../../assistant/models/voice-error';
 import { Appointment } from '../models/appointment.model';
 import { AssistantService } from '../../assistant/services/assistant.service';
@@ -23,12 +24,23 @@ const LAST_SLOT_HOUR = 22;
 /** Default seconds the user has to answer each question. */
 const LISTEN_SECONDS = 10;
 
+/** The send bar creeps towards this percent while waiting; the server answer completes it. */
+const SEND_PROGRESS_CAP = 90;
+const SEND_PROGRESS_TICK_MS = 200;
+/** How long the full bar stays visible before the next question. */
+const SEND_PROGRESS_DONE_MS = 300;
+
+/** Extra attempts per question (not hearing the answer, or failing to send it) before the dialog gives up. */
+const MAX_RETRIES = 2;
+/** Pause before re-sending an answer that failed to reach the server. */
+const SEND_RETRY_DELAY_MS = 1000;
+
 @Component({
   selector: 'app-appointment-list',
   templateUrl: 'appointment-list.page.html',
   styleUrls: ['appointment-list.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonicModule, TranslatePipe],
+  imports: [IonicModule, TranslatePipe, SendProgressComponent],
 })
 export class AppointmentListPage {
   private readonly appointmentService = inject(AppointmentService);
@@ -44,6 +56,8 @@ export class AppointmentListPage {
   protected readonly countdown = signal(LISTEN_SECONDS);
   protected readonly dialogActive = signal(false);
   protected readonly assistantReply = signal<string | null>(null);
+  /** Progress (0-100) of the answer being sent to the assistant; null when nothing is being sent. */
+  protected readonly sendProgress = signal<number | null>(null);
   private readonly appointments = signal<Appointment[]>([]);
 
   /** Day shown in the list (`YYYY-MM-DD`, device local time). Today by default. */
@@ -132,7 +146,7 @@ export class AppointmentListPage {
     this.assistantReply.set(this.i18n.t('assistant.connecting'));
     try {
       let draft: BookingDraft = {};
-      let turn = await firstValueFrom(this.assistant.bookingTurn('', draft));
+      let turn = await this.withSendRetries(() => firstValueFrom(this.assistant.bookingTurn('', draft)));
       while (true) {
         this.assistantReply.set(turn.reply);
         draft = turn.draft;
@@ -143,18 +157,75 @@ export class AppointmentListPage {
           }
           return;
         }
-        this.listening.set(true);
-        const answer = await this.listenWithCountdown(turn.listenSeconds ?? LISTEN_SECONDS);
-        this.listening.set(false);
+        const answer = await this.listenWithRetries(turn.reply, turn.listenSeconds ?? LISTEN_SECONDS);
         this.assistantReply.set(`"${answer}"`);
-        turn = await firstValueFrom(this.assistant.bookingTurn(answer, draft));
+        const sentDraft = draft;
+        turn = await this.withSendRetries(() => this.sendAnswer(answer, sentDraft));
       }
     } catch (error) {
       console.error('Voice dialog failed', error);
       this.assistantReply.set(this.i18n.t(this.assistantErrorKey(error)));
     } finally {
       this.listening.set(false);
+      this.sendProgress.set(null);
       this.dialogActive.set(false);
+    }
+  }
+
+  /** Listens for the answer; when nothing is heard, repeats the question up to MAX_RETRIES times. */
+  private async listenWithRetries(question: string, seconds: number): Promise<string> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        this.listening.set(true);
+        return await this.listenWithCountdown(seconds);
+      } catch (error) {
+        this.listening.set(false);
+        if (!(error instanceof VoiceError && error.code === 'no-speech') || attempt >= MAX_RETRIES) {
+          throw error;
+        }
+        const retry = this.i18n.t('assistant.retry.listen', { question });
+        this.assistantReply.set(retry);
+        await this.voice.speak(retry);
+      } finally {
+        this.listening.set(false);
+      }
+    }
+  }
+
+  /** Runs a request to the assistant; on network errors or timeouts tries again up to MAX_RETRIES times. */
+  private async withSendRetries(send: () => Promise<BookingTurnResult>): Promise<BookingTurnResult> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await send();
+      } catch (error) {
+        if (!isNetworkError(error) || attempt >= MAX_RETRIES) {
+          throw error;
+        }
+        this.assistantReply.set(
+          this.i18n.t('assistant.retry.send', { attempt: attempt + 1, max: MAX_RETRIES }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, SEND_RETRY_DELAY_MS));
+      }
+    }
+  }
+
+  /** Sends one answer to the assistant while a progress bar fills up from 0 to 100 %. */
+  private async sendAnswer(answer: string, draft: BookingDraft): Promise<BookingTurnResult> {
+    this.sendProgress.set(0);
+    const timer = setInterval(() => {
+      const current = this.sendProgress() ?? 0;
+      // Each tick covers a tenth of the remaining distance, so the bar slows down near the cap.
+      this.sendProgress.set(Math.ceil(current + (SEND_PROGRESS_CAP - current) / 10));
+    }, SEND_PROGRESS_TICK_MS);
+    try {
+      const turn = await firstValueFrom(this.assistant.bookingTurn(answer, draft));
+      clearInterval(timer);
+      this.sendProgress.set(100);
+      await new Promise((resolve) => setTimeout(resolve, SEND_PROGRESS_DONE_MS));
+      return turn;
+    } finally {
+      clearInterval(timer);
+      this.sendProgress.set(null);
     }
   }
 
@@ -185,8 +256,7 @@ export class AppointmentListPage {
         case 'no-speech': return 'assistant.errors.noSpeech';
       }
     }
-    // A request that never got an answer: HttpErrorResponse (status 0 included) or the 20 s timeout.
-    if (error instanceof HttpErrorResponse || (error instanceof Error && error.name === 'TimeoutError')) {
+    if (isNetworkError(error)) {
       return 'assistant.errors.server';
     }
     return 'assistant.errors.generic';
@@ -230,4 +300,9 @@ export class AppointmentListPage {
   protected total(appointment: Appointment): number {
     return this.appointmentService.getTotal(appointment);
   }
+}
+
+/** A request that never got an answer: HttpErrorResponse (status 0 included) or the 20 s timeout. */
+function isNetworkError(error: unknown): boolean {
+  return error instanceof HttpErrorResponse || (error instanceof Error && error.name === 'TimeoutError');
 }
