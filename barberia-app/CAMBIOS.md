@@ -466,3 +466,14 @@ npx ionic capacitor add android   # añadir plataforma Android
 - Al llegar al 100 % cambia a verde con el texto "Respuesta enviada" (`assistant.sent`).
 - Entra con una animación suave. Respeta `prefers-reduced-motion` y el modo oscuro, porque usa variables de color de Ionic.
 - `assistant.sending` ya no incluye el porcentaje; se muestra aparte.
+
+---
+
+## 2026-10-27 · Disponibilidad por día en Configuración
+
+**Qué se hizo**
+- Nueva sección "Disponibilidad" en Configuración (`settings/components/business-hours-editor`): de lunes a domingo, un interruptor abierto/cerrado y los selectores "Desde" y "Hasta" (de hora en hora, hasta medianoche), más el botón "Guardar disponibilidad".
+- Por defecto, todos los días de 7:00 a medianoche.
+- `BusinessHoursService` (`GET`/`PUT /business-hours`) y el modelo `DayHours`.
+- El botón "Disponibilidad" de Citas usa el horario del día; antes estaba fijo de 07:00 a 22:00. Si no se puede cargar, usa 07:00 a medianoche.
+- Textos nuevos `settings.hours.*`.

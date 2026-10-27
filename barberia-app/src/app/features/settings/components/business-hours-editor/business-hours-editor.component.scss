@@ -1,0 +1,27 @@
+.hint {
+  margin: 0 16px 4px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.day-name {
+  font-weight: 500;
+}
+
+.closed {
+  margin-left: 8px;
+  font-size: 13px;
+}
+
+/* "From" and "To" side by side under the day toggle. */
+.hours-row {
+  --padding-start: 32px;
+
+  ion-select {
+    flex: 1;
+  }
+
+  ion-select + ion-select {
+    margin-left: 16px;
+  }
+}

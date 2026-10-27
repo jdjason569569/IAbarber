@@ -83,6 +83,23 @@ export const MESSAGES_ES = {
   'settings.errors.invalid': 'Revisa el nombre y el precio.',
   'settings.errors.notFound': 'El servicio ya no existe.',
   'settings.errors.server': 'No se pudo conectar con el servidor.',
+  'settings.hours.title': 'Disponibilidad',
+  'settings.hours.hint': 'Elige qué días atiendes y en qué horario. Por defecto, de 7:00 a medianoche.',
+  'settings.hours.closed': 'Cerrado',
+  'settings.hours.from': 'Desde',
+  'settings.hours.to': 'Hasta',
+  'settings.hours.midnight': 'Medianoche',
+  'settings.hours.save': 'Guardar disponibilidad',
+  'settings.hours.saved': 'Disponibilidad guardada.',
+  'settings.hours.loadError': 'No se pudo cargar la disponibilidad.',
+  'settings.hours.errors.invalid': 'Revisa los horarios: la hora de inicio debe ser anterior a la de cierre.',
+  'settings.hours.day0': 'Domingo',
+  'settings.hours.day1': 'Lunes',
+  'settings.hours.day2': 'Martes',
+  'settings.hours.day3': 'Miércoles',
+  'settings.hours.day4': 'Jueves',
+  'settings.hours.day5': 'Viernes',
+  'settings.hours.day6': 'Sábado',
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_ES;

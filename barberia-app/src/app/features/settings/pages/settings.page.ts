@@ -7,6 +7,7 @@ import { trashOutline } from 'ionicons/icons';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { BusinessHoursEditorComponent } from '../components/business-hours-editor/business-hours-editor.component';
 import { ShopService } from '../models/shop-service.model';
 import { ShopServiceService } from '../services/shop-service.service';
 
@@ -15,7 +16,7 @@ import { ShopServiceService } from '../services/shop-service.service';
   templateUrl: 'settings.page.html',
   styleUrls: ['settings.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonicModule, ReactiveFormsModule, TranslatePipe],
+  imports: [IonicModule, ReactiveFormsModule, TranslatePipe, BusinessHoursEditorComponent],
 })
 export class SettingsPage {
   private readonly shopServices = inject(ShopServiceService);

@@ -1,0 +1,62 @@
+<ion-list-header>{{ 'settings.hours.title' | t }}</ion-list-header>
+<p class="hint">{{ 'settings.hours.hint' | t }}</p>
+
+@if (loading()) {
+  <ion-item lines="none">
+    <ion-label class="ion-text-center">{{ 'settings.loading' | t }}</ion-label>
+  </ion-item>
+} @else {
+  <ion-list>
+    @for (day of orderedDays(); track day.weekday) {
+      <ion-item [lines]="day.open ? 'none' : 'full'">
+        <ion-toggle
+          justify="space-between"
+          [checked]="day.open"
+          (ionChange)="setOpen(day.weekday, $event.detail.checked)"
+        >
+          <span class="day-name">{{ dayName(day.weekday) }}</span>
+          @if (!day.open) {
+            <ion-note class="closed">{{ 'settings.hours.closed' | t }}</ion-note>
+          }
+        </ion-toggle>
+      </ion-item>
+      @if (day.open) {
+        <ion-item class="hours-row">
+          <ion-select
+            interface="popover"
+            [label]="'settings.hours.from' | t"
+            labelPlacement="stacked"
+            [value]="day.openHour"
+            (ionChange)="setOpenHour(day.weekday, $event.detail.value)"
+          >
+            @for (hour of openingHours; track hour) {
+              <ion-select-option [value]="hour">{{ hourLabel(hour) }}</ion-select-option>
+            }
+          </ion-select>
+          <ion-select
+            interface="popover"
+            [label]="'settings.hours.to' | t"
+            labelPlacement="stacked"
+            [value]="day.closeHour"
+            (ionChange)="setCloseHour(day.weekday, $event.detail.value)"
+          >
+            @for (hour of closingHours; track hour) {
+              <ion-select-option [value]="hour" [disabled]="hour <= day.openHour">{{ hourLabel(hour) }}</ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
+      }
+    }
+  </ion-list>
+
+  @if (message(); as msg) {
+    <ion-text [color]="msg.error ? 'danger' : 'success'">
+      <p class="ion-padding-horizontal">{{ msg.key | t }}</p>
+    </ion-text>
+  }
+  <div class="ion-padding">
+    <ion-button expand="block" [disabled]="!dirty() || saving()" (click)="save()">
+      {{ 'settings.hours.save' | t }}
+    </ion-button>
+  </div>
+}

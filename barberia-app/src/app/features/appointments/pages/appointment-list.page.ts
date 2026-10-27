@@ -16,10 +16,11 @@ import { Appointment } from '../models/appointment.model';
 import { AssistantService } from '../../assistant/services/assistant.service';
 import { VoiceService } from '../../assistant/services/voice.service';
 import { AppointmentService } from '../services/appointment.service';
+import { DayHours } from '../../settings/models/business-hours.model';
+import { BusinessHoursService } from '../../settings/services/business-hours.service';
 
-/** Bookable start times: one-hour slots, first at 07:00, last at 22:00 (closes at 23:00). */
-const OPENING_HOUR = 7;
-const LAST_SLOT_HOUR = 22;
+/** Used when the business hours cannot be loaded: one-hour slots from 07:00 to midnight. */
+const FALLBACK_HOURS: Pick<DayHours, 'open' | 'openHour' | 'closeHour'> = { open: true, openHour: 7, closeHour: 24 };
 
 /** Default seconds the user has to answer each question. */
 const LISTEN_SECONDS = 10;
@@ -46,6 +47,7 @@ export class AppointmentListPage {
   private readonly appointmentService = inject(AppointmentService);
   private readonly assistant = inject(AssistantService);
   private readonly voice = inject(VoiceService);
+  private readonly businessHours = inject(BusinessHoursService);
   private readonly i18n = inject(I18nService);
   private readonly alertController = inject(AlertController);
   private readonly toastController = inject(ToastController);
@@ -82,17 +84,19 @@ export class AppointmentListPage {
     this.selectedDate.set(toLocalIsoDate(date));
   }
 
-  /** Alert listing today's hours that are still free (not taken and not already past). */
+  /** Alert listing today's hours that are still free (open, not taken and not already past). */
   protected async showAvailability(): Promise<void> {
     const now = new Date();
     const today = toLocalIsoDate(now);
+    const week = await firstValueFrom(this.businessHours.get()).catch(() => null);
+    const hours = week?.find((d) => d.weekday === now.getDay()) ?? FALLBACK_HOURS;
     const taken = new Set(
       this.appointments()
         .filter((a) => a.date === today && !a.cancelled)
         .map((a) => a.time.slice(0, 5)),
     );
     const free: string[] = [];
-    for (let hour = OPENING_HOUR; hour <= LAST_SLOT_HOUR; hour++) {
+    for (let hour = hours.openHour; hours.open && hour < hours.closeHour; hour++) {
       const time = `${String(hour).padStart(2, '0')}:00`;
       if (hour > now.getHours() && !taken.has(time)) {
         free.push(time);
