@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppointmentsModule } from '../appointments/appointments.module.js';
+import { BusinessHoursModule } from '../business-hours/business-hours.module.js';
 import { ServicesModule } from '../services/services.module.js';
 import { HandleBookingTurnUseCase } from './application/use-cases/handle-booking-turn.use-case.js';
 import { HandleVoiceCommandUseCase } from './application/use-cases/handle-voice-command.use-case.js';
@@ -8,7 +9,7 @@ import { AssistantController } from './infrastructure/http/assistant.controller.
 import { GeminiLlmAdapter } from './infrastructure/llm/gemini-llm.adapter.js';
 
 @Module({
-  imports: [AppointmentsModule, ServicesModule],
+  imports: [AppointmentsModule, BusinessHoursModule, ServicesModule],
   controllers: [AssistantController],
   providers: [HandleVoiceCommandUseCase, HandleBookingTurnUseCase, { provide: LLM_PORT, useClass: GeminiLlmAdapter }],
 })

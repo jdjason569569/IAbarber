@@ -53,3 +53,14 @@ end $$;
 create unique index if not exists appointments_active_slot_unique
   on appointments (date, time)
   where not cancelled;
+
+-- Weekly availability (managed from the app's Settings tab). One row per configured weekday;
+-- weekdays without a row use the default hours, 07:00 to midnight. close_hour 24 = midnight.
+create table if not exists business_hours (
+  weekday    smallint primary key check (weekday between 0 and 6), -- 0 = Sunday
+  is_open    boolean  not null default true,
+  open_hour  smallint not null default 7  check (open_hour between 0 and 23),
+  close_hour smallint not null default 24 check (close_hour between 1 and 24),
+  check (open_hour < close_hour)
+);
+alter table business_hours enable row level security;

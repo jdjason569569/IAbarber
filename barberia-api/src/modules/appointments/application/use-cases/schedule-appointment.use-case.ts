@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { GetBusinessHoursUseCase } from '../../../business-hours/application/use-cases/get-business-hours.use-case.js';
 import { Appointment } from '../../domain/entities/appointment.entity.js';
 import { AppointmentConflictError } from '../../domain/errors/appointment-conflict.error.js';
 import { AppointmentInPastError } from '../../domain/errors/appointment-in-past.error.js';
+import { OutsideBusinessHoursError } from '../../domain/errors/outside-business-hours.error.js';
 import { APPOINTMENT_REPOSITORY } from '../../domain/ports/appointment.repository.js';
 import type { AppointmentRepository } from '../../domain/ports/appointment.repository.js';
 import { toAppointmentDto } from '../dtos/appointment.dto.js';
@@ -11,12 +13,19 @@ import type { AppointmentDto, ScheduleAppointmentInput } from '../dtos/appointme
 export class ScheduleAppointmentUseCase {
   constructor(
     @Inject(APPOINTMENT_REPOSITORY) private readonly appointments: AppointmentRepository,
+    private readonly businessHours: GetBusinessHoursUseCase,
   ) {}
 
   async execute(input: ScheduleAppointmentInput): Promise<AppointmentDto> {
     const appointment = Appointment.create(input);
     if (new Date(`${appointment.date}T${appointment.time}:00`).getTime() <= Date.now()) {
       throw new AppointmentInPastError('The appointment must be in the future');
+    }
+    const hours = await this.businessHours.execute();
+    if (!hours.allows(appointment.date, appointment.time)) {
+      throw new OutsideBusinessHoursError(
+        `The shop is closed on ${appointment.date} at ${appointment.time}`,
+      );
     }
     if (await this.appointments.findActiveAt(appointment.date, appointment.time)) {
       throw new AppointmentConflictError(

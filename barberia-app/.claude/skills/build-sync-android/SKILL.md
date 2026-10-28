@@ -10,7 +10,7 @@ Compiles the Angular/Ionic code with the **development** environment (`apiUrl: h
 ## Steps
 1. Build and sync (run from `barberia-app/`):
    ```bash
-   npx ng build --configuration development && npx cap sync android
+   npx ng build --configuration development && CAP_ENV=development npx cap sync android
    ```
    - Use `npx cap sync`, **not** `ionic capacitor sync`: the Ionic CLI rebuilds in production and puts the `CHANGE-ME` URL back.
 2. Verify the bundle copied to Android uses the right API URL:
@@ -27,7 +27,7 @@ Compiles the Angular/Ionic code with the **development** environment (`apiUrl: h
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 PATH=$JAVA_HOME/bin:$PATH:$HOME/Android/Sdk/platform-tools
 adb reverse tcp:3000 tcp:3000
-npx ionic capacitor run android --target <device-id> --no-build   # device id from `adb devices`
+CAP_ENV=development npx ionic capacitor run android --target <device-id> --no-build   # device id from `adb devices`
 ```
 `--no-build` is required so Ionic does not rebuild in production.
 

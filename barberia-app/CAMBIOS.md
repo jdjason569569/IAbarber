@@ -477,3 +477,16 @@ npx ionic capacitor add android   # añadir plataforma Android
 - `BusinessHoursService` (`GET`/`PUT /business-hours`) y el modelo `DayHours`.
 - El botón "Disponibilidad" de Citas usa el horario del día; antes estaba fijo de 07:00 a 22:00. Si no se puede cargar, usa 07:00 a medianoche.
 - Textos nuevos `settings.hours.*`.
+
+---
+
+## 2026-10-27 · Compilación de desarrollo: http y cleartext solo en dev
+
+**Qué se hizo**
+- Problema: al comentar `server: { androidScheme: 'http', cleartext: true }` en `capacitor.config.ts` para la APK de producción, la versión de desarrollo (`http://localhost:3000` por `adb reverse`) dejó de llegar al API. Android bloquea el tráfico http desde una app servida en `https://localhost`.
+- `capacitor.config.ts` añade ese bloque `server` solo si `CAP_ENV=development`.
+- `android:sync` e `install_app` (package.json) y la skill `build-sync-android` pasan `CAP_ENV=development`.
+- La APK de producción se genera sin la variable: queda en https y sin cleartext.
+
+**Pendiente / notas**
+- Para la versión de desarrollo, usa siempre `npm run install_app` o `npm run android:sync`. Si sincronizas con un `npx cap sync` a secas, la versión de desarrollo vuelve a fallar.

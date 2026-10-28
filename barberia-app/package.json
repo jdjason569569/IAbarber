@@ -11,9 +11,9 @@
     "test": "ng test",
     "lint": "ng lint",
     "android:add": "cap add android",
-    "android:sync": "ng build --configuration development && cap sync android",
+    "android:sync": "ng build --configuration development && CAP_ENV=development cap sync android",
     "android:open": "npm run android:sync && CAPACITOR_ANDROID_STUDIO_PATH=${CAPACITOR_ANDROID_STUDIO_PATH:-/snap/android-studio/current/bin/studio.sh} cap open android",
-    "install_app": "ng build --configuration development && cap sync android && ionic capacitor run android --no-build"
+    "install_app": "ng build --configuration development && CAP_ENV=development cap sync android && CAP_ENV=development ionic capacitor run android --no-build"
   },
   "scripts-info": {
     "ng": "Angular CLI passthrough: npm run ng -- <command>.",

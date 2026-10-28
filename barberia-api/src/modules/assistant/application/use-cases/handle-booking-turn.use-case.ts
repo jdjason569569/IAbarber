@@ -4,6 +4,9 @@ import { ScheduleAppointmentUseCase } from '../../../appointments/application/us
 import { AppointmentConflictError } from '../../../appointments/domain/errors/appointment-conflict.error.js';
 import { AppointmentInPastError } from '../../../appointments/domain/errors/appointment-in-past.error.js';
 import { InvalidAppointmentError } from '../../../appointments/domain/errors/invalid-appointment.error.js';
+import { OutsideBusinessHoursError } from '../../../appointments/domain/errors/outside-business-hours.error.js';
+import { GetBusinessHoursUseCase } from '../../../business-hours/application/use-cases/get-business-hours.use-case.js';
+import type { DayHours } from '../../../business-hours/domain/entities/weekly-hours.entity.js';
 import type { ServiceDto } from '../../../services/application/dtos/service.dto.js';
 import { ListServicesUseCase } from '../../../services/application/use-cases/list-services.use-case.js';
 import { LLM_PORT } from '../../domain/ports/llm.port.js';
@@ -22,6 +25,8 @@ const TIME_24H = /^([01]\d|2[0-3]):[0-5]\d$/;
 const RETRY_LISTEN_SECONDS = 7;
 
 const PAST_REPLY = 'Esa fecha ya pasó, no se puede agendar una cita en el pasado.';
+
+const CLOSED_DAY_REPLY = 'Ese día no atendemos. ¿Para qué otra fecha?';
 
 const NO_SERVICES_REPLY =
   'No hay servicios configurados. Agrégalos en la pestaña Settings de la app.';
@@ -67,6 +72,7 @@ export class HandleBookingTurnUseCase {
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
     private readonly listAppointments: ListAppointmentsUseCase,
     private readonly listServices: ListServicesUseCase,
+    private readonly businessHours: GetBusinessHoursUseCase,
   ) {}
 
   async execute(input: BookingTurnInput): Promise<BookingTurnResult> {
@@ -95,6 +101,19 @@ export class HandleBookingTurnUseCase {
 
     if (draft.date && draft.date < localIsoDate(new Date())) {
       return { reply: PAST_REPLY, draft: {}, status: 'cancelled' };
+    }
+
+    if (draft.date) {
+      const hours = await this.businessHours.execute();
+      const day = hours.forDate(draft.date);
+      if (!day.open) {
+        const { date: _closed, time: _time, ...keep } = draft;
+        return { reply: CLOSED_DAY_REPLY, draft: keep, status: 'asking' };
+      }
+      if (draft.time && !hours.allows(draft.date, draft.time)) {
+        const { time: _outside, ...keep } = draft;
+        return { reply: outsideHoursReply(day), draft: keep, status: 'asking' };
+      }
     }
 
     if (draft.client && draft.date && (await this.hasActiveClientOn(draft.client, draft.date))) {
@@ -156,6 +175,11 @@ export class HandleBookingTurnUseCase {
           status: 'asking',
         };
       }
+      if (error instanceof OutsideBusinessHoursError) {
+        const { time: _outside, ...keep } = draft;
+        const day = (await this.businessHours.execute()).forDate(draft.date ?? '');
+        return { reply: outsideHoursReply(day), draft: keep, status: 'asking' };
+      }
       if (error instanceof AppointmentInPastError) {
         return { reply: PAST_REPLY, draft: {}, status: 'cancelled' };
       }
@@ -182,6 +206,15 @@ export class HandleBookingTurnUseCase {
       'Call fill_booking with ONLY the details present in the last answer (the user may give several at once). If they want to stop, call abort_booking.',
     ].join('\n');
   }
+}
+
+function outsideHoursReply(day: DayHours): string {
+  return `Ese día atendemos de ${spokenHour(day.openHour)} a ${spokenHour(day.closeHour)}. ¿A qué otra hora?`;
+}
+
+/** `7` -> "07:00"; `24` -> "medianoche". */
+function spokenHour(hour: number): string {
+  return hour === 24 ? 'medianoche' : `${String(hour).padStart(2, '0')}:00`;
 }
 
 /** Keeps only valid, well-formed values so a bad LLM answer never reaches the domain. */

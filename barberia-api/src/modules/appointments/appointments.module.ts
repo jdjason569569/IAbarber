@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { supabaseProvider } from '../../shared/supabase/supabase.provider.js';
+import { BusinessHoursModule } from '../business-hours/business-hours.module.js';
 import { ListAppointmentsUseCase } from './application/use-cases/list-appointments.use-case.js';
 import { ScheduleAppointmentUseCase } from './application/use-cases/schedule-appointment.use-case.js';
 import { SetAppointmentCancelledUseCase } from './application/use-cases/set-appointment-cancelled.use-case.js';
@@ -12,6 +13,7 @@ import { SupabaseAppointmentRepository } from './infrastructure/persistence/supa
 const useSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 
 @Module({
+  imports: [BusinessHoursModule],
   controllers: [AppointmentsController],
   providers: [
     ListAppointmentsUseCase,

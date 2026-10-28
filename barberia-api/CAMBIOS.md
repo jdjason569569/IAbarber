@@ -215,3 +215,18 @@ This file records, in chronological order, every change made to the backend.
 **Pending / notes**
 - **Run the migration block of `docs/schema.sql` in the Supabase SQL Editor before using the new backend**: until the `cancelled` column exists, creating and listing appointments against Supabase fails.
 - The states confirmed / completed no longer exist.
+
+---
+
+## 2026-10-27 · Business hours per weekday
+
+**What was done**
+- New `business-hours` module (domain `WeeklyHours`, Supabase and in-memory repositories, use cases `GetBusinessHours` / `UpdateBusinessHours`).
+- `GET /business-hours`: returns the 7 weekdays (`weekday` 0 = Sunday … 6 = Saturday, `open`, `openHour`, `closeHour`; 24 = midnight). Weekdays never configured use the default hours, 07:00 to midnight.
+- `PUT /business-hours`: saves the list of weekdays. Returns 400 for an invalid hour or when opening is not before closing.
+- `ScheduleAppointmentUseCase` rejects appointments outside business hours (`OutsideBusinessHoursError` → 400).
+- Voice assistant: a closed day gets "Ese día no atendemos. ¿Para qué otra fecha?". A time outside the hours gets "Ese día atendemos de X a Y. ¿A qué otra hora?". In both cases the rest of the answers is kept.
+- `docs/schema.sql`: `business_hours` table.
+
+**Pending / notes**
+- `business_hours` table created in Supabase (migration `create_business_hours`, RLS enabled). Pending: deploy the API to Render.
