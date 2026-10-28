@@ -27,6 +27,7 @@ export const MESSAGES_ES = {
   'appointments.service': 'Servicio',
   'appointments.total': 'Total',
   'appointments.micLabel': 'Crear cita por voz',
+  'appointments.keyboardLabel': 'Crear cita escribiendo',
 
   // Appointment state (cancelled flag) and cancel action
   'appointments.state.active': 'Activa',
@@ -44,6 +45,16 @@ export const MESSAGES_ES = {
   'assistant.sending': 'Enviando respuesta...',
   'assistant.sent': 'Respuesta enviada',
   'assistant.retry.listen': 'No te escuché. {question}',
+  'assistant.typePlaceholder': 'Escribe tu respuesta...',
+  'assistant.sendTyped': 'Enviar respuesta',
+  'assistant.textFallback': 'No pude escucharte. Escribe tu respuesta abajo.',
+  'assistant.switchToVoice': 'Responder por voz',
+  'assistant.switchToText': 'Responder escribiendo',
+  'assistant.listening': 'Escuchando...',
+  'assistant.modeVoice': 'Hablar',
+  'assistant.modeText': 'Escribir',
+  'assistant.cancel': 'Cancelar',
+  'assistant.cancelled': 'Creación de la cita cancelada.',
   'assistant.retry.send': 'No se pudo enviar la respuesta. Reintentando ({attempt} de {max})...',
   'assistant.errors.permissionDenied':
     'Permiso de micrófono denegado. Actívalo en los ajustes del teléfono.',

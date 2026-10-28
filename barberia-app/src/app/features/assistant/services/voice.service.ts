@@ -47,6 +47,11 @@ export class VoiceService {
     });
   }
 
+  /** Cuts off whatever is being read aloud; the pending `speak()` resolves. */
+  stopSpeaking(): void {
+    window.speechSynthesis?.cancel();
+  }
+
   /** Listens once and resolves with the transcript. Rejects if nothing was captured. */
   listen(): Promise<string> {
     return Capacitor.isNativePlatform() ? this.listenNative() : this.listenWeb();

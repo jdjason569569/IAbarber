@@ -197,7 +197,7 @@ export class HandleBookingTurnUseCase {
   ): string {
     const today = new Date().toISOString().slice(0, 10);
     return [
-      'You help book a barbershop appointment by voice. The user speaks Spanish and answers one question at a time.',
+      'You help book a barbershop appointment by voice or typed text. The user answers in Spanish, one question at a time.',
       `Today is ${today}. Resolve relative dates ("mañana", "el viernes") to ISO dates.`,
       'Barbershop hours are daytime: "a las 4" means 16:00 unless the user says morning.',
       `Services: ${services.map((s) => s.name).join(', ')}. Map what the user says to the closest exact service name; if nothing matches, omit the service.`,

@@ -490,3 +490,87 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Pendiente / notas**
 - Para la versión de desarrollo, usa siempre `npm run install_app` o `npm run android:sync`. Si sincronizas con un `npx cap sync` a secas, la versión de desarrollo vuelve a fallar.
+
+---
+
+## 2026-10-27 · APK de release firmada que apunta a producción
+
+**Qué se hizo**
+- Keystore de release `android/app/barberia-release.keystore` (alias `barberia`). Las claves están en `android/keystore.properties`.
+- Los dos archivos están en `android/.gitignore` (`keystore.properties`, `*.keystore`, `*.jks`) y no se suben a git.
+- `android/app/build.gradle` define `signingConfigs.release` a partir de `keystore.properties`. Si ese archivo no existe, el build sigue funcionando, pero la APK sale sin firmar.
+- Pasos de la compilación: `ng build --configuration production`, `npx cap sync android` (sin `CAP_ENV`) y `./gradlew assembleRelease`. La APK apunta a `apiUrl: https://iabarber.onrender.com`.
+
+**Pendiente / notas**
+- Haz una copia de seguridad del keystore y de `keystore.properties` fuera del repo. Si se pierden, no podrás publicar actualizaciones de la app con la misma firma.
+- Después de compilar el release, vuelve a sincronizar en modo desarrollo con `npm run android:sync` antes de probar con el API local.
+
+---
+
+## 2026-10-28 · Responder por texto cuando la voz no funciona
+
+**Qué se hizo**
+- Al agendar una cita, cada pregunta del asistente muestra un campo "Escribe tu respuesta..." con botón de enviar. La primera respuesta que llegue, por voz o por texto, es la que cuenta.
+- Al tocar el campo se apaga el micrófono y el resto del diálogo sigue por texto.
+- Si el micrófono falla (no oye nada después de los reintentos, falta el permiso, no hay reconocimiento de voz o el navegador no lo soporta), el diálogo ya no se corta. Pasa a texto y no se pierde lo ya respondido.
+- Nuevo botón con icono de teclado junto al micrófono: empieza el diálogo directamente por texto.
+- Nuevas claves en `messages.es.ts`: `appointments.keyboardLabel`, `assistant.typePlaceholder`, `assistant.sendTyped` y `assistant.textFallback`.
+- API: el prompt de `HandleBookingTurnUseCase` ahora dice que las respuestas pueden llegar por voz o escritas.
+
+**Pendiente / notas**
+- En modo texto, el asistente sigue leyendo las preguntas en voz alta.
+- Una vez en modo texto, no se puede volver a la voz dentro del mismo diálogo.
+
+---
+
+## 2026-10-28 · Cambiar entre voz y texto en cualquier momento del diálogo
+
+**Qué se hizo**
+- Antes, cuando el diálogo pasaba a texto (por elección o porque falló el micrófono), seguía en texto hasta terminar. El botón del micrófono no hacía nada y el del teclado se ocultaba.
+- Durante el diálogo, los dos botones están siempre visibles. El micrófono vuelve a responder por voz y el teclado pasa a responder escribiendo. Puedes cambiar las veces que quieras, también a mitad de una pregunta. La cita que se va armando no se pierde.
+- Al volver a voz desde una pregunta que esperaba texto, se oculta el teclado, aparece otra vez la pregunta y el micrófono empieza a escuchar.
+- Al tocar o escribir en el campo de respuesta se pasa a texto, igual que antes.
+- El botón del teclado se ve relleno mientras estás en modo texto.
+- Textos nuevos: `assistant.switchToVoice` y `assistant.switchToText` (aria-label de los botones durante el diálogo).
+
+---
+
+## 2026-10-28 · Cada modo del asistente tiene su propia interfaz
+
+**Qué se hizo**
+- **Modo escritura:** solo se ve la fila de texto: un botón pequeño de micrófono para volver a voz, el campo de respuesta y el botón de enviar. El micrófono grande y el contador se ocultan. Cuando una pregunta espera respuesta, el campo recibe el foco solo y se abre el teclado.
+- Mientras el asistente habla o envía, el campo y el botón de enviar quedan deshabilitados.
+- **Modo voz:** se ve el micrófono grande. Mientras escucha aparecen "Escuchando..." y el contador. El botón del teclado sirve para pasar a escribir. El campo de texto se oculta.
+- Texto nuevo: `assistant.listening`. Estilo nuevo: `.listening-label`.
+
+---
+
+## 2026-10-28 · Botones del asistente más expresivos
+
+**Qué se hizo**
+- **Micrófono:** pasa de 56 a 76 px. Tiene degradado del color primario y una sombra de brillo, y se encoge un poco al tocarlo. Mientras escucha se vuelve rojo y aparecen dos anillos que laten (`@keyframes mic-pulse`).
+- **Teclado y "volver a voz":** botones redondos con fondo translúcido del color primario. Antes eran botones con solo borde.
+- Cada botón del modo voz tiene una etiqueta debajo: "Hablar" y "Escribir" (textos nuevos `assistant.modeVoice` y `assistant.modeText`).
+- Ahora se usan los iconos rellenos `mic` y `keypad`. Se quitaron `micOutline` y `keypadOutline`.
+
+---
+
+## 2026-10-28 · Botón para cancelar la creación de una cita
+
+**Qué se hizo**
+- Mientras el diálogo del asistente está en marcha, en modo voz o en modo escritura, debajo de los controles aparece un botón rojo "✕ Cancelar".
+- Al pulsarlo, el diálogo termina en el momento y sin guardar nada: deja de hablar, apaga el micrófono, deja de esperar el texto y descarta la respuesta pendiente del servidor. Se cierra el teclado y aparece el mensaje "Creación de la cita cancelada.".
+- Cómo funciona: una promesa `cancelled` se rechaza con `DialogCancelled` y compite (`untilCancelled`) con cada paso que espera: `speak`, `listen`, respuesta escrita, `bookingTurn` y pausas entre reintentos.
+- `VoiceService.stopSpeaking()` corta la lectura en voz alta.
+- Textos nuevos: `assistant.cancel` y `assistant.cancelled`. Estilo nuevo: `.cancel-button`.
+
+**Pendiente / notas**
+- Si el servidor ya estaba procesando la última respuesta, la petición termina en el backend aunque la app la ignore. Mientras la cita no se confirme, no se crea nada.
+
+---
+
+## 2026-10-28 · El botón Cancelar ya no parece deshabilitado
+
+**Qué se hizo**
+- `.cancel-button` tenía un fondo rojo al 14 % y texto rojo. En el tema oscuro parecía un botón deshabilitado.
+- Ahora es rojo sólido (`--ion-color-danger`) con texto blanco, sombra roja y efecto al pulsarlo. Además es un poco más grande (40 px de alto, texto de 15 px en negrita).

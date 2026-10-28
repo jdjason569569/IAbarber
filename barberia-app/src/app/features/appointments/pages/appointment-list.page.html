@@ -72,18 +72,73 @@
       @if (sendProgress() !== null) {
         <app-send-progress [progress]="sendProgress()!" />
       }
-      @if (listening()) {
-        <ion-text class="countdown" color="danger">{{ countdown() }}</ion-text>
+      @if (dialogActive() && textMode()) {
+        <!-- Text mode: only the answer field, with a small button to go back to voice. -->
+        <div class="answer-row">
+          <ion-button
+            class="switch-voice-button"
+            [attr.aria-label]="'assistant.switchToVoice' | t"
+            (click)="onMicClick()"
+          >
+            <ion-icon slot="icon-only" name="mic"></ion-icon>
+          </ion-button>
+          <ion-input
+            #answerInput
+            class="answer-input"
+            fill="outline"
+            enterkeyhint="send"
+            [disabled]="!awaitingAnswer()"
+            [placeholder]="'assistant.typePlaceholder' | t"
+            [value]="typedText()"
+            (ionFocus)="onTypingStart()"
+            (ionInput)="onTypedInput($event)"
+            (keyup.enter)="submitTyped()"
+          ></ion-input>
+          <ion-button
+            shape="round"
+            [disabled]="!awaitingAnswer() || !typedText().trim()"
+            [attr.aria-label]="'assistant.sendTyped' | t"
+            (click)="submitTyped()"
+          >
+            <ion-icon slot="icon-only" name="send"></ion-icon>
+          </ion-button>
+        </div>
+      } @else {
+        <!-- Voice mode: big microphone, countdown while listening, small button to switch to text. -->
+        @if (listening()) {
+          <ion-text class="listening-label" color="danger">{{ 'assistant.listening' | t }}</ion-text>
+          <ion-text class="countdown" color="danger">{{ countdown() }}</ion-text>
+        }
+        <div class="start-row">
+          <div class="mode-action">
+            <ion-button
+              class="mic-button"
+              [class.listening]="listening()"
+              [attr.aria-label]="'appointments.micLabel' | t"
+              (click)="onMicClick()"
+            >
+              <ion-icon slot="icon-only" name="mic"></ion-icon>
+            </ion-button>
+            <span class="mode-label">{{ 'assistant.modeVoice' | t }}</span>
+          </div>
+          <div class="mode-action">
+            <ion-button
+              class="keyboard-button"
+              [attr.aria-label]="(dialogActive() ? 'assistant.switchToText' : 'appointments.keyboardLabel') | t"
+              (click)="onMicClick(true)"
+            >
+              <ion-icon slot="icon-only" name="keypad"></ion-icon>
+            </ion-button>
+            <span class="mode-label">{{ 'assistant.modeText' | t }}</span>
+          </div>
+        </div>
       }
-      <ion-button
-        class="mic-button"
-        shape="round"
-        [color]="listening() ? 'danger' : 'primary'"
-        [attr.aria-label]="'appointments.micLabel' | t"
-        (click)="onMicClick()"
-      >
-        <ion-icon slot="icon-only" [name]="listening() ? 'mic' : 'mic-outline'"></ion-icon>
-      </ion-button>
+      @if (dialogActive()) {
+        <ion-button class="cancel-button" (click)="onCancelClick()">
+          <ion-icon slot="start" name="close"></ion-icon>
+          {{ 'assistant.cancel' | t }}
+        </ion-button>
+      }
     </div>
   </ion-toolbar>
 </ion-footer>

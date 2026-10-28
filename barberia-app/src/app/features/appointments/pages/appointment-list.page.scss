@@ -12,13 +12,144 @@
   text-align: center;
 }
 
+/* Typed answer: the field takes the width, the send button sits at its end. */
+.answer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.answer-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.start-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
+  padding-top: 4px;
+}
+
+/* Each mode: round button with its label underneath. */
+.mode-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.mode-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--ion-color-medium);
+}
+
+/* Main action: big gradient microphone with a soft glow. */
 .mic-button {
-  width: 56px;
-  height: 56px;
+  position: relative;
+  width: 76px;
+  height: 76px;
   margin: 0;
   --padding-start: 0;
   --padding-end: 0;
   --border-radius: 50%;
+  --background: linear-gradient(135deg, var(--ion-color-primary-tint), var(--ion-color-primary-shade));
+  --box-shadow: 0 6px 20px rgba(var(--ion-color-primary-rgb), 0.45);
+  font-size: 30px;
+  transition: transform 0.15s ease;
+
+  &:active {
+    transform: scale(0.92);
+  }
+
+  /* Listening: turns red and sends out pulsing rings. */
+  &.listening {
+    --background: linear-gradient(135deg, var(--ion-color-danger-tint), var(--ion-color-danger-shade));
+    --box-shadow: 0 6px 22px rgba(var(--ion-color-danger-rgb), 0.55);
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid var(--ion-color-danger);
+      animation: mic-pulse 1.6s ease-out infinite;
+      pointer-events: none;
+    }
+
+    &::after {
+      animation-delay: 0.8s;
+    }
+  }
+}
+
+@keyframes mic-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Secondary actions: tinted round buttons in the brand color. */
+.keyboard-button,
+.switch-voice-button {
+  margin: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  --border-radius: 50%;
+  --background: rgba(var(--ion-color-primary-rgb), 0.16);
+  --background-activated: rgba(var(--ion-color-primary-rgb), 0.3);
+  --color: var(--ion-color-primary);
+  --box-shadow: none;
+  transition: transform 0.15s ease;
+
+  &:active {
+    transform: scale(0.92);
+  }
+}
+
+.keyboard-button {
+  width: 56px;
+  height: 56px;
+  font-size: 24px;
+}
+
+.switch-voice-button {
+  width: 48px;
+  height: 48px;
+  font-size: 22px;
+}
+
+/*
+ * Cancel: solid red pill under the controls, the same in voice and text mode.
+ * A faint tinted background looked disabled on the dark theme, so it is fully opaque.
+ */
+.cancel-button {
+  margin: 4px 0 0;
+  height: 40px;
+  font-size: 15px;
+  font-weight: 700;
+  --border-radius: 20px;
+  --padding-start: 18px;
+  --padding-end: 20px;
+  --background: var(--ion-color-danger);
+  --background-activated: var(--ion-color-danger-shade);
+  --color: var(--ion-color-danger-contrast);
+  --box-shadow: 0 4px 14px rgba(var(--ion-color-danger-rgb), 0.45);
+  text-transform: none;
+  transition: transform 0.15s ease;
+
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 /* Compact card with the day number; the header stays fixed while the list scrolls. */
@@ -76,4 +207,9 @@ ion-item.cancelled {
 .countdown {
   font-size: 28px;
   font-weight: 700;
+}
+
+.listening-label {
+  font-size: 14px;
+  font-weight: 600;
 }

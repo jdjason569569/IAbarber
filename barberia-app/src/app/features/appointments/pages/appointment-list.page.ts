@@ -1,10 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { AlertController, IonicModule, ToastController } from '@ionic/angular/lazy';
 import type { RefresherCustomEvent } from '@ionic/core';
 import { addIcons } from 'ionicons';
-import { chevronBack, chevronForward, mic, micOutline } from 'ionicons/icons';
+import { chevronBack, chevronForward, close, keypad, mic, send } from 'ionicons/icons';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
@@ -36,6 +36,9 @@ const MAX_RETRIES = 2;
 /** Pause before re-sending an answer that failed to reach the server. */
 const SEND_RETRY_DELAY_MS = 1000;
 
+/** Thrown inside the dialog when the user presses cancel. */
+class DialogCancelled extends Error {}
+
 @Component({
   selector: 'app-appointment-list',
   templateUrl: 'appointment-list.page.html',
@@ -60,6 +63,19 @@ export class AppointmentListPage {
   protected readonly assistantReply = signal<string | null>(null);
   /** Progress (0-100) of the answer being sent to the assistant; null when nothing is being sent. */
   protected readonly sendProgress = signal<number | null>(null);
+  /** The user answers by typing instead of speaking (chosen, or forced when the microphone fails). */
+  protected readonly textMode = signal(false);
+  /** The assistant asked a question and waits for the answer (spoken or typed). */
+  protected readonly awaitingAnswer = signal(false);
+  protected readonly typedText = signal('');
+  /** Resolves the pending question with the typed answer; null when nothing is waiting. */
+  private typedAnswer: ((text: string) => void) | null = null;
+  /** Wakes up a question waiting for text when the user switches back to voice; null otherwise. */
+  private resumeVoice: (() => void) | null = null;
+  /** Rejects with DialogCancelled when the user cancels the running dialog. */
+  private cancelled: Promise<never> = new Promise<never>(() => undefined);
+  /** Cancels the running dialog; null when no dialog is running. */
+  private cancelDialog: (() => void) | null = null;
   private readonly appointments = signal<Appointment[]>([]);
 
   /** Day shown in the list (`YYYY-MM-DD`, device local time). Today by default. */
@@ -110,8 +126,17 @@ export class AppointmentListPage {
     await alert.present();
   }
 
+  private readonly answerInput = viewChild<ElementRef<HTMLIonInputElement>>('answerInput');
+
   constructor() {
-    addIcons({ chevronBack, chevronForward, mic, micOutline });
+    addIcons({ chevronBack, chevronForward, close, keypad, mic, send });
+    // Text mode opens the keyboard as soon as a question waits for the answer.
+    effect(() => {
+      const input = this.answerInput();
+      if (input && this.textMode() && this.awaitingAnswer()) {
+        setTimeout(() => void input.nativeElement.setFocus());
+      }
+    });
   }
 
   /** Ionic hook: reload every time the tab is shown, so appointments are never stale. */
@@ -141,38 +166,151 @@ export class AppointmentListPage {
     });
   }
 
-  /** Guided dialog: the assistant asks, the user answers by voice, until the appointment is saved. */
-  protected async onMicClick(): Promise<void> {
+  /** Guided dialog: the assistant asks, the user answers by voice or text, until the appointment is saved. */
+  protected async onMicClick(startInText = false): Promise<void> {
     if (this.dialogActive()) {
+      // While a dialog runs, the buttons only switch how the user answers.
+      if (startInText) {
+        this.switchToText();
+      } else {
+        this.switchToVoice();
+      }
       return;
     }
+    this.textMode.set(startInText);
     this.dialogActive.set(true);
     this.assistantReply.set(this.i18n.t('assistant.connecting'));
+    this.cancelled = new Promise<never>((_, reject) => (this.cancelDialog = () => reject(new DialogCancelled())));
+    // Nothing may be waiting on it when the user cancels; that is not an unhandled error.
+    this.cancelled.catch(() => undefined);
     try {
       let draft: BookingDraft = {};
-      let turn = await this.withSendRetries(() => firstValueFrom(this.assistant.bookingTurn('', draft)));
+      let turn = await this.withSendRetries(() =>
+        this.untilCancelled(firstValueFrom(this.assistant.bookingTurn('', draft))),
+      );
       while (true) {
         this.assistantReply.set(turn.reply);
         draft = turn.draft;
-        await this.voice.speak(turn.reply);
+        await this.untilCancelled(this.voice.speak(turn.reply));
         if (turn.status !== 'asking') {
           if (turn.status === 'created') {
             this.refresh();
           }
           return;
         }
-        const answer = await this.listenWithRetries(turn.reply, turn.listenSeconds ?? LISTEN_SECONDS);
+        const answer = await this.awaitAnswer(turn.reply, turn.listenSeconds ?? LISTEN_SECONDS);
         this.assistantReply.set(`"${answer}"`);
         const sentDraft = draft;
         turn = await this.withSendRetries(() => this.sendAnswer(answer, sentDraft));
       }
     } catch (error) {
-      console.error('Voice dialog failed', error);
-      this.assistantReply.set(this.i18n.t(this.assistantErrorKey(error)));
+      if (error instanceof DialogCancelled) {
+        this.assistantReply.set(this.i18n.t('assistant.cancelled'));
+      } else {
+        console.error('Voice dialog failed', error);
+        this.assistantReply.set(this.i18n.t(this.assistantErrorKey(error)));
+      }
     } finally {
+      this.cancelDialog = null;
       this.listening.set(false);
       this.sendProgress.set(null);
+      this.textMode.set(false);
       this.dialogActive.set(false);
+    }
+  }
+
+  /**
+   * Waits for the answer to one question, by voice or by text. The user can switch between both
+   * as many times as they want; when the microphone fails it switches to text and keeps the draft.
+   */
+  private async awaitAnswer(question: string, seconds: number): Promise<string> {
+    const typed = new Promise<string>((resolve) => (this.typedAnswer = resolve));
+    this.awaitingAnswer.set(true);
+    try {
+      while (true) {
+        if (this.textMode()) {
+          const switchedToVoice = new Promise<null>((resolve) => (this.resumeVoice = () => resolve(null)));
+          const answer = await this.untilCancelled(Promise.race([typed, switchedToVoice]));
+          this.resumeVoice = null;
+          if (answer !== null) {
+            return answer;
+          }
+          this.assistantReply.set(question);
+          continue;
+        }
+        const heard = await this.listenWithRetries(question, seconds).catch(async (error: unknown) => {
+          if (!(error instanceof VoiceError)) {
+            throw error;
+          }
+          if (!this.textMode()) {
+            this.textMode.set(true);
+            const fallback = this.i18n.t('assistant.textFallback');
+            this.assistantReply.set(fallback);
+            await this.untilCancelled(this.voice.speak(fallback));
+          }
+          return null;
+        });
+        // Once the user switches to text, whatever the microphone caught is ignored.
+        if (heard !== null && !this.textMode()) {
+          return heard;
+        }
+      }
+    } finally {
+      this.typedAnswer = null;
+      this.resumeVoice = null;
+      this.awaitingAnswer.set(false);
+      this.typedText.set('');
+    }
+  }
+
+  /** Stops listening and waits for the typed answer. */
+  private switchToText(): void {
+    if (!this.textMode()) {
+      this.textMode.set(true);
+      this.voice.stop();
+    }
+  }
+
+  /** Goes back to answering by voice; a question waiting for text starts listening again. */
+  private switchToVoice(): void {
+    if (this.textMode()) {
+      this.textMode.set(false);
+      // Hide the keyboard so the next tap on the field switches to text again.
+      (document.activeElement as HTMLElement | null)?.blur();
+      this.resumeVoice?.();
+    }
+  }
+
+  /** Cancel button: ends the running dialog right away, by voice or by text, without saving anything. */
+  protected onCancelClick(): void {
+    if (!this.cancelDialog) {
+      return;
+    }
+    this.cancelDialog();
+    this.voice.stop();
+    this.voice.stopSpeaking();
+    (document.activeElement as HTMLElement | null)?.blur();
+  }
+
+  /** Lets a step of the dialog end early when the user cancels. */
+  private untilCancelled<T>(work: Promise<T>): Promise<T> {
+    return Promise.race([work, this.cancelled]);
+  }
+
+  /** The user focused the answer field: stop listening and wait for the text. */
+  protected onTypingStart(): void {
+    this.switchToText();
+  }
+
+  protected onTypedInput(event: Event): void {
+    this.switchToText();
+    this.typedText.set((event as CustomEvent<{ value?: string | null }>).detail.value ?? '');
+  }
+
+  protected submitTyped(): void {
+    const text = this.typedText().trim();
+    if (text && this.typedAnswer) {
+      this.typedAnswer(text);
     }
   }
 
@@ -184,12 +322,13 @@ export class AppointmentListPage {
         return await this.listenWithCountdown(seconds);
       } catch (error) {
         this.listening.set(false);
-        if (!(error instanceof VoiceError && error.code === 'no-speech') || attempt >= MAX_RETRIES) {
+        const giveUp = !(error instanceof VoiceError && error.code === 'no-speech') || attempt >= MAX_RETRIES;
+        if (giveUp || this.textMode()) {
           throw error;
         }
         const retry = this.i18n.t('assistant.retry.listen', { question });
         this.assistantReply.set(retry);
-        await this.voice.speak(retry);
+        await this.untilCancelled(this.voice.speak(retry));
       } finally {
         this.listening.set(false);
       }
@@ -208,7 +347,7 @@ export class AppointmentListPage {
         this.assistantReply.set(
           this.i18n.t('assistant.retry.send', { attempt: attempt + 1, max: MAX_RETRIES }),
         );
-        await new Promise((resolve) => setTimeout(resolve, SEND_RETRY_DELAY_MS));
+        await this.untilCancelled(new Promise((resolve) => setTimeout(resolve, SEND_RETRY_DELAY_MS)));
       }
     }
   }
@@ -222,7 +361,7 @@ export class AppointmentListPage {
       this.sendProgress.set(Math.ceil(current + (SEND_PROGRESS_CAP - current) / 10));
     }, SEND_PROGRESS_TICK_MS);
     try {
-      const turn = await firstValueFrom(this.assistant.bookingTurn(answer, draft));
+      const turn = await this.untilCancelled(firstValueFrom(this.assistant.bookingTurn(answer, draft)));
       clearInterval(timer);
       this.sendProgress.set(100);
       await new Promise((resolve) => setTimeout(resolve, SEND_PROGRESS_DONE_MS));
@@ -245,7 +384,7 @@ export class AppointmentListPage {
       }
     }, 1000);
     try {
-      return await this.voice.listen();
+      return await this.untilCancelled(this.voice.listen());
     } finally {
       clearInterval(timer);
     }
