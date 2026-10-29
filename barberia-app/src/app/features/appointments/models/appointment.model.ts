@@ -16,4 +16,6 @@ export interface Appointment {
   cancelled: boolean;
   /** true = client served without a booking (walk-in), registered with the "Cliente casual" button. */
   walkIn: boolean;
+  /** true = the barber confirmed the service was done (button "Completar"). */
+  completed: boolean;
 }

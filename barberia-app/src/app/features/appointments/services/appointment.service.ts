@@ -16,6 +16,7 @@ interface AppointmentDto {
   extras: AppointmentExtra[];
   cancelled: boolean;
   walkIn: boolean;
+  completed: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -33,6 +34,13 @@ export class AppointmentService {
   setCancelled(id: number, cancelled: boolean): Observable<Appointment> {
     return this.http
       .patch<AppointmentDto>(`${this.url}/${id}/cancelled`, { cancelled })
+      .pipe(map(toAppointment));
+  }
+
+  /** Marks (true) that the service of an appointment was done. */
+  setCompleted(id: number, completed: boolean): Observable<Appointment> {
+    return this.http
+      .patch<AppointmentDto>(`${this.url}/${id}/completed`, { completed })
       .pipe(map(toAppointment));
   }
 

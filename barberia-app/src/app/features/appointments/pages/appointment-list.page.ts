@@ -39,6 +39,9 @@ const MAX_RETRIES = 2;
 /** Pause before re-sending an answer that failed to reach the server. */
 const SEND_RETRY_DELAY_MS = 1000;
 
+/** State changes offered on each appointment of the list; each one has its texts under `appointments.<action>`. */
+type RowAction = 'cancel' | 'reactivate' | 'complete' | 'uncomplete';
+
 /** Thrown inside the dialog when the user presses cancel. */
 class DialogCancelled extends Error {}
 
@@ -423,39 +426,61 @@ export class AppointmentListPage {
     return 'assistant.errors.generic';
   }
 
-  protected async confirmCancel(appointment: Appointment): Promise<void> {
+  /** Asks for confirmation before changing the state of an appointment (each action has its own texts). */
+  protected async confirmAction(action: RowAction, appointment: Appointment): Promise<void> {
     const alert = await this.alertController.create({
-      header: this.i18n.t('appointments.cancel.title'),
-      message: this.i18n.t('appointments.cancel.message', {
+      header: this.i18n.t(`appointments.${action}.title`),
+      message: this.i18n.t(`appointments.${action}.message`, {
         client: appointment.clientName,
         date: appointment.date,
         time: appointment.time,
       }),
       buttons: [
-        { text: this.i18n.t('appointments.cancel.no'), role: 'cancel' },
+        { text: this.i18n.t(`appointments.${action}.no`), role: 'cancel' },
         {
-          text: this.i18n.t('appointments.cancel.confirm'),
-          role: 'destructive',
-          handler: () => this.cancel(appointment),
+          text: this.i18n.t(`appointments.${action}.confirm`),
+          role: action === 'cancel' ? 'destructive' : undefined,
+          handler: () => this.runAction(action, appointment),
         },
       ],
     });
     await alert.present();
   }
 
-  private cancel(appointment: Appointment): void {
-    this.appointmentService.setCancelled(appointment.id, true).subscribe({
+  /** Cancel and complete can be undone, in case the barber tapped the wrong appointment. */
+  private runAction(action: RowAction, appointment: Appointment): void {
+    const request = {
+      cancel: () => this.appointmentService.setCancelled(appointment.id, true),
+      reactivate: () => this.appointmentService.setCancelled(appointment.id, false),
+      complete: () => this.appointmentService.setCompleted(appointment.id, true),
+      uncomplete: () => this.appointmentService.setCompleted(appointment.id, false),
+    }[action];
+    request().subscribe({
       next: (updated) =>
         this.appointments.update((items) => items.map((a) => (a.id === updated.id ? updated : a))),
-      error: async () => {
+      error: async (error: unknown) => {
+        // Reactivating fails with 409/400 when the slot was taken or blocked meanwhile.
+        const slotLost =
+          action === 'reactivate' && error instanceof HttpErrorResponse && [400, 409].includes(error.status);
         const toast = await this.toastController.create({
-          message: this.i18n.t('appointments.cancel.error'),
+          message: this.i18n.t(slotLost ? 'appointments.reactivate.taken' : `appointments.${action}.error`),
           duration: 3000,
           color: 'danger',
         });
         await toast.present();
       },
     });
+  }
+
+  /** Status badge: completed wins over active; cancelled appointments are never completed. */
+  protected stateKey(appointment: Appointment): MessageKey {
+    if (appointment.cancelled) return 'appointments.state.cancelled';
+    return appointment.completed ? 'appointments.state.completed' : 'appointments.state.active';
+  }
+
+  protected stateColor(appointment: Appointment): string {
+    if (appointment.cancelled) return 'danger';
+    return appointment.completed ? 'primary' : 'success';
   }
 
   protected total(appointment: Appointment): number {

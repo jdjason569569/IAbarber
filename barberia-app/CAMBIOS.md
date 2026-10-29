@@ -681,3 +681,25 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Pendiente / notas**
 - No generar el release desde Android Studio justo después de `android:sync`/`install_app`; usar `android:release`. Después, para volver a desarrollo, correr `android:sync`.
+
+---
+
+## 2026-10-28 · Botón "Completar" en cada cita
+
+**Qué se hizo**
+- Cada cita activa (no cancelada ni completada) muestra **Completar** arriba de **Cancelar**. Pide confirmación con una alerta y llama a `PATCH /appointments/:id/completed`.
+- Una cita completada muestra el badge **Completada** (color `primary`) y ya no tiene botones.
+- `AppointmentService.setCompleted`, `Appointment.completed`, y textos nuevos `appointments.state.completed` y `appointments.complete.*`.
+- Los ingresos del mes en Estadísticas solo cuentan las citas completadas (cambio del API).
+
+**Pendiente / notas**
+- Requiere el API desplegado y la migración `completed` ejecutada en Supabase.
+
+---
+
+## 2026-10-28 · Deshacer cancelar y completar
+
+**Qué se hizo**
+- Las citas canceladas muestran **Reactivar** y las completadas muestran **Deshacer**. Las dos piden confirmación y dejan la cita otra vez activa. Sirven para cuando el barbero toca la cita equivocada.
+- Si al reactivar ese horario ya está ocupado o bloqueado, se muestra un aviso específico (`appointments.reactivate.taken`).
+- Las cuatro acciones de cada cita (`cancel`, `reactivate`, `complete`, `uncomplete`) comparten `confirmAction`/`runAction`. Sus textos están en `appointments.<acción>.*`.
