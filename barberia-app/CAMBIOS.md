@@ -630,3 +630,54 @@ npx ionic capacitor add android   # añadir plataforma Android
 **Pendiente / notas**
 - `android/` quedó sincronizado en modo producción. Antes de probar con el API local, ejecutar `npm run android:sync`.
 - Aviso del build: `appointment-list.page.scss` supera el presupuesto de 2 kB (3,17 kB). No bloquea la compilación.
+
+---
+
+## 2026-10-28 · Voz: idioma es-CO con respaldo al idioma del teléfono y errores reales
+
+**Problema**
+- En otros teléfonos (p. ej. Moto G84) el agendamiento por voz siempre decía "No te he escuchado". La app pedía el reconocimiento en `es-ES`, que muchos reconocedores de teléfonos latinoamericanos no tienen. Además, `voice.service.ts` descartaba el error del plugin (`.catch(() => null)`), así que cualquier fallo (idioma, red, servicio ocupado) se mostraba como "no te he escuchado".
+
+**Qué se hizo**
+- `I18nService.speechLocale` pasa a `es-CO`.
+- `VoiceService`: si el reconocedor falla con el error genérico del plugin (el que devuelve cuando el idioma no está soportado), reintenta con el idioma del teléfono y lo recuerda para las siguientes sesiones.
+- El error real del plugin se registra con `console.warn('[Voice] ...')` (visible en `adb logcat`) y se traduce a nuevos códigos de `VoiceError`: `network` y `recognizer`.
+- Nuevos textos i18n `assistant.errors.voiceNetwork` y `assistant.errors.recognizer`.
+- Nueva APK de release (`versionName 0.0.2`, `versionCode 2`) apuntando a `https://iabarber.onrender.com`.
+
+**Pendiente / notas**
+- Falta probarla en el Moto G84. Si sigue fallando, conectar por USB y filtrar `adb logcat | grep "\[Voice\]"`.
+- `android/` quedó sincronizado en modo producción; usar `npm run android:sync` antes de probar con el API local.
+
+---
+
+## 2026-10-28 · Nombre de la APK con la versión
+
+**Qué se hizo**
+- `android/app/build.gradle` nombra la APK como `barberia-<versionName>-<buildType>.apk` (p. ej. `barberia-0.0.2-release.apk`, `barberia-0.0.2-debug.apk`). La versión sale del `versionName` que actualiza `npm run version:bump`.
+
+---
+
+## 2026-10-28 · Botón "Cliente casual"
+
+**Qué se hizo**
+- Nuevo botón **Cliente casual** en la barra del día, al lado de "Disponibilidad". Muestra el día de hoy y abre el asistente (voz o texto) con `{ walkIn: true }`. El asistente solo pregunta el servicio, sin nombre, fecha ni hora.
+- El API registra al cliente para ahora mismo y corre 30 minutos la cita que se cruza y todas las siguientes del día. La respuesta del asistente dice qué citas se corrieron.
+- La lista muestra el badge **Casual** en esas atenciones (`Appointment.walkIn`).
+- "Disponibilidad" ignora las atenciones casuales y considera ocupada una hora si hay una cita a menos de 60 minutos (las citas corridas quedan en :30).
+- `onMicClick` recibe el borrador inicial del diálogo.
+- Textos nuevos: `appointments.walkIn.button` y `appointments.walkIn.badge`.
+
+**Pendiente / notas**
+- Requiere el API desplegado y la migración `walk_in` ejecutada en Supabase.
+
+---
+
+## 2026-10-28 · APK release sin conexión a los servicios
+
+**Qué se hizo**
+- El APK release se generó sobre el último `android:sync` (build de desarrollo), así que apuntaba a `http://localhost:3000` y no a Render. Se regeneró con build de producción + `cap sync android`.
+- Nuevo script `npm run android:release`: build de producción, sync y `assembleRelease` en un solo paso.
+
+**Pendiente / notas**
+- No generar el release desde Android Studio justo después de `android:sync`/`install_app`; usar `android:release`. Después, para volver a desarrollo, correr `android:sync`.

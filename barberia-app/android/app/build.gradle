@@ -7,8 +7,8 @@ android {
         applicationId "com.ia.barberia.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "0.0.2"
+        versionCode 3
+        versionName "0.0.3"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -37,6 +37,12 @@ android {
             }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    // APK file name carries the version, e.g. barberia-0.0.2-release.apk.
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "barberia-${variant.versionName}-${variant.buildType.name}.apk"
         }
     }
 }

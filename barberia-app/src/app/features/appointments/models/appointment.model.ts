@@ -14,4 +14,6 @@ export interface Appointment {
   extras: AppointmentExtra[];
   /** true = cancelled, false = active. Cancelled appointments are kept, never deleted. */
   cancelled: boolean;
+  /** true = client served without a booking (walk-in), registered with the "Cliente casual" button. */
+  walkIn: boolean;
 }

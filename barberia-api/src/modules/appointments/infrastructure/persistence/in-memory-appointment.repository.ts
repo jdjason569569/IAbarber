@@ -17,11 +17,11 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
   }
 
   async findActiveAt(date: string, time: string): Promise<Appointment | null> {
-    return this.items.find((a) => a.isActive && a.date === date && a.time === time) ?? null;
+    return this.items.find((a) => a.isActive && !a.walkIn && a.date === date && a.time === time) ?? null;
   }
 
   async save(appointment: Appointment): Promise<Appointment> {
-    const taken = appointment.isActive
+    const taken = appointment.isActive && !appointment.walkIn
       ? await this.findActiveAt(appointment.date, appointment.time)
       : null;
     if (taken && taken.id !== appointment.id) {
@@ -42,6 +42,7 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
       serviceCost: appointment.serviceCost,
       extras: appointment.extras,
       cancelled: appointment.cancelled,
+      walkIn: appointment.walkIn,
     });
     this.items.push(stored);
     return stored;

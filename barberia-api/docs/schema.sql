@@ -54,6 +54,14 @@ create unique index if not exists appointments_active_slot_unique
   on appointments (date, time)
   where not cancelled;
 
+-- Migration: walk-in clients (served without a booking). They do not hold a slot of the agenda,
+-- so the unique (date, time) index ignores them. Run once; it is safe to repeat.
+alter table appointments add column if not exists walk_in boolean not null default false;
+drop index if exists appointments_active_slot_unique;
+create unique index appointments_active_slot_unique
+  on appointments (date, time)
+  where not cancelled and not walk_in;
+
 -- Weekly availability (managed from the app's Settings tab). One row per configured weekday;
 -- weekdays without a row use the default hours, 07:00 to midnight. close_hour 24 = midnight.
 create table if not exists business_hours (

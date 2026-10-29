@@ -22,6 +22,9 @@ import { BusinessHoursService } from '../../settings/services/business-hours.ser
 /** Used when the business hours cannot be loaded: one-hour slots from 07:00 to midnight. */
 const FALLBACK_HOURS: Pick<DayHours, 'open' | 'openHour' | 'closeHour'> = { open: true, openHour: 7, closeHour: 24 };
 
+/** Minutes a booking takes; moved bookings can start at :30, so a free hour needs this much room. */
+const APPOINTMENT_MINUTES = 60;
+
 /** Default seconds the user has to answer each question. */
 const LISTEN_SECONDS = 10;
 
@@ -100,6 +103,15 @@ export class AppointmentListPage {
     this.selectedDate.set(toLocalIsoDate(date));
   }
 
+  /** "Cliente casual" button: registers a client served right now; the assistant only asks for the service. */
+  protected onWalkInClick(): void {
+    if (this.dialogActive()) {
+      return;
+    }
+    this.selectedDate.set(toLocalIsoDate(new Date()));
+    void this.onMicClick(false, { walkIn: true });
+  }
+
   /** Alert listing today's hours that are still free (open, not blocked, not taken and not already past). */
   protected async showAvailability(): Promise<void> {
     const now = new Date();
@@ -109,16 +121,16 @@ export class AppointmentListPage {
       firstValueFrom(this.businessHours.getBlocks(today)).catch(() => []),
     ]);
     const hours = week?.find((d) => d.weekday === now.getDay()) ?? FALLBACK_HOURS;
-    const taken = new Set(
-      this.appointments()
-        .filter((a) => a.date === today && !a.cancelled)
-        .map((a) => a.time.slice(0, 5)),
-    );
+    // Walk-ins do not hold a slot; a booking moved to :30 takes the two hours it overlaps.
+    const taken = this.appointments()
+      .filter((a) => a.date === today && !a.cancelled && !a.walkIn)
+      .map((a) => toMinutes(a.time));
     const free: string[] = [];
     for (let hour = hours.openHour; hours.open && hour < hours.closeHour; hour++) {
       const time = `${String(hour).padStart(2, '0')}:00`;
       const blocked = blocks.some((b) => hour >= b.fromHour && hour < b.toHour);
-      if (hour > now.getHours() && !taken.has(time) && !blocked) {
+      const clashes = taken.some((start) => Math.abs(start - hour * 60) < APPOINTMENT_MINUTES);
+      if (hour > now.getHours() && !clashes && !blocked) {
         free.push(time);
       }
     }
@@ -171,7 +183,7 @@ export class AppointmentListPage {
   }
 
   /** Guided dialog: the assistant asks, the user answers by voice or text, until the appointment is saved. */
-  protected async onMicClick(startInText = false): Promise<void> {
+  protected async onMicClick(startInText = false, initialDraft: BookingDraft = {}): Promise<void> {
     if (this.dialogActive()) {
       // While a dialog runs, the buttons only switch how the user answers.
       if (startInText) {
@@ -188,7 +200,7 @@ export class AppointmentListPage {
     // Nothing may be waiting on it when the user cancels; that is not an unhandled error.
     this.cancelled.catch(() => undefined);
     try {
-      let draft: BookingDraft = {};
+      let draft: BookingDraft = initialDraft;
       let turn = await this.withSendRetries(() =>
         this.untilCancelled(firstValueFrom(this.assistant.bookingTurn('', draft))),
       );
@@ -401,6 +413,8 @@ export class AppointmentListPage {
         case 'unavailable': return 'assistant.errors.unavailable';
         case 'unsupported': return 'assistant.errors.unsupported';
         case 'no-speech': return 'assistant.errors.noSpeech';
+        case 'network': return 'assistant.errors.voiceNetwork';
+        case 'recognizer': return 'assistant.errors.recognizer';
       }
     }
     if (isNetworkError(error)) {
@@ -447,6 +461,12 @@ export class AppointmentListPage {
   protected total(appointment: Appointment): number {
     return this.appointmentService.getTotal(appointment);
   }
+}
+
+/** `HH:mm` -> minutes since midnight. */
+function toMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
 }
 
 /** A request that never got an answer: HttpErrorResponse (status 0 included) or the 20 s timeout. */

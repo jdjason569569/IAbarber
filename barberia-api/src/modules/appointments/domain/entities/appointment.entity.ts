@@ -15,10 +15,26 @@ export interface AppointmentProps {
   extras: AppointmentExtra[];
   /** true = cancelled, false = active. Cancelled appointments are kept, never deleted. */
   cancelled: boolean;
+  /** true = client served without a booking (walk-in); it does not hold a slot of the agenda. */
+  walkIn: boolean;
 }
 
 /** Id assigned to an appointment that has not been persisted yet. */
 export const UNSAVED_APPOINTMENT_ID = 0;
+
+/** Minutes a booked appointment takes in the agenda (slots are one hour). */
+export const APPOINTMENT_MINUTES = 60;
+
+/** `HH:mm` -> minutes since midnight. */
+export function toMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+/** Minutes since midnight -> `HH:mm`. */
+export function toTime(minutes: number): string {
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
 
 /** True for real calendar dates in `YYYY-MM-DD` format (rejects 2026-02-30). */
 function isValidDate(value: string): boolean {
@@ -30,7 +46,7 @@ function isValidDate(value: string): boolean {
 export class Appointment {
   private constructor(private readonly props: AppointmentProps) {}
 
-  static create(props: Omit<AppointmentProps, 'id' | 'cancelled'>): Appointment {
+  static create(props: Omit<AppointmentProps, 'id' | 'cancelled' | 'walkIn'> & { walkIn?: boolean }): Appointment {
     if (!props.client.trim()) {
       throw new InvalidAppointmentError('Client name is required');
     }
@@ -46,7 +62,7 @@ export class Appointment {
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(props.time)) {
       throw new InvalidAppointmentError(`Invalid time: ${props.time}`);
     }
-    return new Appointment({ ...props, id: UNSAVED_APPOINTMENT_ID, cancelled: false });
+    return new Appointment({ ...props, id: UNSAVED_APPOINTMENT_ID, cancelled: false, walkIn: props.walkIn ?? false });
   }
 
   static restore(props: AppointmentProps): Appointment {
@@ -57,6 +73,10 @@ export class Appointment {
     return new Appointment({ ...this.props, cancelled });
   }
 
+  withTime(time: string): Appointment {
+    return new Appointment({ ...this.props, time });
+  }
+
   get id(): number { return this.props.id; }
   get client(): string { return this.props.client; }
   get service(): string { return this.props.service; }
@@ -65,6 +85,16 @@ export class Appointment {
   get serviceCost(): number { return this.props.serviceCost; }
   get extras(): AppointmentExtra[] { return this.props.extras; }
   get cancelled(): boolean { return this.props.cancelled; }
+  get walkIn(): boolean { return this.props.walkIn; }
 
   get isActive(): boolean { return !this.props.cancelled; }
+
+  /** True when both are active bookings (not walk-ins) of the same day less than one slot apart. */
+  clashesWith(other: Appointment): boolean {
+    return (
+      this.isActive && other.isActive && !this.walkIn && !other.walkIn &&
+      this.date === other.date &&
+      Math.abs(toMinutes(this.time) - toMinutes(other.time)) < APPOINTMENT_MINUTES
+    );
+  }
 }

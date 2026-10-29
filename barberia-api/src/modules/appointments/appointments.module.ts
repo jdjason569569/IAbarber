@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { supabaseProvider } from '../../shared/supabase/supabase.provider.js';
 import { BusinessHoursModule } from '../business-hours/business-hours.module.js';
 import { ListAppointmentsUseCase } from './application/use-cases/list-appointments.use-case.js';
+import { RegisterWalkInUseCase } from './application/use-cases/register-walk-in.use-case.js';
 import { ScheduleAppointmentUseCase } from './application/use-cases/schedule-appointment.use-case.js';
 import { SetAppointmentCancelledUseCase } from './application/use-cases/set-appointment-cancelled.use-case.js';
 import { UpdateDayBlocksUseCase } from './application/use-cases/update-day-blocks.use-case.js';
@@ -20,6 +21,7 @@ const useSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SER
   providers: [
     ListAppointmentsUseCase,
     ScheduleAppointmentUseCase,
+    RegisterWalkInUseCase,
     SetAppointmentCancelledUseCase,
     UpdateDayBlocksUseCase,
     ...(useSupabase ? [supabaseProvider] : []),
@@ -28,6 +30,11 @@ const useSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SER
       useClass: useSupabase ? SupabaseAppointmentRepository : InMemoryAppointmentRepository,
     },
   ],
-  exports: [ListAppointmentsUseCase, ScheduleAppointmentUseCase, SetAppointmentCancelledUseCase],
+  exports: [
+    ListAppointmentsUseCase,
+    ScheduleAppointmentUseCase,
+    RegisterWalkInUseCase,
+    SetAppointmentCancelledUseCase,
+  ],
 })
 export class AppointmentsModule {}

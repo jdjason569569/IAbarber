@@ -8,6 +8,8 @@ export interface BookingDraft {
   time?: string;
   /** Exact service name from the catalog. */
   service?: string;
+  /** Client served right now without a booking: only the service is asked, the rest is filled in. */
+  walkIn?: boolean;
 }
 
 export type BookingStep = 'client' | 'date' | 'time' | 'service';

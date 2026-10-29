@@ -1,6 +1,6 @@
 {
   "name": "barberia-app",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "Ionic Framework",
   "homepage": "https://ionicframework.com/",
   "scripts": {
@@ -11,6 +11,7 @@
     "test": "ng test",
     "lint": "ng lint",
     "android:add": "cap add android",
+    "android:release": "ng build --configuration production && cap sync android && cd android && ./gradlew assembleRelease",
     "android:sync": "ng build --configuration development && CAP_ENV=development cap sync android",
     "android:open": "npm run android:sync && CAPACITOR_ANDROID_STUDIO_PATH=${CAPACITOR_ANDROID_STUDIO_PATH:-/snap/android-studio/current/bin/studio.sh} cap open android",
     "install_app": "ng build --configuration development && CAP_ENV=development cap sync android && CAP_ENV=development ionic capacitor run android --no-build",
@@ -26,6 +27,7 @@
     "test": "Unused: this project does not implement unit tests.",
     "lint": "Runs the Angular linter.",
     "android:add": "Creates the android/ project. Only needed when the folder does not exist; never delete and re-add it, it holds manual changes (microphone permission, speech queries, cleartext).",
+    "android:release": "Production build (apiUrl https://iabarber.onrender.com), sync without cleartext and signed release APK in android/app/build/outputs/apk/release/.",
     "android:sync": "Development build (apiUrl http://localhost:3000) and copy of www/ into android/. Run it after every front-end change, then press Run in Android Studio.",
     "android:open": "Runs android:sync and opens the android/ project in Android Studio (snap path by default; override with CAPACITOR_ANDROID_STUDIO_PATH).",
     "install_app": "Development build, sync and install on the USB phone without Android Studio (--no-build stops Ionic from rebuilding in production). Needs adb reverse tcp:3000 tcp:3000 and the backend running.",

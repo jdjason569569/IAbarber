@@ -18,6 +18,8 @@ export const MESSAGES_ES = {
   'appointments.availability.title': 'Horas disponibles hoy',
   'appointments.availability.none': 'No quedan horas disponibles hoy.',
   'appointments.availability.close': 'Cerrar',
+  'appointments.walkIn.button': 'Cliente casual',
+  'appointments.walkIn.badge': 'Casual',
   'appointments.emptyDay': 'No hay citas este día',
   'appointments.previousDay': 'Día anterior',
   'appointments.nextDay': 'Día siguiente',
@@ -62,6 +64,10 @@ export const MESSAGES_ES = {
   'assistant.errors.unavailable': 'El reconocimiento de voz no está disponible en este dispositivo.',
   'assistant.errors.unsupported': 'Este navegador no soporta el reconocimiento de voz.',
   'assistant.errors.noSpeech': 'No te he escuchado. Toca el micrófono para intentarlo de nuevo.',
+  'assistant.errors.voiceNetwork':
+    'El reconocimiento de voz necesita internet. Revisa tu conexión e inténtalo de nuevo.',
+  'assistant.errors.recognizer':
+    'El reconocimiento de voz del teléfono falló. Actualiza la app Google y descarga el español en sus ajustes de voz.',
   'assistant.errors.server': 'No se pudo conectar con el asistente. Revisa tu conexión.',
   'assistant.errors.generic': 'Algo salió mal. Toca el micrófono para intentarlo de nuevo.',
 

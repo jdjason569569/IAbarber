@@ -21,7 +21,8 @@ export class AppointmentStatisticsRepository implements StatisticsRepository {
     const cancelled = thisMonth.length - active.length;
 
     const firstSeen = new Map<string, string>();
-    for (const a of all) {
+    // Walk-ins are anonymous ("Cliente casual"), so they never count as new clients.
+    for (const a of all.filter((x) => !x.walkIn)) {
       const key = a.client.trim().toLowerCase();
       const first = firstSeen.get(key);
       if (first === undefined || a.date < first) firstSeen.set(key, a.date);

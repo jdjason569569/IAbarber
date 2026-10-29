@@ -1,5 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { AppointmentDto, WalkInResult } from '../../../appointments/application/dtos/appointment.dto.js';
 import { ListAppointmentsUseCase } from '../../../appointments/application/use-cases/list-appointments.use-case.js';
+import {
+  RegisterWalkInUseCase,
+  WALK_IN_MINUTES,
+} from '../../../appointments/application/use-cases/register-walk-in.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../../appointments/application/use-cases/schedule-appointment.use-case.js';
 import { AppointmentConflictError } from '../../../appointments/domain/errors/appointment-conflict.error.js';
 import { AppointmentInPastError } from '../../../appointments/domain/errors/appointment-in-past.error.js';
@@ -74,6 +79,7 @@ export class HandleBookingTurnUseCase {
   constructor(
     @Inject(LLM_PORT) private readonly llm: LlmPort,
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
+    private readonly registerWalkIn: RegisterWalkInUseCase,
     private readonly listAppointments: ListAppointmentsUseCase,
     private readonly listServices: ListServicesUseCase,
     private readonly businessHours: GetBusinessHoursUseCase,
@@ -147,7 +153,21 @@ export class HandleBookingTurnUseCase {
         status: 'asking',
       };
     }
-    return this.create(draft, services);
+    return draft.walkIn ? this.createWalkIn(draft, services) : this.create(draft, services);
+  }
+
+  private async createWalkIn(draft: BookingDraft, services: ServiceDto[]): Promise<BookingTurnResult> {
+    const service = services.find((s) => s.name === draft.service);
+    const result = await this.registerWalkIn.execute({
+      service: draft.service ?? '',
+      serviceCost: service?.price ?? 0,
+    });
+    return {
+      reply: walkInReply(result),
+      draft: {},
+      status: 'created',
+      appointment: result.appointment,
+    };
   }
 
   private async hasActiveClientOn(client: string, date: string): Promise<boolean> {
@@ -215,6 +235,14 @@ export class HandleBookingTurnUseCase {
     services: ServiceDto[],
   ): string {
     const today = localIsoDate();
+    if (draft.walkIn) {
+      return [
+        'You help register a walk-in client being served right now at a barbershop. The user answers in Spanish.',
+        'Only the service is needed: never ask for or record the client name, date or time.',
+        `Services: ${services.map((s) => s.name).join(', ')}. Map what the user says to the closest exact service name; if nothing matches, omit the service.`,
+        'Call fill_booking with only the service. If they want to stop, call abort_booking.',
+      ].join('\n');
+    }
     return [
       'You help book a barbershop appointment by voice or typed text. The user answers in Spanish, one question at a time.',
       `Today is ${today}. Resolve relative dates ("mañana", "el viernes") to ISO dates.`,
@@ -225,6 +253,28 @@ export class HandleBookingTurnUseCase {
       'Call fill_booking with ONLY the details present in the last answer (the user may give several at once). If they want to stop, call abort_booking.',
     ].join('\n');
   }
+}
+
+function walkInReply(result: WalkInResult): string {
+  const parts = [`Listo. Cliente casual registrado (${result.appointment.service}).`];
+  if (result.shifted.length > 0) {
+    const n = result.shifted.length;
+    parts.push(
+      `Corrí ${n === 1 ? 'una cita' : `${n} citas`} ${WALK_IN_MINUTES} minutos: ${listTimes(result.shifted)}.`,
+    );
+  }
+  if (result.unavailable.length > 0) {
+    parts.push(`Ojo, quedan fuera del horario disponible: ${listTimes(result.unavailable)}.`);
+  }
+  if (result.notMoved.length > 0) {
+    parts.push(`No pude correr: ${listTimes(result.notMoved)}.`);
+  }
+  return parts.join(' ');
+}
+
+/** "Juan 10:30, Ana 11:30". */
+function listTimes(appointments: AppointmentDto[]): string {
+  return appointments.map((a) => `${a.client} ${a.time}`).join(', ');
 }
 
 function outsideHoursReply(day: DayHours): string {
@@ -243,6 +293,13 @@ function spokenHour(hour: number): string {
 /** Keeps only valid, well-formed values so a bad LLM answer never reaches the domain. */
 function sanitize(draft: BookingDraft, services: ServiceDto[]): BookingDraft {
   const result: BookingDraft = {};
+  if (draft.walkIn === true) {
+    // A walk-in only needs the service: name, date and time are never taken from the user.
+    result.walkIn = true;
+    const service = services.find((s) => s.name === draft.service);
+    if (service) result.service = service.name;
+    return result;
+  }
   const client = typeof draft.client === 'string' ? draft.client.trim() : '';
   if (client) result.client = client;
   if (typeof draft.date === 'string' && ISO_DATE.test(draft.date)) result.date = draft.date;
@@ -264,6 +321,7 @@ function pickDefined(args: Record<string, unknown>): BookingDraft {
 }
 
 function nextStep(draft: BookingDraft): BookingStep | null {
+  if (draft.walkIn) return draft.service ? null : 'service';
   if (!draft.client) return 'client';
   if (!draft.date) return 'date';
   if (!draft.time) return 'time';

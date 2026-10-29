@@ -15,6 +15,7 @@ interface AppointmentRow {
   service_cost: number;
   extras: AppointmentExtra[] | null;
   cancelled: boolean;
+  walk_in: boolean;
 }
 
 const TABLE = 'appointments';
@@ -47,6 +48,7 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
       .eq('date', date)
       .eq('time', time)
       .eq('cancelled', false)
+      .eq('walk_in', false)
       .limit(1)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -62,6 +64,7 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
       service_cost: appointment.serviceCost,
       extras: appointment.extras,
       cancelled: appointment.cancelled,
+      walk_in: appointment.walkIn,
     };
     const query =
       appointment.id === UNSAVED_APPOINTMENT_ID
@@ -89,5 +92,6 @@ function toEntity(row: AppointmentRow): Appointment {
     serviceCost: Number(row.service_cost),
     extras: row.extras ?? [],
     cancelled: row.cancelled,
+    walkIn: row.walk_in ?? false,
   });
 }

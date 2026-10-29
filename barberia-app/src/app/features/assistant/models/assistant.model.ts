@@ -3,6 +3,8 @@ export interface BookingDraft {
   date?: string;
   time?: string;
   service?: string;
+  /** Client served right now without a booking: the assistant only asks for the service. */
+  walkIn?: boolean;
 }
 
 export interface BookingTurnResult {

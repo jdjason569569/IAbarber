@@ -1,4 +1,10 @@
-export type VoiceErrorCode = 'permission-denied' | 'unavailable' | 'unsupported' | 'no-speech';
+export type VoiceErrorCode =
+  | 'permission-denied'
+  | 'unavailable'
+  | 'unsupported'
+  | 'no-speech'
+  | 'network'
+  | 'recognizer';
 
 /** Failure while listening; the page maps the code to a translated message. */
 export class VoiceError extends Error {

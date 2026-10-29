@@ -259,3 +259,18 @@ This file records, in chronological order, every change made to the backend.
 
 **Pending / notes**
 - Deploy the API to Render. Optional: set `SHOP_TIMEZONE` if the shop is not in Bogotá's time zone.
+
+---
+
+## 2026-10-28 · Walk-in clients ("Cliente casual") push today's agenda back 30 minutes
+
+**What was done**
+- New `walkIn` flag on `Appointment` (column `walk_in`). Walk-ins are stored as client "Cliente casual", today, at the current time. They skip the past, business-hours, block and slot checks, and they do not hold a slot of the agenda.
+- New `RegisterWalkInUseCase`. It saves the walk-in, finds the first active booking of today whose hour overlaps the walk-in's 30 minutes, and moves that booking and every later one today 30 minutes later. Bookings are saved latest first so the unique index never clashes. It reports which moved bookings fall outside hours or inside a block, and which could not move (past midnight).
+- Booking assistant: `BookingDraft.walkIn`. With it, the assistant only asks for the service (never the name, date or time), then calls `RegisterWalkInUseCase` and lists the moved bookings in its reply.
+- Bookings can now start at :30, so slot conflicts use overlap: `Appointment.clashesWith` (active, non walk-in, same day, less than 60 min apart). It applies when scheduling and when reactivating a cancelled appointment.
+- Statistics: walk-ins count as appointments and revenue, but not as new clients.
+
+**Pending / notes**
+- Run the new migration in Supabase (`walk_in` column and the updated `appointments_active_slot_unique` index, in `docs/schema.sql`). Until then, every save fails because the column does not exist.
+- Clients whose booking moved are not notified (the app does not store phone numbers).

@@ -30,8 +30,8 @@ export class SetAppointmentCancelledUseCase {
       if ((await this.dayBlocks.execute(updated.date)).covering(updated.time)) {
         throw new BarberUnavailableError(`The barber is not available on ${updated.date} at ${updated.time}`);
       }
-      const taken = await this.appointments.findActiveAt(updated.date, updated.time);
-      if (taken && taken.id !== updated.id) {
+      const all = await this.appointments.findAll();
+      if (all.some((a) => a.id !== updated.id && a.clashesWith(updated))) {
         throw new AppointmentConflictError(`${updated.date} at ${updated.time} is already booked`);
       }
     }

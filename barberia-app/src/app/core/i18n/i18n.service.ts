@@ -9,8 +9,11 @@ export class I18nService {
   /** Locale of the catalog; also used to format dates. */
   readonly locale = 'es-ES';
 
-  /** Locale for speech recognition and speech synthesis. */
-  readonly speechLocale = this.locale;
+  /**
+   * Locale for speech recognition and speech synthesis. Colombian Spanish: recognizers on Latin American
+   * phones often lack es-ES; VoiceService falls back to the device language when this one fails.
+   */
+  readonly speechLocale = 'es-CO';
 
   private readonly messages: Record<MessageKey, string> = MESSAGES_ES;
 

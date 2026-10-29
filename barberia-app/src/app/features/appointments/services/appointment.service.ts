@@ -15,6 +15,7 @@ interface AppointmentDto {
   serviceCost: number;
   extras: AppointmentExtra[];
   cancelled: boolean;
+  walkIn: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -10,6 +10,7 @@ export interface AppointmentDto {
   serviceCost: number;
   extras: AppointmentExtra[];
   cancelled: boolean;
+  walkIn: boolean;
 }
 
 export interface ScheduleAppointmentInput {
@@ -19,6 +20,21 @@ export interface ScheduleAppointmentInput {
   time: string;
   serviceCost: number;
   extras: AppointmentExtra[];
+}
+
+export interface WalkInInput {
+  service: string;
+  serviceCost: number;
+}
+
+export interface WalkInResult {
+  appointment: AppointmentDto;
+  /** Bookings moved WALK_IN_MINUTES later, in agenda order, with their new time. */
+  shifted: AppointmentDto[];
+  /** Moved bookings that now fall outside business hours or inside a block of the barber. */
+  unavailable: AppointmentDto[];
+  /** Bookings that could not be moved (past midnight or the new time was taken). */
+  notMoved: AppointmentDto[];
 }
 
 export function toAppointmentDto(a: Appointment): AppointmentDto {
@@ -31,5 +47,6 @@ export function toAppointmentDto(a: Appointment): AppointmentDto {
     serviceCost: a.serviceCost,
     extras: a.extras,
     cancelled: a.cancelled,
+    walkIn: a.walkIn,
   };
 }

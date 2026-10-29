@@ -17,6 +17,9 @@
       </ion-button>
     </div>
     <ion-buttons slot="end">
+      <ion-button size="small" [disabled]="dialogActive()" (click)="onWalkInClick()">
+        {{ 'appointments.walkIn.button' | t }}
+      </ion-button>
       <ion-button size="small" (click)="showAvailability()">
         {{ 'appointments.availability.button' | t }}
       </ion-button>
@@ -43,6 +46,9 @@
           <p><strong>{{ 'appointments.total' | t }}: ${{ total(appointment) }}</strong></p>
         </ion-label>
         <div slot="end" class="row-actions">
+          @if (appointment.walkIn) {
+            <ion-badge color="tertiary">{{ 'appointments.walkIn.badge' | t }}</ion-badge>
+          }
           <ion-badge [color]="appointment.cancelled ? 'danger' : 'success'">
             {{ (appointment.cancelled ? 'appointments.state.cancelled' : 'appointments.state.active') | t }}
           </ion-badge>
