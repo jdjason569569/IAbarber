@@ -41,6 +41,13 @@ const QUESTION_KEYS: Record<BookingStep, MessageKey> = {
   price: 'assistant.question.price',
 };
 
+const STEP_LABEL_KEYS: Record<BookingStep, MessageKey> = {
+  client: 'assistant.step.client',
+  date: 'assistant.step.date',
+  time: 'assistant.step.time',
+  price: 'assistant.step.price',
+};
+
 /** Extra attempts per question (not hearing the answer, or failing to send it) before the dialog gives up. */
 const MAX_RETRIES = 2;
 /** Pause before re-sending an answer that failed to reach the server. */
@@ -74,6 +81,23 @@ export class AppointmentListPage {
   protected readonly countdown = signal(LISTEN_SECONDS);
   protected readonly dialogActive = signal(false);
   protected readonly assistantReply = signal<string | null>(null);
+  /** What was heard (or typed) for the current question; null while waiting for it. */
+  protected readonly dialogAnswer = signal<string | null>(null);
+  /** Goes up with every question shown; the modal re-renders the question so its flash replays. */
+  protected readonly questionTick = signal(0);
+  /** Answers given so far in the running dialog, one per question; a repeated question replaces its entry. */
+  protected readonly dialogLog = signal<{ step: BookingStep; answer: string }[]>([]);
+  protected readonly stepLabels = STEP_LABEL_KEYS;
+  /** Every answer is in: the modal shows them with Confirm / Edit / Cancel before sending. */
+  protected readonly reviewing = signal(false);
+  /** Resolves the pending review when the user taps Confirm or Edit; null when not reviewing. */
+  private reviewChoice: ((choice: 'confirm' | 'edit') => void) | null = null;
+  /** The review rows turned into fields to fix the answers. */
+  protected readonly editingAnswers = signal(false);
+  /** Values typed in the edit fields, by step. */
+  private editedValues: BookingAnswers = {};
+  /** Ends the edit: true saves the typed values, false goes back without changes. */
+  private editDone: ((save: boolean) => void) | null = null;
   /** Progress (0-100) of the answer being sent to the assistant; null when nothing is being sent. */
   protected readonly sendProgress = signal<number | null>(null);
   /** The user answers by typing instead of speaking (chosen, or forced when the microphone fails). */
@@ -219,19 +243,22 @@ export class AppointmentListPage {
           const question = rejected?.reply ?? this.i18n.t(QUESTION_KEYS[step]);
           const seconds = rejected?.listenSeconds ?? LISTEN_SECONDS;
           rejected = null;
-          this.assistantReply.set(question);
+          this.showQuestion(question);
+          this.dialogAnswer.set(null);
           await this.untilCancelled(this.voice.speak(question));
           answers[step] = await this.awaitAnswer(question, seconds);
-          this.assistantReply.set(`"${answers[step]}"`);
+          this.dialogAnswer.set(answers[step]!);
+          this.logAnswer(step, answers[step]!);
         }
-        const sentDraft = draft;
-        const turn = await this.withSendRetries(() => this.sendAnswers(answers, sentDraft));
+        const reviewed = await this.reviewAnswers(answers, draft);
+        const turn = await this.withSendRetries(() => this.sendAnswers(reviewed.answers, reviewed.draft));
         draft = turn.draft;
         if (turn.status === 'asking') {
           rejected = turn;
           continue;
         }
         this.assistantReply.set(turn.reply);
+        this.dialogAnswer.set(null);
         await this.untilCancelled(this.voice.speak(turn.reply));
         if (turn.status === 'created') {
           this.refresh();
@@ -249,9 +276,105 @@ export class AppointmentListPage {
       this.cancelDialog = null;
       this.listening.set(false);
       this.sendProgress.set(null);
+      this.dialogAnswer.set(null);
+      this.dialogLog.set([]);
+      this.reviewing.set(false);
+      this.reviewChoice = null;
       this.textMode.set(false);
       this.dialogActive.set(false);
     }
+  }
+
+  /**
+   * Shows every answer with Confirm / Edit / Cancel and waits until the user confirms. Editing an
+   * answer the API already accepted takes it out of the draft so it is read again.
+   */
+  private async reviewAnswers(
+    answers: BookingAnswers,
+    draft: BookingDraft,
+  ): Promise<{ answers: BookingAnswers; draft: BookingDraft }> {
+    const prompt = this.i18n.t('assistant.review.title');
+    this.assistantReply.set(prompt);
+    this.reviewing.set(true);
+    try {
+      while (true) {
+        const choice = new Promise<'confirm' | 'edit'>((resolve) => (this.reviewChoice = resolve));
+        void this.voice.speak(prompt);
+        if ((await this.untilCancelled(choice)) === 'confirm') {
+          this.voice.stopSpeaking();
+          return { answers, draft };
+        }
+        this.voice.stopSpeaking();
+        const edited = await this.editAnswers();
+        for (const [step, answer] of Object.entries(edited) as [BookingStep, string][]) {
+          answers = { ...answers, [step]: answer };
+          const { [step]: _replaced, ...rest } = draft;
+          draft = rest;
+          this.logAnswer(step, answer);
+        }
+      }
+    } finally {
+      this.reviewChoice = null;
+      this.editDone = null;
+      this.editingAnswers.set(false);
+      this.reviewing.set(false);
+    }
+  }
+
+  /** Turns the review rows into fields; resolves with the answers that changed (none on Back). */
+  private async editAnswers(): Promise<BookingAnswers> {
+    const log = this.dialogLog();
+    this.editedValues = Object.fromEntries(log.map((entry) => [entry.step, entry.answer]));
+    this.editingAnswers.set(true);
+    try {
+      const save = await this.untilCancelled(new Promise<boolean>((resolve) => (this.editDone = resolve)));
+      const changed: BookingAnswers = {};
+      if (save) {
+        for (const entry of log) {
+          const value = (this.editedValues[entry.step] ?? '').trim();
+          if (value && value !== entry.answer) changed[entry.step] = value;
+        }
+      }
+      return changed;
+    } finally {
+      this.editDone = null;
+      this.editingAnswers.set(false);
+    }
+  }
+
+  protected onEditInput(step: BookingStep, event: Event): void {
+    this.editedValues[step] = (event as CustomEvent<{ value?: string | null }>).detail.value ?? '';
+  }
+
+  protected onEditSave(): void {
+    this.editDone?.(true);
+  }
+
+  protected onEditBack(): void {
+    this.editDone?.(false);
+  }
+
+  protected onReviewConfirm(): void {
+    this.reviewChoice?.('confirm');
+  }
+
+  protected onReviewEdit(): void {
+    this.reviewChoice?.('edit');
+  }
+
+  /** Shows a new question in the modal and makes it flash to catch the user's eye. */
+  private showQuestion(question: string): void {
+    this.assistantReply.set(question);
+    this.questionTick.update((tick) => tick + 1);
+  }
+
+  /** Notes the answer under its question; answering the same question again replaces it in place. */
+  private logAnswer(step: BookingStep, answer: string): void {
+    this.dialogLog.update((log) =>
+      log.some((entry) => entry.step === step)
+        ? log.map((entry) => (entry.step === step ? { step, answer } : entry))
+        : [...log, { step, answer }],
+    );
   }
 
   /**
@@ -362,7 +485,7 @@ export class AppointmentListPage {
           throw error;
         }
         const retry = this.i18n.t('assistant.retry.listen', { question });
-        this.assistantReply.set(retry);
+        this.showQuestion(retry);
         await this.untilCancelled(this.voice.speak(retry));
       } finally {
         this.listening.set(false);

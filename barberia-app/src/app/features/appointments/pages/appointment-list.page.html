@@ -101,6 +101,102 @@
   </ion-list>
 </ion-content>
 
+<!-- Voice dialog: the question, the countdown and the answer shown big while answering by voice. -->
+<ion-modal class="voice-modal" [isOpen]="dialogActive() && (!textMode() || reviewing())" [backdropDismiss]="false">
+  <ng-template>
+    <ion-content class="ion-padding">
+      <div class="voice-dialog">
+        <!-- Tracked by the question counter: each new question is a new element, so the flash replays. -->
+        @for (tick of [questionTick()]; track tick) {
+          <p class="voice-question" [class.flash]="!reviewing()">{{ assistantReply() }}</p>
+        }
+
+        @if (!reviewing()) {
+          <div class="voice-timer" [class.active]="listening()">
+            @if (listening()) {
+              <span class="voice-countdown">{{ countdown() }}</span>
+              <span class="voice-listening">{{ 'assistant.listening' | t }}</span>
+            } @else {
+              <ion-icon name="mic"></ion-icon>
+            }
+          </div>
+
+          <div class="voice-answer">
+            <span class="voice-answer-label">{{ 'assistant.modal.answer' | t }}</span>
+            @if (dialogAnswer(); as answer) {
+              <p class="voice-answer-text">"{{ answer }}"</p>
+            } @else {
+              <p class="voice-answer-text pending">{{ 'assistant.modal.waiting' | t }}</p>
+            }
+          </div>
+        }
+
+        @if (dialogLog().length > 0) {
+          <div class="voice-log">
+            <span class="voice-answer-label">{{ 'assistant.modal.log' | t }}</span>
+            @for (entry of dialogLog(); track entry.step) {
+              @if (editingAnswers()) {
+                <ion-input
+                  class="voice-edit-input"
+                  fill="outline"
+                  labelPlacement="stacked"
+                  [label]="stepLabels[entry.step] | t"
+                  [value]="entry.answer"
+                  (ionInput)="onEditInput(entry.step, $event)"
+                ></ion-input>
+              } @else {
+                <div class="voice-log-row">
+                  <span class="voice-log-step">{{ stepLabels[entry.step] | t }}</span>
+                  <span class="voice-log-answer">{{ entry.answer }}</span>
+                </div>
+              }
+            }
+          </div>
+        }
+      </div>
+    </ion-content>
+    <!-- Fixed at the bottom so the answers above always have room. -->
+    <ion-footer class="voice-footer">
+      @if (sendProgress() !== null) {
+        <app-send-progress [progress]="sendProgress()!" />
+      }
+      <div class="voice-actions">
+        @if (editingAnswers()) {
+          <ion-button class="review-confirm-button" (click)="onEditSave()">
+            <ion-icon slot="start" name="checkmark"></ion-icon>
+            {{ 'assistant.review.save' | t }}
+          </ion-button>
+          <ion-button class="review-edit-button" (click)="onEditBack()">
+            <ion-icon slot="start" name="chevron-back"></ion-icon>
+            {{ 'assistant.review.back' | t }}
+          </ion-button>
+        } @else if (reviewing()) {
+          <ion-button class="review-confirm-button" (click)="onReviewConfirm()">
+            <ion-icon slot="start" name="checkmark"></ion-icon>
+            {{ 'assistant.review.confirm' | t }}
+          </ion-button>
+          <ion-button class="review-edit-button" (click)="onReviewEdit()">
+            <ion-icon slot="start" name="create-outline"></ion-icon>
+            {{ 'assistant.review.edit' | t }}
+          </ion-button>
+        } @else {
+          <ion-button
+            class="keyboard-button"
+            [attr.aria-label]="'assistant.switchToText' | t"
+            (click)="onMicClick(true)"
+          >
+            <ion-icon slot="icon-only" name="keypad"></ion-icon>
+          </ion-button>
+        }
+        <ion-button class="cancel-button" (click)="onCancelClick()">
+          <ion-icon slot="start" name="close"></ion-icon>
+          {{ 'assistant.cancel' | t }}
+        </ion-button>
+      </div>
+    </ion-footer>
+  </ng-template>
+</ion-modal>
+
 <ion-footer>
   <ion-toolbar>
     <div class="assistant-bar">

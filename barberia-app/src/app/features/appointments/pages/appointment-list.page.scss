@@ -311,3 +311,205 @@
   font-size: 14px;
   font-weight: 600;
 }
+
+/* Voice dialog modal: everything large so it reads from arm's length. */
+.voice-modal {
+  --width: 100%;
+  --height: 100%;
+}
+
+.voice-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  /* The full-screen modal starts under the status bar. */
+  padding-top: calc(8px + var(--ion-safe-area-top, 0px));
+  text-align: center;
+}
+
+.voice-question {
+  width: 100%;
+  margin: 0;
+  padding: 12px 8px;
+  border-radius: var(--app-radius, 12px);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ion-color-primary);
+}
+
+.voice-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 6px solid var(--ion-color-medium);
+  color: var(--ion-color-medium);
+
+  ion-icon {
+    font-size: 48px;
+  }
+
+  &.active {
+    border-color: var(--ion-color-danger);
+    color: var(--ion-color-danger);
+    animation: voice-pulse 1s ease-in-out infinite;
+  }
+}
+
+.voice-countdown {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.voice-listening {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@keyframes voice-pulse {
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.voice-answer {
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--app-radius, 12px);
+  border: var(--app-card-border, 1px solid var(--ion-color-medium));
+  background: var(--ion-card-background, transparent);
+}
+
+.voice-answer-label {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ion-color-medium);
+}
+
+.voice-answer-text {
+  margin: 8px 0 0;
+  font-size: 26px;
+  font-weight: 600;
+
+  &.pending {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--ion-color-medium);
+  }
+}
+
+.voice-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px calc(12px + var(--ion-safe-area-bottom, 0px));
+  background: var(--ion-background-color);
+}
+
+.voice-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* Answers given so far, one row per question, under the modal actions. */
+.voice-log {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.voice-log-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--app-radius, 12px);
+  border-left: 4px solid var(--ion-color-primary);
+  background: rgba(var(--ion-color-primary-rgb), 0.08);
+}
+
+.voice-log-step {
+  min-width: 64px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ion-color-primary);
+}
+
+.voice-log-answer {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Review step: confirm (green) and edit (gold outline) next to the red cancel pill. */
+.review-confirm-button,
+.review-edit-button {
+  margin: 4px 0 0;
+  height: 40px;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: none;
+  --border-radius: 20px;
+  --padding-start: 16px;
+  --padding-end: 18px;
+}
+
+.review-confirm-button {
+  --background: var(--ion-color-success);
+  --background-activated: var(--ion-color-success-shade);
+  --color: var(--ion-color-success-contrast);
+  --box-shadow: 0 4px 14px rgba(var(--ion-color-success-rgb), 0.45);
+}
+
+.review-edit-button {
+  --background: transparent;
+  --color: var(--ion-color-primary);
+  --border-color: var(--ion-color-primary);
+  --border-style: solid;
+  --border-width: 2px;
+  --box-shadow: none;
+}
+
+/* Editing the answers before sending: one large field per question. */
+.voice-edit-input {
+  font-size: 20px;
+  --border-color: var(--ion-color-primary);
+  --highlight-color-focused: var(--ion-color-primary);
+}
+
+/* New question: a gold flash behind the text and a small bounce, twice, to catch the eye. */
+.voice-question.flash {
+  animation: question-flash 0.7s ease-out 2;
+}
+
+@keyframes question-flash {
+  0% {
+    background: rgba(var(--ion-color-primary-rgb), 0.55);
+    box-shadow: 0 0 32px 8px rgba(var(--ion-color-primary-rgb), 0.6);
+    color: var(--ion-color-primary-contrast);
+    transform: scale(1.06);
+  }
+  100% {
+    background: transparent;
+    box-shadow: 0 0 0 0 rgba(var(--ion-color-primary-rgb), 0);
+    color: var(--ion-color-primary);
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-question.flash {
+    animation-duration: 0.01ms;
+  }
+}

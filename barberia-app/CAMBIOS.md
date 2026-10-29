@@ -784,3 +784,16 @@ npx ionic capacitor add android   # añadir plataforma Android
 **Pendiente / notas**
 - Necesita el API con soporte de `answers` desplegado.
 - Si se dice "cancelar" como respuesta, solo se detecta al enviar al final. El botón Cancelar corta el diálogo al momento.
+
+---
+
+## 2026-10-29 · Modal grande para el diálogo por voz
+
+**Qué se hizo**
+- Mientras se agenda por voz se abre un modal a pantalla completa con la pregunta en letra grande, un círculo con la cuenta atrás (rojo y con pulso mientras escucha), la respuesta escuchada en una tarjeta, la barra de envío y los botones **Escribir** y **Cancelar**.
+- Al cambiar a texto el modal se cierra y se usa la barra inferior con el campo de respuesta. Al volver a voz, se abre otra vez.
+- Señal nueva `dialogAnswer`: la respuesta ya no reemplaza a la pregunta en `assistantReply`.
+- Textos nuevos `assistant.modal.answer` y `assistant.modal.waiting`.
+- Bajo los botones del modal se apunta cada respuesta con su pregunta (Cliente, Fecha, Hora, Precio), con la señal `dialogLog`. Si una pregunta se repite, su respuesta se reemplaza. Textos nuevos `assistant.modal.log` y `assistant.step.*`.
+- Corrección: la lista de respuestas iba debajo de los botones y quedaba fuera de la pantalla en teléfonos pequeños. Ahora va justo debajo de "Tu respuesta". Los botones están fijos en un pie del modal, y la pregunta deja el margen de la barra de estado.
+- Paso de revisión antes de enviar: con todas las respuestas, el modal muestra "Revisa los datos antes de enviar" con **Confirmar** (envía), **Editar** y **Cancelar**. Sale también si se respondió escribiendo. **Editar** convierte cada fila en un campo con su etiqueta, con **Guardar** y **Volver**. Si se edita una respuesta que el API ya había aceptado, sale del `draft` y se vuelve a interpretar. Textos nuevos `assistant.review.*`.
