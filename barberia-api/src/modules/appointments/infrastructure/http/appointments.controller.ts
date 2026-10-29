@@ -44,7 +44,6 @@ export class AppointmentsController {
     try {
       return await this.scheduleAppointment.execute({
         client: String(body?.client ?? ''),
-        service: String(body?.service ?? ''),
         date: String(body?.date ?? ''),
         time: String(body?.time ?? ''),
         serviceCost: Number(body?.serviceCost ?? 0),

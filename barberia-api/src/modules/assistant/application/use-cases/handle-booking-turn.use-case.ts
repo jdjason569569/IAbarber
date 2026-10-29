@@ -15,8 +15,6 @@ import { GetBusinessHoursUseCase } from '../../../business-hours/application/use
 import { GetDayBlocksUseCase } from '../../../business-hours/application/use-cases/get-day-blocks.use-case.js';
 import type { TimeBlock } from '../../../business-hours/domain/entities/day-blocks.entity.js';
 import type { DayHours } from '../../../business-hours/domain/entities/weekly-hours.entity.js';
-import type { ServiceDto } from '../../../services/application/dtos/service.dto.js';
-import { ListServicesUseCase } from '../../../services/application/use-cases/list-services.use-case.js';
 import { localIsoDate } from '../../../../shared/utils/local-date.js';
 import { LLM_PORT } from '../../domain/ports/llm.port.js';
 import type { LlmPort, LlmTool } from '../../domain/ports/llm.port.js';
@@ -37,10 +35,9 @@ const PAST_REPLY = 'Esa fecha ya pasó, no se puede agendar una cita en el pasad
 
 const CLOSED_DAY_REPLY = 'Ese día no atendemos. ¿Para qué otra fecha?';
 
-const NO_SERVICES_REPLY =
-  'No hay servicios configurados. Agrégalos en la pestaña Settings de la app.';
+const PRICE_HINT = "The price is a number in pesos: 'quince mil' -> 15000, '20 mil' -> 20000, 'doce mil quinientos' -> 12500.";
 
-function question(step: BookingStep, services: ServiceDto[]): string {
+function question(step: BookingStep): string {
   switch (step) {
     case 'client':
       return '¿Cuál es el nombre del cliente?';
@@ -48,8 +45,8 @@ function question(step: BookingStep, services: ServiceDto[]): string {
       return '¿Para qué fecha es la cita?';
     case 'time':
       return '¿A qué hora?';
-    case 'service':
-      return `¿Qué servicio desea? Tenemos ${services.map((s) => s.name).join(', ')}.`;
+    case 'price':
+      return '¿Cuánto cuesta el servicio?';
   }
 }
 
@@ -63,7 +60,7 @@ const TOOLS: LlmTool[] = [
         client: { type: 'string', description: 'Client full name' },
         date: { type: 'string', description: 'ISO date YYYY-MM-DD' },
         time: { type: 'string', description: '24h time HH:mm' },
-        service: { type: 'string', description: 'Exact service name from the catalog' },
+        price: { type: 'number', description: 'Price of the service in pesos, e.g. 15000' },
       },
     },
   },
@@ -81,23 +78,18 @@ export class HandleBookingTurnUseCase {
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
     private readonly registerWalkIn: RegisterWalkInUseCase,
     private readonly listAppointments: ListAppointmentsUseCase,
-    private readonly listServices: ListServicesUseCase,
     private readonly businessHours: GetBusinessHoursUseCase,
     private readonly dayBlocks: GetDayBlocksUseCase,
   ) {}
 
   async execute(input: BookingTurnInput): Promise<BookingTurnResult> {
-    const services = await this.listServices.execute();
-    if (services.length === 0) {
-      return { reply: NO_SERVICES_REPLY, draft: {}, status: 'cancelled' };
-    }
-    let draft: BookingDraft = sanitize(input.draft, services);
+    let draft: BookingDraft = sanitize(input.draft);
     const text = input.text.trim();
 
     if (text) {
       const expecting = nextStep(draft);
       const response = await this.llm.complete({
-        system: this.buildSystemPrompt(draft, expecting, services),
+        system: this.buildSystemPrompt(draft, expecting),
         user: text,
         tools: TOOLS,
       });
@@ -106,7 +98,7 @@ export class HandleBookingTurnUseCase {
         return { reply: 'De acuerdo, cita cancelada.', draft: {}, status: 'cancelled' };
       }
       if (call?.name === 'fill_booking') {
-        draft = sanitize({ ...draft, ...pickDefined(call.arguments) }, services);
+        draft = sanitize({ ...draft, ...pickDefined(call.arguments) });
       }
     }
 
@@ -145,23 +137,19 @@ export class HandleBookingTurnUseCase {
 
     const missing = nextStep(draft);
     if (missing) {
-      const retry = text && missing === nextStep(sanitize(input.draft, services));
-      const prompt = question(missing, services);
+      const retry = text && missing === nextStep(sanitize(input.draft));
+      const prompt = question(missing);
       return {
         reply: retry ? `No te he entendido. ${prompt}` : prompt,
         draft,
         status: 'asking',
       };
     }
-    return draft.walkIn ? this.createWalkIn(draft, services) : this.create(draft, services);
+    return draft.walkIn ? this.createWalkIn(draft) : this.create(draft);
   }
 
-  private async createWalkIn(draft: BookingDraft, services: ServiceDto[]): Promise<BookingTurnResult> {
-    const service = services.find((s) => s.name === draft.service);
-    const result = await this.registerWalkIn.execute({
-      service: draft.service ?? '',
-      serviceCost: service?.price ?? 0,
-    });
+  private async createWalkIn(draft: BookingDraft): Promise<BookingTurnResult> {
+    const result = await this.registerWalkIn.execute({ serviceCost: draft.price ?? 0 });
     return {
       reply: walkInReply(result),
       draft: {},
@@ -178,15 +166,13 @@ export class HandleBookingTurnUseCase {
     );
   }
 
-  private async create(draft: BookingDraft, services: ServiceDto[]): Promise<BookingTurnResult> {
-    const service = services.find((s) => s.name === draft.service);
+  private async create(draft: BookingDraft): Promise<BookingTurnResult> {
     try {
       const appointment = await this.scheduleAppointment.execute({
         client: draft.client ?? '',
-        service: draft.service ?? '',
         date: draft.date ?? '',
         time: draft.time ?? '',
-        serviceCost: service?.price ?? 0,
+        serviceCost: draft.price ?? 0,
         extras: [],
       });
       return {
@@ -229,25 +215,21 @@ export class HandleBookingTurnUseCase {
     }
   }
 
-  private buildSystemPrompt(
-    draft: BookingDraft,
-    expecting: BookingStep | null,
-    services: ServiceDto[],
-  ): string {
+  private buildSystemPrompt(draft: BookingDraft, expecting: BookingStep | null): string {
     const today = localIsoDate();
     if (draft.walkIn) {
       return [
         'You help register a walk-in client being served right now at a barbershop. The user answers in Spanish.',
-        'Only the service is needed: never ask for or record the client name, date or time.',
-        `Services: ${services.map((s) => s.name).join(', ')}. Map what the user says to the closest exact service name; if nothing matches, omit the service.`,
-        'Call fill_booking with only the service. If they want to stop, call abort_booking.',
+        'Only the price of the service is needed: never ask for or record the client name, date or time.',
+        PRICE_HINT,
+        'Call fill_booking with only the price. If they want to stop, call abort_booking.',
       ].join('\n');
     }
     return [
       'You help book a barbershop appointment by voice or typed text. The user answers in Spanish, one question at a time.',
       `Today is ${today}. Resolve relative dates ("mañana", "el viernes") to ISO dates.`,
       'Barbershop hours are daytime: "a las 4" means 16:00 unless the user says morning.',
-      `Services: ${services.map((s) => s.name).join(', ')}. Map what the user says to the closest exact service name; if nothing matches, omit the service.`,
+      PRICE_HINT,
       `Already collected: ${JSON.stringify(draft)}.`,
       `The question just asked was about: ${expecting ?? 'confirmation'}.`,
       'Call fill_booking with ONLY the details present in the last answer (the user may give several at once). If they want to stop, call abort_booking.',
@@ -256,7 +238,7 @@ export class HandleBookingTurnUseCase {
 }
 
 function walkInReply(result: WalkInResult): string {
-  const parts = [`Listo. Cliente casual registrado (${result.appointment.service}).`];
+  const parts = [`Listo. Cliente casual registrado ($${result.appointment.serviceCost}).`];
   if (result.shifted.length > 0) {
     const n = result.shifted.length;
     parts.push(
@@ -291,40 +273,47 @@ function spokenHour(hour: number): string {
 }
 
 /** Keeps only valid, well-formed values so a bad LLM answer never reaches the domain. */
-function sanitize(draft: BookingDraft, services: ServiceDto[]): BookingDraft {
+function sanitize(draft: BookingDraft): BookingDraft {
   const result: BookingDraft = {};
+  const price = toPrice(draft.price);
   if (draft.walkIn === true) {
-    // A walk-in only needs the service: name, date and time are never taken from the user.
+    // A walk-in only needs the price: name, date and time are never taken from the user.
     result.walkIn = true;
-    const service = services.find((s) => s.name === draft.service);
-    if (service) result.service = service.name;
+    if (price !== undefined) result.price = price;
     return result;
   }
   const client = typeof draft.client === 'string' ? draft.client.trim() : '';
   if (client) result.client = client;
   if (typeof draft.date === 'string' && ISO_DATE.test(draft.date)) result.date = draft.date;
   if (typeof draft.time === 'string' && TIME_24H.test(draft.time)) result.time = draft.time;
-  const service = services.find((s) => s.name === draft.service);
-  if (service) result.service = service.name;
+  if (price !== undefined) result.price = price;
   return result;
+}
+
+/** Accepts a number or a numeric string (the LLM may send either); undefined when not a valid price. */
+function toPrice(value: unknown): number | undefined {
+  const price = typeof value === 'string' && value.trim() ? Number(value.replace(/[$\s.,]/g, '')) : value;
+  return typeof price === 'number' && Number.isFinite(price) && price >= 0 ? price : undefined;
 }
 
 /** `YYYY-MM-DD` in server local time, the same clock `ScheduleAppointmentUseCase` uses. */
 
 function pickDefined(args: Record<string, unknown>): BookingDraft {
   const out: BookingDraft = {};
-  for (const key of ['client', 'date', 'time', 'service'] as const) {
+  for (const key of ['client', 'date', 'time'] as const) {
     const value = args[key];
     if (typeof value === 'string' && value.trim()) out[key] = value;
   }
+  const price = toPrice(args['price']);
+  if (price !== undefined) out.price = price;
   return out;
 }
 
 function nextStep(draft: BookingDraft): BookingStep | null {
-  if (draft.walkIn) return draft.service ? null : 'service';
+  if (draft.walkIn) return draft.price === undefined ? 'price' : null;
   if (!draft.client) return 'client';
   if (!draft.date) return 'date';
   if (!draft.time) return 'time';
-  if (!draft.service) return 'service';
+  if (draft.price === undefined) return 'price';
   return null;
 }

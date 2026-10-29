@@ -1,6 +1,5 @@
 export interface ScheduleAppointmentRequest {
   client: string;
-  service: string;
   date: string;
   time: string;
   serviceCost?: number;

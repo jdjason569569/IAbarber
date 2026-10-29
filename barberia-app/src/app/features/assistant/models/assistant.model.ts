@@ -2,8 +2,9 @@ export interface BookingDraft {
   client?: string;
   date?: string;
   time?: string;
-  service?: string;
-  /** Client served right now without a booking: the assistant only asks for the service. */
+  /** Price of the service (pesos). */
+  price?: number;
+  /** Client served right now without a booking: the assistant only asks for the price. */
   walkIn?: boolean;
 }
 

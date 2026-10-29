@@ -9,7 +9,6 @@ import type { AppointmentRepository } from '../../domain/ports/appointment.repos
 interface AppointmentRow {
   id: number;
   client: string;
-  service: string;
   date: string;
   time: string;
   service_cost: number;
@@ -59,7 +58,6 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
   async save(appointment: Appointment): Promise<Appointment> {
     const row = {
       client: appointment.client,
-      service: appointment.service,
       date: appointment.date,
       time: appointment.time,
       service_cost: appointment.serviceCost,
@@ -88,7 +86,6 @@ function toEntity(row: AppointmentRow): Appointment {
   return Appointment.restore({
     id: row.id,
     client: row.client,
-    service: row.service,
     date: row.date,
     time: row.time.slice(0, 5),
     serviceCost: Number(row.service_cost),

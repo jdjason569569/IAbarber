@@ -10,12 +10,6 @@ export interface StatisticsTotal {
   value: string;
 }
 
-export interface TopService {
-  name: string;
-  count: number;
-}
-
 export interface StatisticsSummary {
   totals: StatisticsTotal[];
-  topServices: TopService[];
 }

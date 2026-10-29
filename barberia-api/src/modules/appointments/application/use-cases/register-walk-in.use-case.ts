@@ -39,7 +39,6 @@ export class RegisterWalkInUseCase {
     const start = now.getHours() * 60 + now.getMinutes();
     const walkIn = Appointment.create({
       client: WALK_IN_CLIENT,
-      service: input.service,
       date,
       time: toTime(start),
       serviceCost: input.serviceCost,

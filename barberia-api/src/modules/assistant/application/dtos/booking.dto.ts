@@ -6,13 +6,13 @@ export interface BookingDraft {
   date?: string;
   /** 24h time HH:mm. */
   time?: string;
-  /** Exact service name from the catalog. */
-  service?: string;
-  /** Client served right now without a booking: only the service is asked, the rest is filled in. */
+  /** Price of the service, as the barber says it (pesos). */
+  price?: number;
+  /** Client served right now without a booking: only the price is asked, the rest is filled in. */
   walkIn?: boolean;
 }
 
-export type BookingStep = 'client' | 'date' | 'time' | 'service';
+export type BookingStep = 'client' | 'date' | 'time' | 'price';
 
 export interface BookingTurnInput {
   /** What the user just said; empty on the first turn. */

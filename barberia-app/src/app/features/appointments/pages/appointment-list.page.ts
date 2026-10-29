@@ -106,7 +106,7 @@ export class AppointmentListPage {
     this.selectedDate.set(toLocalIsoDate(date));
   }
 
-  /** "Cliente casual" button: registers a client served right now; the assistant only asks for the service. */
+  /** "Cliente casual" button: registers a client served right now; the assistant only asks for the price. */
   protected onWalkInClick(): void {
     if (this.dialogActive()) {
       return;

@@ -5,40 +5,5 @@
 </ion-header>
 
 <ion-content>
-  <ion-list-header>{{ 'settings.services' | t }}</ion-list-header>
-  <ion-list>
-    @for (service of services(); track service.id) {
-      <ion-item>
-        <ion-label>{{ service.name }}</ion-label>
-        <ion-note slot="end">${{ service.price }}</ion-note>
-        <ion-button slot="end" fill="clear" color="danger" [attr.aria-label]="'settings.deleteAria' | t" (click)="confirmRemove(service)">
-          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-        </ion-button>
-      </ion-item>
-    } @empty {
-      <ion-item lines="none">
-        <ion-label class="ion-text-center ion-text-wrap">
-          @if (loading()) { {{ 'settings.loading' | t }} } @else { {{ 'settings.servicesEmpty' | t }} }
-        </ion-label>
-      </ion-item>
-    }
-  </ion-list>
-
-  <ion-list-header>{{ 'settings.addService' | t }}</ion-list-header>
-  <form class="add-form" [formGroup]="form" (ngSubmit)="add()">
-    <ion-item>
-      <ion-input [label]="'settings.name' | t" labelPlacement="stacked" formControlName="name" maxlength="60" [placeholder]="'settings.namePlaceholder' | t"></ion-input>
-    </ion-item>
-    <ion-item>
-      <ion-input [label]="'settings.price' | t" labelPlacement="stacked" type="number" inputmode="decimal" formControlName="price" [placeholder]="'settings.pricePlaceholder' | t"></ion-input>
-    </ion-item>
-    @if (error()) {
-      <ion-text color="danger"><p class="ion-padding-horizontal">{{ error() }}</p></ion-text>
-    }
-    <div class="ion-padding">
-      <ion-button expand="block" type="submit" [disabled]="form.invalid || saving()">{{ 'settings.addService' | t }}</ion-button>
-    </div>
-  </form>
-
   <app-day-blocks-editor />
 </ion-content>

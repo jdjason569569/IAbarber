@@ -703,3 +703,30 @@ npx ionic capacitor add android   # añadir plataforma Android
 - Las citas canceladas muestran **Reactivar** y las completadas muestran **Deshacer**. Las dos piden confirmación y dejan la cita otra vez activa. Sirven para cuando el barbero toca la cita equivocada.
 - Si al reactivar ese horario ya está ocupado o bloqueado, se muestra un aviso específico (`appointments.reactivate.taken`).
 - Las cuatro acciones de cada cita (`cancel`, `reactivate`, `complete`, `uncomplete`) comparten `confirmAction`/`runAction`. Sus textos están en `appointments.<acción>.*`.
+
+---
+
+## 2026-10-28 · Spinner global al enviar peticiones
+
+**Qué se hizo**
+- Overlay global (`core/loading/`): mientras haya una petición al API en curso, la pantalla se oscurece, bloquea los toques y muestra solo la animación del spinner, sin texto. `loading.sending` queda únicamente como `aria-label`.
+- `loadingInterceptor` (registrado en `AppModule`) cuenta las peticiones pendientes en `LoadingService`. Se cierra también si hay error, timeout o cancelación. Si hay peticiones en paralelo, espera a que termine la última.
+- Los turnos del asistente para agendar (`POST /assistant/booking`) usan `SKIP_LOADING`, porque ya muestran su propia barra de progreso.
+- El overlay aparece solo si la petición tarda más de 250 ms, para que no parpadee con las respuestas rápidas.
+
+**Pendiente / notas**
+- El pull-to-refresh también muestra el overlay. Si sobra, marcar esas llamadas con `SKIP_LOADING`.
+
+---
+
+## 2026-10-29 · Se quitan los servicios: el asistente pregunta el precio
+
+**Qué se hizo**
+- Configuración: se quitaron la lista de servicios y el formulario para agregarlos. Solo queda el editor de disponibilidad. Se borraron `ShopServiceService` y `ShopService`.
+- Citas: ya no se muestra el nombre del servicio, solo el precio (etiqueta "Precio") y el total. Se quitó `service` de `Appointment` y del DTO.
+- Asistente: `BookingDraft.service` pasa a ser `price`. El asistente y "Cliente casual" preguntan cuánto cuesta el servicio.
+- Estadísticas: se quitó la sección "Servicios más pedidos".
+- i18n: se borraron los textos de servicios que ya no se usan.
+
+**Pendiente / notas**
+- Requiere el API nuevo desplegado (ver `barberia-api/CAMBIOS.md`).

@@ -9,6 +9,9 @@ export const MESSAGES_ES = {
   'tabs.settings': 'Configuración',
   'app.version': 'Versión {version}',
 
+  // Global loading overlay (every API request except assistant booking turns)
+  'loading.sending': 'Enviando…',
+
   // Appointments
   'appointments.title': 'Citas',
   'appointments.loading': 'Cargando...',
@@ -27,7 +30,7 @@ export const MESSAGES_ES = {
   'appointments.calendar.nextMonth': 'Mes siguiente',
   'appointments.calendar.hasAppointments': 'con citas',
   'appointments.loadError': 'No se pudieron cargar las citas',
-  'appointments.service': 'Servicio',
+  'appointments.service': 'Precio',
   'appointments.total': 'Total',
   'appointments.micLabel': 'Crear cita por voz',
   'appointments.keyboardLabel': 'Crear cita escribiendo',
@@ -95,7 +98,6 @@ export const MESSAGES_ES = {
   'statistics.title': 'Estadísticas',
   'statistics.loading': 'Cargando...',
   'statistics.loadError': 'No se pudieron cargar las estadísticas',
-  'statistics.topServices': 'Servicios más pedidos',
   'statistics.totals.appointmentsThisMonth': 'Citas este mes',
   'statistics.totals.revenueThisMonth': 'Ingresos este mes',
   'statistics.totals.newClients': 'Clientes nuevos',
@@ -103,23 +105,7 @@ export const MESSAGES_ES = {
 
   // Settings
   'settings.title': 'Configuración',
-  'settings.services': 'Servicios',
-  'settings.servicesEmpty': 'Aún no hay servicios. Agrega el primero abajo.',
   'settings.loading': 'Cargando...',
-  'settings.loadError': 'No se pudieron cargar los servicios',
-  'settings.addService': 'Agregar servicio',
-  'settings.name': 'Nombre',
-  'settings.namePlaceholder': 'Corte clásico',
-  'settings.price': 'Precio',
-  'settings.pricePlaceholder': '15',
-  'settings.deleteAria': 'Eliminar servicio',
-  'settings.deleteTitle': 'Eliminar servicio',
-  'settings.deleteMessage': '¿Eliminar "{name}"? Las citas existentes conservan sus datos.',
-  'settings.cancel': 'Cancelar',
-  'settings.delete': 'Eliminar',
-  'settings.errors.duplicate': 'Ese servicio ya existe.',
-  'settings.errors.invalid': 'Revisa el nombre y el precio.',
-  'settings.errors.notFound': 'El servicio ya no existe.',
   'settings.errors.server': 'No se pudo conectar con el servidor.',
   'settings.blocks.title': 'Disponibilidad',
   'settings.blocks.hint': 'Hoy, {date}: marca de qué hora a qué hora no estarás disponible.',

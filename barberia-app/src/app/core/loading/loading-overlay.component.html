@@ -1,0 +1,7 @@
+@if (visible()) {
+  <div class="loading-overlay" role="status" aria-live="polite" [attr.aria-label]="'loading.sending' | t">
+    <div class="loading-overlay__box">
+      <ion-spinner name="crescent" color="primary"></ion-spinner>
+    </div>
+  </div>
+}

@@ -4,7 +4,6 @@ import type { Appointment } from '../../domain/entities/appointment.entity.js';
 export interface AppointmentDto {
   id: number;
   client: string;
-  service: string;
   date: string;
   time: string;
   serviceCost: number;
@@ -16,7 +15,6 @@ export interface AppointmentDto {
 
 export interface ScheduleAppointmentInput {
   client: string;
-  service: string;
   date: string;
   time: string;
   serviceCost: number;
@@ -24,7 +22,6 @@ export interface ScheduleAppointmentInput {
 }
 
 export interface WalkInInput {
-  service: string;
   serviceCost: number;
 }
 
@@ -42,7 +39,6 @@ export function toAppointmentDto(a: Appointment): AppointmentDto {
   return {
     id: a.id,
     client: a.client,
-    service: a.service,
     date: a.date,
     time: a.time,
     serviceCost: a.serviceCost,

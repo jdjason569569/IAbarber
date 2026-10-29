@@ -36,7 +36,6 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
     const stored = Appointment.restore({
       id: nextId,
       client: appointment.client,
-      service: appointment.service,
       date: appointment.date,
       time: appointment.time,
       serviceCost: appointment.serviceCost,

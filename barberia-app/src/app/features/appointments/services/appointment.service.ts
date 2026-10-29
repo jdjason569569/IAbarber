@@ -9,7 +9,6 @@ import { AppointmentExtra } from '../models/appointment-extra.model';
 interface AppointmentDto {
   id: number;
   client: string;
-  service: string;
   date: string;
   time: string;
   serviceCost: number;

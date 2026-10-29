@@ -7,8 +7,6 @@ import { AppointmentConflictError } from '../../../appointments/domain/errors/ap
 import { BarberUnavailableError } from '../../../appointments/domain/errors/barber-unavailable.error.js';
 import { InvalidAppointmentError } from '../../../appointments/domain/errors/invalid-appointment.error.js';
 import { AppointmentNotFoundError } from '../../../appointments/domain/errors/appointment-not-found.error.js';
-import type { ServiceDto } from '../../../services/application/dtos/service.dto.js';
-import { ListServicesUseCase } from '../../../services/application/use-cases/list-services.use-case.js';
 import { LLM_PORT } from '../../domain/ports/llm.port.js';
 import type { LlmPort, LlmTool, LlmToolCall } from '../../domain/ports/llm.port.js';
 import type { AssistantCommandInput, AssistantResult } from '../dtos/assistant.dto.js';
@@ -22,11 +20,11 @@ const TOOLS: LlmTool[] = [
       type: 'object',
       properties: {
         client: { type: 'string', description: 'Client full name' },
-        service: { type: 'string', description: 'Exact service name from the catalog' },
+        price: { type: 'number', description: 'Price of the service in pesos, e.g. 15000' },
         date: { type: 'string', description: 'ISO date YYYY-MM-DD' },
         time: { type: 'string', description: '24h time HH:mm' },
       },
-      required: ['client', 'service', 'date', 'time'],
+      required: ['client', 'price', 'date', 'time'],
     },
   },
   {
@@ -60,7 +58,6 @@ export class HandleVoiceCommandUseCase {
     private readonly listAppointments: ListAppointmentsUseCase,
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
     private readonly setCancelled: SetAppointmentCancelledUseCase,
-    private readonly listServices: ListServicesUseCase,
   ) {}
 
   async execute(input: AssistantCommandInput): Promise<AssistantResult> {
@@ -73,9 +70,8 @@ export class HandleVoiceCommandUseCase {
     }
 
     const existing = await this.listAppointments.execute();
-    const services = await this.listServices.execute();
     const response = await this.llm.complete({
-      system: this.buildSystemPrompt(existing, services),
+      system: this.buildSystemPrompt(existing),
       user: text,
       tools: TOOLS,
     });
@@ -84,30 +80,26 @@ export class HandleVoiceCommandUseCase {
     if (!call) {
       return { reply: response.text ?? 'No he entendido el comando.', action: 'none' };
     }
-    return this.run(call, existing, services);
+    return this.run(call, existing);
   }
 
   private async run(
     call: LlmToolCall,
     existing: AppointmentDto[],
-    services: ServiceDto[],
   ): Promise<AssistantResult> {
     const args = call.arguments;
     try {
       switch (call.name) {
         case 'create_appointment': {
-          const service = services.find(
-            (s) => s.name.toLowerCase() === asString(args['service'], '').toLowerCase(),
-          );
-          if (!service) {
-            return { reply: `No conozco ese servicio. Disponibles: ${services.map((s) => s.name).join(', ')}.`, action: 'none' };
+          const price = Number(args['price']);
+          if (!Number.isFinite(price) || price < 0) {
+            return { reply: '¿Cuánto cuesta el servicio?', action: 'none' };
           }
           const appointment = await this.scheduleAppointment.execute({
             client: asString(args['client'], ''),
-            service: service.name,
             date: asString(args['date'], ''),
             time: asString(args['time'], ''),
-            serviceCost: service.price,
+            serviceCost: price,
             extras: [],
           });
           return {
@@ -166,16 +158,16 @@ export class HandleVoiceCommandUseCase {
     }
   }
 
-  private buildSystemPrompt(existing: AppointmentDto[], services: ServiceDto[]): string {
+  private buildSystemPrompt(existing: AppointmentDto[]): string {
     const today = localIsoDate();
     const active = existing
       .filter((a) => !a.cancelled)
-      .map((a) => `#${a.id} ${a.client} ${a.date} ${a.time} (${a.service})`)
+      .map((a) => `#${a.id} ${a.client} ${a.date} ${a.time} ($${a.serviceCost})`)
       .join('\n');
     return [
       'You are the voice assistant of a barbershop. The user speaks Spanish. Always call exactly one tool when the request matches one; otherwise answer briefly in Spanish.',
       `Today is ${today}. Resolve relative dates ("mañana", "el viernes") to ISO dates.`,
-      `Services: ${services.map((s) => s.name).join(', ') || '(none configured)'}.`,
+      "Prices are numbers in pesos: 'quince mil' -> 15000.",
       `Active appointments:\n${active || '(none)'}`,
     ].join('\n');
   }

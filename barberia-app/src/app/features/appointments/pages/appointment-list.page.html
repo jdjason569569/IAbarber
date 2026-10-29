@@ -37,7 +37,6 @@
       <ion-item [class.cancelled]="appointment.cancelled">
         <ion-label>
           <h2>{{ appointment.clientName }}</h2>
-          <p>{{ appointment.service }}</p>
           <p>{{ appointment.date }} · {{ appointment.time }}</p>
           <p>{{ 'appointments.service' | t }}: ${{ appointment.serviceCost }}</p>
           @for (extra of appointment.extras; track extra.name) {

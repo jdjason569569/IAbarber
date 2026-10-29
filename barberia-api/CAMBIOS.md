@@ -294,3 +294,18 @@ This file records, in chronological order, every change made to the backend.
 
 **What was done**
 - `SetAppointmentCancelledUseCase`: reactivating a walk-in skips the block and slot checks, since walk-ins hold no slot. The app now offers undo for cancel (`cancelled: false`) and complete (`completed: false`) with the existing endpoints.
+
+---
+
+## 2026-10-29 · Se quitan los servicios: el asistente pregunta el precio
+
+**Qué se hizo**
+- Se eliminó el módulo `services` completo (catálogo, endpoints `/services`, use cases y repositorios).
+- El asistente ya no pregunta qué servicio quiere el cliente. Pregunta **"¿Cuánto cuesta el servicio?"** y el LLM convierte lo que dice el barbero en un número ("quince mil" → 15000). `BookingDraft.service` pasa a ser `price` y el paso `service` pasa a ser `price`. Cliente casual solo pide el precio.
+- El precio se guarda en `serviceCost`. Se quitó `service` de `Appointment`, de los DTOs, del request `POST /appointments`, del walk-in y de los repositorios (Supabase y memoria).
+- El comando de voz (`/assistant/command`) recibe `price` en vez de `service`.
+- Estadísticas: se quitó `topServices`.
+- `docs/schema.sql`: se quitó `service` y la tabla `services`, y se agregó una migración que hace `drop column service` y `drop table services`.
+
+**Pendiente / notas**
+- Primero hay que desplegar este API en Render y **después** correr la migración. Si se hace al revés, el API viejo deja de poder crear citas.

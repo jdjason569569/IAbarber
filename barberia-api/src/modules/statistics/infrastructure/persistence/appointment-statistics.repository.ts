@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ListAppointmentsUseCase } from '../../../appointments/application/use-cases/list-appointments.use-case.js';
 import type { AppointmentDto } from '../../../appointments/application/dtos/appointment.dto.js';
-import type {
-  StatisticsSummary,
-  TopService,
-} from '../../domain/entities/statistics-summary.js';
+import type { StatisticsSummary } from '../../domain/entities/statistics-summary.js';
 import type { StatisticsRepository } from '../../domain/ports/statistics.repository.js';
 import { localIsoDate } from '../../../../shared/utils/local-date.js';
 
@@ -39,7 +36,6 @@ export class AppointmentStatisticsRepository implements StatisticsRepository {
           value: `${thisMonth.length ? Math.round((cancelled / thisMonth.length) * 100) : 0}%`,
         },
       ],
-      topServices: topServices(active),
     };
   }
 }
@@ -54,12 +50,4 @@ function sum(items: AppointmentDto[]): number {
 
 function money(value: number): string {
   return `$${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
-}
-
-function topServices(items: AppointmentDto[]): TopService[] {
-  const counts = new Map<string, number>();
-  for (const a of items) counts.set(a.service, (counts.get(a.service) ?? 0) + 1);
-  return [...counts.entries()]
-    .map(([name, count]) => ({ name, count }))
-    .sort((x, y) => y.count - x.count);
 }

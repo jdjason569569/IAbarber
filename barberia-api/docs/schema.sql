@@ -2,7 +2,6 @@
 create table if not exists appointments (
   id           bigint generated always as identity primary key,
   client       text not null,
-  service      text not null,
   date         date not null,
   time         time not null,
   service_cost numeric(10, 2) not null default 0,
@@ -19,15 +18,6 @@ alter table appointments enable row level security;
 create unique index if not exists appointments_active_slot_unique
   on appointments (date, time)
   where not cancelled;
-
--- Services offered by the shop (managed from the app's Settings tab).
-create table if not exists services (
-  id    bigint generated always as identity primary key,
-  name  text not null check (length(trim(name)) > 0),
-  price numeric(10, 2) not null check (price >= 0)
-);
-create unique index if not exists services_name_unique on services (lower(name));
-alter table services enable row level security;
 
 -- Migration: the `barber` column was removed (the shop has a single barber).
 -- Run it once on a database created before this change; it is safe to repeat.
@@ -88,3 +78,8 @@ create table if not exists unavailable_slots (
 );
 create index if not exists unavailable_slots_date on unavailable_slots (date);
 alter table unavailable_slots enable row level security;
+
+-- Migration: the services catalog was removed; the barber says the price of each appointment
+-- (stored in service_cost). Run it once after deploying the API without services; it is safe to repeat.
+alter table appointments drop column if exists service;
+drop table if exists services;

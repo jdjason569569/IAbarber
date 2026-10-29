@@ -7,8 +7,7 @@ export interface Appointment {
   date: string;
   /** Appointment time, 24h format (HH:mm). */
   time: string;
-  service: string;
-  /** Base price of the service. */
+  /** Price of the service, as the barber said it to the assistant. */
   serviceCost: number;
   /** Additional items charged on top of the service. */
   extras: AppointmentExtra[];

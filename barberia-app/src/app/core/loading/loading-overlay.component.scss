@@ -1,0 +1,34 @@
+/* Dims the whole app (tabs included) and blocks taps while a request is in flight. */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  animation: loading-overlay-in 180ms ease-out;
+}
+
+.loading-overlay__box {
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--ion-background-color, #fff);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes loading-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-overlay {
+    animation: none;
+  }
+}

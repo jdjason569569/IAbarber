@@ -8,7 +8,6 @@ export interface AppointmentExtra {
 export interface AppointmentProps {
   id: number;
   client: string;
-  service: string;
   date: string;
   time: string;
   serviceCost: number;
@@ -52,9 +51,6 @@ export class Appointment {
     if (!props.client.trim()) {
       throw new InvalidAppointmentError('Client name is required');
     }
-    if (!props.service.trim()) {
-      throw new InvalidAppointmentError('Service is required');
-    }
     if (props.serviceCost < 0) {
       throw new InvalidAppointmentError('Service cost cannot be negative');
     }
@@ -91,7 +87,6 @@ export class Appointment {
 
   get id(): number { return this.props.id; }
   get client(): string { return this.props.client; }
-  get service(): string { return this.props.service; }
   get date(): string { return this.props.date; }
   get time(): string { return this.props.time; }
   get serviceCost(): number { return this.props.serviceCost; }

@@ -20,16 +20,6 @@
         }
       </ion-row>
     </ion-grid>
-
-    <ion-list-header>{{ 'statistics.topServices' | t }}</ion-list-header>
-    <ion-list>
-      @for (service of stats.topServices; track service.name) {
-        <ion-item>
-          <ion-label>{{ service.name }}</ion-label>
-          <ion-note slot="end">{{ service.count }}</ion-note>
-        </ion-item>
-      }
-    </ion-list>
   } @else {
     <p class="ion-padding ion-text-center">
       @if (loading()) { {{ 'statistics.loading' | t }} } @else { {{ error() }} }
