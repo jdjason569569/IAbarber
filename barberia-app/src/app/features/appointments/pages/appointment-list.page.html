@@ -49,6 +49,9 @@
             <ion-badge color="tertiary">{{ 'appointments.walkIn.badge' | t }}</ion-badge>
           }
           <ion-badge [color]="stateColor(appointment)">{{ stateKey(appointment) | t }}</ion-badge>
+          <ion-button size="small" fill="outline" (click)="openEdit(appointment)">
+            {{ 'appointments.edit.button' | t }}
+          </ion-button>
           @if (appointment.cancelled) {
             <ion-button size="small" fill="outline" color="medium" (click)="confirmAction('reactivate', appointment)">
               {{ 'appointments.reactivate.button' | t }}

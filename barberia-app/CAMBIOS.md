@@ -730,3 +730,16 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Pendiente / notas**
 - Requiere el API nuevo desplegado (ver `barberia-api/CAMBIOS.md`).
+
+---
+
+## 2026-10-29 · Botón "Editar" en cada cita
+
+**Qué se hizo**
+- Cada cita, en cualquier estado y también las de cliente casual, tiene un botón **Editar**. Abre una alerta con el nombre del cliente y el precio, para corregir lo que el barbero dijo mal.
+- Si el nombre está vacío o el precio no es válido, la alerta sigue abierta y se muestra un aviso. Si no cambió nada, no se envía nada al API.
+- Los avisos de error de la lista pasan a usar `showError`, que comparten las acciones de cada cita.
+- `AppointmentService.update` y textos nuevos `appointments.edit.*`.
+
+**Pendiente / notas**
+- Requiere el API con `PATCH /appointments/:id` desplegado.

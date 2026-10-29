@@ -36,6 +36,13 @@ export class AppointmentService {
       .pipe(map(toAppointment));
   }
 
+  /** Corrects the client name and the price. */
+  update(id: number, clientName: string, serviceCost: number): Observable<Appointment> {
+    return this.http
+      .patch<AppointmentDto>(`${this.url}/${id}`, { client: clientName, serviceCost })
+      .pipe(map(toAppointment));
+  }
+
   /** Marks (true) that the service of an appointment was done. */
   setCompleted(id: number, completed: boolean): Observable<Appointment> {
     return this.http

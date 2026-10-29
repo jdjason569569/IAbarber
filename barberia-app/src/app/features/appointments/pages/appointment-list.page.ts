@@ -426,6 +426,68 @@ export class AppointmentListPage {
     return 'assistant.errors.generic';
   }
 
+  /** Lets the barber fix the client name or the price (said wrong to the assistant, or a walk-in's name). */
+  protected async openEdit(appointment: Appointment): Promise<void> {
+    const alert = await this.alertController.create({
+      header: this.i18n.t('appointments.edit.title'),
+      inputs: [
+        {
+          name: 'client',
+          type: 'text',
+          value: appointment.clientName,
+          placeholder: this.i18n.t('appointments.edit.client'),
+          attributes: { 'aria-label': this.i18n.t('appointments.edit.client') },
+        },
+        {
+          name: 'price',
+          type: 'number',
+          min: 0,
+          value: appointment.serviceCost,
+          placeholder: this.i18n.t('appointments.edit.price'),
+          attributes: { 'aria-label': this.i18n.t('appointments.edit.price'), inputmode: 'decimal' },
+        },
+      ],
+      buttons: [
+        { text: this.i18n.t('appointments.edit.cancel'), role: 'cancel' },
+        {
+          text: this.i18n.t('appointments.edit.save'),
+          handler: (values: { client?: string; price?: string }) => {
+            const client = (values.client ?? '').trim();
+            const price = Number(values.price);
+            if (!client || values.price === '' || !Number.isFinite(price) || price < 0) {
+              void this.showError('appointments.edit.invalid');
+              // Keeps the alert open so the barber can fix the value.
+              return false;
+            }
+            this.save(appointment, client, price);
+            return true;
+          },
+        },
+      ],
+    });
+    await alert.present();
+  }
+
+  private save(appointment: Appointment, client: string, price: number): void {
+    if (client === appointment.clientName && price === appointment.serviceCost) {
+      return;
+    }
+    this.appointmentService.update(appointment.id, client, price).subscribe({
+      next: (updated) =>
+        this.appointments.update((items) => items.map((a) => (a.id === updated.id ? updated : a))),
+      error: () => void this.showError('appointments.edit.error'),
+    });
+  }
+
+  private async showError(key: MessageKey): Promise<void> {
+    const toast = await this.toastController.create({
+      message: this.i18n.t(key),
+      duration: 3000,
+      color: 'danger',
+    });
+    await toast.present();
+  }
+
   /** Asks for confirmation before changing the state of an appointment (each action has its own texts). */
   protected async confirmAction(action: RowAction, appointment: Appointment): Promise<void> {
     const alert = await this.alertController.create({
@@ -458,16 +520,11 @@ export class AppointmentListPage {
     request().subscribe({
       next: (updated) =>
         this.appointments.update((items) => items.map((a) => (a.id === updated.id ? updated : a))),
-      error: async (error: unknown) => {
+      error: (error: unknown) => {
         // Reactivating fails with 409/400 when the slot was taken or blocked meanwhile.
         const slotLost =
           action === 'reactivate' && error instanceof HttpErrorResponse && [400, 409].includes(error.status);
-        const toast = await this.toastController.create({
-          message: this.i18n.t(slotLost ? 'appointments.reactivate.taken' : `appointments.${action}.error`),
-          duration: 3000,
-          color: 'danger',
-        });
-        await toast.present();
+        void this.showError(slotLost ? 'appointments.reactivate.taken' : `appointments.${action}.error`);
       },
     });
   }
