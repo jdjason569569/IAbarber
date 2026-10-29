@@ -274,3 +274,23 @@ This file records, in chronological order, every change made to the backend.
 **Pending / notes**
 - Run the new migration in Supabase (`walk_in` column and the updated `appointments_active_slot_unique` index, in `docs/schema.sql`). Until then, every save fails because the column does not exist.
 - Clients whose booking moved are not notified (the app does not store phone numbers).
+
+---
+
+## 2026-10-28 · "Completed" appointments
+
+**What was done**
+- New `completed` flag on `Appointment` (column `completed`): the barber confirms the service was done. `withCompleted` rejects cancelled appointments, and `withCancelled(true)` rejects completed ones (`InvalidAppointmentError` → 400).
+- New `SetAppointmentCompletedUseCase` and `PATCH /appointments/:id/completed` with body `{ completed: boolean }`, same pattern as `/cancelled`.
+- Statistics: monthly revenue only adds completed appointments. "Appointments this month" and top services are unchanged.
+
+**Pending / notes**
+- Run the `completed` migration in Supabase (`docs/schema.sql`) before deploying. Until then, every save fails.
+- Revenue for the current month drops to $0 until appointments are marked completed. Older appointments are not completed automatically.
+
+---
+
+## 2026-10-28 · Reactivating walk-ins
+
+**What was done**
+- `SetAppointmentCancelledUseCase`: reactivating a walk-in skips the block and slot checks, since walk-ins hold no slot. The app now offers undo for cancel (`cancelled: false`) and complete (`completed: false`) with the existing endpoints.

@@ -11,6 +11,7 @@ export interface AppointmentDto {
   extras: AppointmentExtra[];
   cancelled: boolean;
   walkIn: boolean;
+  completed: boolean;
 }
 
 export interface ScheduleAppointmentInput {
@@ -48,5 +49,6 @@ export function toAppointmentDto(a: Appointment): AppointmentDto {
     extras: a.extras,
     cancelled: a.cancelled,
     walkIn: a.walkIn,
+    completed: a.completed,
   };
 }

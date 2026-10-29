@@ -62,6 +62,10 @@ create unique index appointments_active_slot_unique
   on appointments (date, time)
   where not cancelled and not walk_in;
 
+-- Migration: `completed` = the barber confirmed the service was done. Monthly revenue only
+-- counts completed appointments. Run once; it is safe to repeat.
+alter table appointments add column if not exists completed boolean not null default false;
+
 -- Weekly availability (managed from the app's Settings tab). One row per configured weekday;
 -- weekdays without a row use the default hours, 07:00 to midnight. close_hour 24 = midnight.
 create table if not exists business_hours (

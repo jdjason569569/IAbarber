@@ -32,7 +32,7 @@ export class AppointmentStatisticsRepository implements StatisticsRepository {
     return {
       totals: [
         { key: 'appointmentsThisMonth', value: String(active.length) },
-        { key: 'revenueThisMonth', value: money(sum(active)) },
+        { key: 'revenueThisMonth', value: money(sum(active.filter((a) => a.completed))) },
         { key: 'newClients', value: String(newClients) },
         {
           key: 'cancellationRate',

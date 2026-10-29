@@ -43,6 +43,7 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
       extras: appointment.extras,
       cancelled: appointment.cancelled,
       walkIn: appointment.walkIn,
+      completed: appointment.completed,
     });
     this.items.push(stored);
     return stored;

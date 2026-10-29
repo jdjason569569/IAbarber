@@ -17,6 +17,8 @@ export interface AppointmentProps {
   cancelled: boolean;
   /** true = client served without a booking (walk-in); it does not hold a slot of the agenda. */
   walkIn: boolean;
+  /** true = the barber confirmed the service was done. Only active appointments can be completed. */
+  completed: boolean;
 }
 
 /** Id assigned to an appointment that has not been persisted yet. */
@@ -46,7 +48,7 @@ function isValidDate(value: string): boolean {
 export class Appointment {
   private constructor(private readonly props: AppointmentProps) {}
 
-  static create(props: Omit<AppointmentProps, 'id' | 'cancelled' | 'walkIn'> & { walkIn?: boolean }): Appointment {
+  static create(props: Omit<AppointmentProps, 'id' | 'cancelled' | 'walkIn' | 'completed'> & { walkIn?: boolean }): Appointment {
     if (!props.client.trim()) {
       throw new InvalidAppointmentError('Client name is required');
     }
@@ -62,7 +64,7 @@ export class Appointment {
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(props.time)) {
       throw new InvalidAppointmentError(`Invalid time: ${props.time}`);
     }
-    return new Appointment({ ...props, id: UNSAVED_APPOINTMENT_ID, cancelled: false, walkIn: props.walkIn ?? false });
+    return new Appointment({ ...props, id: UNSAVED_APPOINTMENT_ID, cancelled: false, walkIn: props.walkIn ?? false, completed: false });
   }
 
   static restore(props: AppointmentProps): Appointment {
@@ -70,7 +72,17 @@ export class Appointment {
   }
 
   withCancelled(cancelled: boolean): Appointment {
+    if (cancelled && this.props.completed) {
+      throw new InvalidAppointmentError('A completed appointment cannot be cancelled');
+    }
     return new Appointment({ ...this.props, cancelled });
+  }
+
+  withCompleted(completed: boolean): Appointment {
+    if (completed && this.props.cancelled) {
+      throw new InvalidAppointmentError('A cancelled appointment cannot be completed');
+    }
+    return new Appointment({ ...this.props, completed });
   }
 
   withTime(time: string): Appointment {
@@ -86,6 +98,7 @@ export class Appointment {
   get extras(): AppointmentExtra[] { return this.props.extras; }
   get cancelled(): boolean { return this.props.cancelled; }
   get walkIn(): boolean { return this.props.walkIn; }
+  get completed(): boolean { return this.props.completed; }
 
   get isActive(): boolean { return !this.props.cancelled; }
 

@@ -26,7 +26,8 @@ export class SetAppointmentCancelledUseCase {
     }
     const updated = appointment.withCancelled(cancelled);
     // Reactivating takes the slot again, so it must still be free and not blocked by the barber.
-    if (updated.isActive) {
+    // Walk-ins hold no slot, so they always come back.
+    if (updated.isActive && !updated.walkIn) {
       if ((await this.dayBlocks.execute(updated.date)).covering(updated.time)) {
         throw new BarberUnavailableError(`The barber is not available on ${updated.date} at ${updated.time}`);
       }

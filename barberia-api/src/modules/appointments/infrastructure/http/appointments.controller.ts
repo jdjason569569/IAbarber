@@ -13,12 +13,17 @@ import {
 import { ListAppointmentsUseCase } from '../../application/use-cases/list-appointments.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../application/use-cases/schedule-appointment.use-case.js';
 import { SetAppointmentCancelledUseCase } from '../../application/use-cases/set-appointment-cancelled.use-case.js';
+import { SetAppointmentCompletedUseCase } from '../../application/use-cases/set-appointment-completed.use-case.js';
 import { AppointmentConflictError } from '../../domain/errors/appointment-conflict.error.js';
 import { BarberUnavailableError } from '../../domain/errors/barber-unavailable.error.js';
 import { OutsideBusinessHoursError } from '../../domain/errors/outside-business-hours.error.js';
 import { AppointmentNotFoundError } from '../../domain/errors/appointment-not-found.error.js';
 import { InvalidAppointmentError } from '../../domain/errors/invalid-appointment.error.js';
-import type { ScheduleAppointmentRequest, SetCancelledRequest } from './schedule-appointment.request.js';
+import type {
+  ScheduleAppointmentRequest,
+  SetCancelledRequest,
+  SetCompletedRequest,
+} from './schedule-appointment.request.js';
 
 @Controller('appointments')
 export class AppointmentsController {
@@ -26,6 +31,7 @@ export class AppointmentsController {
     private readonly listAppointments: ListAppointmentsUseCase,
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
     private readonly setCancelled: SetAppointmentCancelledUseCase,
+    private readonly setCompleted: SetAppointmentCompletedUseCase,
   ) {}
 
   @Get()
@@ -58,6 +64,18 @@ export class AppointmentsController {
     }
     try {
       return await this.setCancelled.execute(id, body.cancelled);
+    } catch (error) {
+      throw this.toHttpError(error);
+    }
+  }
+
+  @Patch(':id/completed')
+  async changeCompleted(@Param('id', ParseIntPipe) id: number, @Body() body: SetCompletedRequest) {
+    if (typeof body?.completed !== 'boolean') {
+      throw new BadRequestException('completed must be true or false');
+    }
+    try {
+      return await this.setCompleted.execute(id, body.completed);
     } catch (error) {
       throw this.toHttpError(error);
     }

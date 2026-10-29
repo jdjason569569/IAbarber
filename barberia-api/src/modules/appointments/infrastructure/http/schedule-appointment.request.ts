@@ -10,3 +10,7 @@ export interface ScheduleAppointmentRequest {
 export interface SetCancelledRequest {
   cancelled: boolean;
 }
+
+export interface SetCompletedRequest {
+  completed: boolean;
+}
