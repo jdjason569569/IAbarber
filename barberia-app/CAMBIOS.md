@@ -743,3 +743,18 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Pendiente / notas**
 - Requiere el API con `PATCH /appointments/:id` desplegado.
+
+---
+
+## 2026-10-29 · Paleta "Negro y dorado" y tarjetas de cita ordenadas
+
+**Qué se hizo**
+- `src/theme/variables.scss`: paleta de barbería. Dorado latón como primario, burdeos como secundario, cuero en terciario, verde botella en success y rojo poste en danger. Fondo carbón, tarjetas marrón oscuro y texto crema. Tokens `--app-radius` y `--app-card-border`.
+- `src/global.scss`: la app es siempre oscura (`dark.always.css`) y los títulos van en dorado.
+- Lista de citas: cada cita es una tarjeta con borde lateral del color de su estado. Arriba la hora (dorada), el cliente y los badges en una fila; luego el precio, los extras y el total. Abajo, una fila de botones del mismo tamaño con iconos. Ya no se repite la fecha.
+- Botones "Cliente casual" y "Disponibilidad" en contorno dorado. La tarjeta del día lleva un degradado dorado y el botón de teclado pasa a burdeos.
+- Calendario: los días con citas se marcan en dorado en vez de verde.
+- `angular.json`: el presupuesto `anyComponentStyle` sube a 5 kB (aviso) y 8 kB (error), porque los estilos de la lista de citas ocupan 4,6 kB.
+
+**Pendiente / notas**
+- Para verlo en el teléfono hay que volver a compilar y sincronizar (skill build-sync-android).

@@ -1,2 +1,84 @@
+// "Black and gold" barbershop palette. The app is always dark (see global.scss).
 // For information on how to create your own theme, please refer to:
 // https://ionicframework.com/docs/theming/
+
+:root {
+  /* Brass gold: main actions, selected day, microphone. */
+  --ion-color-primary: #d4a24c;
+  --ion-color-primary-rgb: 212, 162, 76;
+  --ion-color-primary-contrast: #121212;
+  --ion-color-primary-contrast-rgb: 18, 18, 18;
+  --ion-color-primary-shade: #bb8f43;
+  --ion-color-primary-tint: #d8ab5e;
+
+  /* Burgundy accent. */
+  --ion-color-secondary: #8b1e2d;
+  --ion-color-secondary-rgb: 139, 30, 45;
+  --ion-color-secondary-contrast: #f3ede4;
+  --ion-color-secondary-contrast-rgb: 243, 237, 228;
+  --ion-color-secondary-shade: #7a1a28;
+  --ion-color-secondary-tint: #973542;
+
+  /* Leather / copper: walk-in badge. */
+  --ion-color-tertiary: #c9a27e;
+  --ion-color-tertiary-rgb: 201, 162, 126;
+  --ion-color-tertiary-contrast: #121212;
+  --ion-color-tertiary-contrast-rgb: 18, 18, 18;
+  --ion-color-tertiary-shade: #b18f6f;
+  --ion-color-tertiary-tint: #ceab8b;
+
+  /* Bottle green: complete / active. */
+  --ion-color-success: #3fa66b;
+  --ion-color-success-rgb: 63, 166, 107;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #37925e;
+  --ion-color-success-tint: #52af7a;
+
+  --ion-color-warning: #e0a33a;
+  --ion-color-warning-rgb: 224, 163, 58;
+  --ion-color-warning-contrast: #121212;
+  --ion-color-warning-contrast-rgb: 18, 18, 18;
+  --ion-color-warning-shade: #c58f33;
+  --ion-color-warning-tint: #e3ac4e;
+
+  /* Barber-pole red: cancel / listening. */
+  --ion-color-danger: #d9443a;
+  --ion-color-danger-rgb: 217, 68, 58;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #bf3c33;
+  --ion-color-danger-tint: #dd574e;
+
+  --ion-color-medium: #9a8f84;
+  --ion-color-medium-rgb: 154, 143, 132;
+  --ion-color-medium-contrast: #121212;
+  --ion-color-medium-contrast-rgb: 18, 18, 18;
+  --ion-color-medium-shade: #887e74;
+  --ion-color-medium-tint: #a49a90;
+
+  --ion-color-light: #2a2520;
+  --ion-color-light-rgb: 42, 37, 32;
+  --ion-color-light-contrast: #f3ede4;
+  --ion-color-light-contrast-rgb: 243, 237, 228;
+  --ion-color-light-shade: #25211c;
+  --ion-color-light-tint: #3f3b36;
+
+  /* Surfaces: charcoal background, dark-brown cards and bars, cream text. */
+  --ion-background-color: #121212;
+  --ion-background-color-rgb: 18, 18, 18;
+  --ion-text-color: #f3ede4;
+  --ion-text-color-rgb: 243, 237, 228;
+  --ion-item-background: #1e1b18;
+  --ion-card-background: #1e1b18;
+  --ion-toolbar-background: #17140f;
+  --ion-toolbar-color: #f3ede4;
+  --ion-tab-bar-background: #17140f;
+  --ion-tab-bar-color: #9a8f84;
+  --ion-tab-bar-color-selected: #d4a24c;
+  --ion-border-color: rgba(212, 162, 76, 0.18);
+
+  /* App tokens. */
+  --app-radius: 14px;
+  --app-card-border: rgba(212, 162, 76, 0.18);
+}

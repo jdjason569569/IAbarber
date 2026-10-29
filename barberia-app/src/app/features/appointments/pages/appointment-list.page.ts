@@ -4,7 +4,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, injec
 import { AlertController, IonicModule, ToastController } from '@ionic/angular/lazy';
 import type { RefresherCustomEvent } from '@ionic/core';
 import { addIcons } from 'ionicons';
-import { chevronBack, chevronForward, close, keypad, mic, send } from 'ionicons/icons';
+import { checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send } from 'ionicons/icons';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
@@ -148,7 +148,7 @@ export class AppointmentListPage {
   private readonly answerInput = viewChild<ElementRef<HTMLIonInputElement>>('answerInput');
 
   constructor() {
-    addIcons({ chevronBack, chevronForward, close, keypad, mic, send });
+    addIcons({ checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send });
     // Text mode opens the keyboard as soon as a question waits for the answer.
     effect(() => {
       const input = this.answerInput();

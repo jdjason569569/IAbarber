@@ -17,10 +17,10 @@
       </ion-button>
     </div>
     <ion-buttons slot="end">
-      <ion-button size="small" [disabled]="dialogActive()" (click)="onWalkInClick()">
+      <ion-button size="small" fill="outline" color="primary" [disabled]="dialogActive()" (click)="onWalkInClick()">
         {{ 'appointments.walkIn.button' | t }}
       </ion-button>
-      <ion-button size="small" (click)="showAvailability()">
+      <ion-button size="small" fill="outline" color="primary" (click)="showAvailability()">
         {{ 'appointments.availability.button' | t }}
       </ion-button>
     </ion-buttons>
@@ -32,42 +32,63 @@
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
-  <ion-list>
+  <ion-list class="appt-list" lines="none">
     @for (appointment of dayAppointments(); track appointment.id) {
-      <ion-item [class.cancelled]="appointment.cancelled">
-        <ion-label>
-          <h2>{{ appointment.clientName }}</h2>
-          <p>{{ appointment.date }} · {{ appointment.time }}</p>
-          <p>{{ 'appointments.service' | t }}: ${{ appointment.serviceCost }}</p>
-          @for (extra of appointment.extras; track extra.name) {
-            <p>+ {{ extra.name }}: ${{ extra.price }}</p>
-          }
-          <p><strong>{{ 'appointments.total' | t }}: ${{ total(appointment) }}</strong></p>
-        </ion-label>
-        <div slot="end" class="row-actions">
-          @if (appointment.walkIn) {
-            <ion-badge color="tertiary">{{ 'appointments.walkIn.badge' | t }}</ion-badge>
-          }
-          <ion-badge [color]="stateColor(appointment)">{{ stateKey(appointment) | t }}</ion-badge>
-          <ion-button size="small" fill="outline" (click)="openEdit(appointment)">
-            {{ 'appointments.edit.button' | t }}
-          </ion-button>
-          @if (appointment.cancelled) {
-            <ion-button size="small" fill="outline" color="medium" (click)="confirmAction('reactivate', appointment)">
-              {{ 'appointments.reactivate.button' | t }}
+      <!-- Card: header (time, client, badges), price detail, then one row of equal-size actions. -->
+      <ion-item
+        class="appt-card"
+        [class.cancelled]="appointment.cancelled"
+        [style.--state-color]="'var(--ion-color-' + stateColor(appointment) + ')'"
+      >
+        <div class="appt-body">
+          <div class="appt-header">
+            <span class="appt-time">{{ appointment.time }}</span>
+            <h2 class="appt-client">{{ appointment.clientName }}</h2>
+            <div class="appt-badges">
+              @if (appointment.walkIn) {
+                <ion-badge color="tertiary">{{ 'appointments.walkIn.badge' | t }}</ion-badge>
+              }
+              <ion-badge [color]="stateColor(appointment)">{{ stateKey(appointment) | t }}</ion-badge>
+            </div>
+          </div>
+
+          <div class="appt-detail">
+            <p>{{ 'appointments.service' | t }}: ${{ appointment.serviceCost }}</p>
+            @for (extra of appointment.extras; track extra.name) {
+              <p>+ {{ extra.name }}: ${{ extra.price }}</p>
+            }
+          </div>
+          <div class="appt-total">
+            <span>{{ 'appointments.total' | t }}</span>
+            <strong>${{ total(appointment) }}</strong>
+          </div>
+
+          <div class="appt-actions">
+            <ion-button size="small" fill="clear" (click)="openEdit(appointment)">
+              <ion-icon slot="start" name="create-outline"></ion-icon>
+              {{ 'appointments.edit.button' | t }}
             </ion-button>
-          } @else if (appointment.completed) {
-            <ion-button size="small" fill="outline" color="medium" (click)="confirmAction('uncomplete', appointment)">
-              {{ 'appointments.uncomplete.button' | t }}
-            </ion-button>
-          } @else {
-            <ion-button size="small" color="success" (click)="confirmAction('complete', appointment)">
-              {{ 'appointments.complete.button' | t }}
-            </ion-button>
-            <ion-button size="small" fill="outline" color="danger" (click)="confirmAction('cancel', appointment)">
-              {{ 'appointments.cancel.button' | t }}
-            </ion-button>
-          }
+            @if (appointment.cancelled) {
+              <ion-button size="small" fill="outline" color="medium" (click)="confirmAction('reactivate', appointment)">
+                <ion-icon slot="start" name="refresh"></ion-icon>
+                {{ 'appointments.reactivate.button' | t }}
+              </ion-button>
+            } @else if (appointment.completed) {
+              <ion-button size="small" fill="outline" color="medium" (click)="confirmAction('uncomplete', appointment)">
+                <ion-icon slot="start" name="refresh"></ion-icon>
+                {{ 'appointments.uncomplete.button' | t }}
+              </ion-button>
+            } @else {
+              <ion-button size="small" color="success" (click)="confirmAction('complete', appointment)">
+                <ion-icon slot="start" name="checkmark"></ion-icon>
+                {{ 'appointments.complete.button' | t }}
+              </ion-button>
+              <ion-button size="small" fill="outline" color="danger" (click)="confirmAction('cancel', appointment)">
+                <ion-icon slot="start" name="close"></ion-icon>
+                {{ 'appointments.cancel.button' | t }}
+              </ion-button>
+            }
+          </div>
         </div>
       </ion-item>
     } @empty {

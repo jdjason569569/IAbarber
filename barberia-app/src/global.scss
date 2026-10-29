@@ -32,6 +32,13 @@
  * https://ionicframework.com/docs/theming/dark-mode
  */
 
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
+/* Always dark: the black-and-gold palette in theme/variables.scss is designed for it. */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import "@ionic/angular/css/palettes/dark.system.css";
+@import "@ionic/angular/css/palettes/dark.always.css";
+
+/* Header titles: bold, slightly spaced, in the brand gold. */
+ion-title {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--ion-color-primary);
+}

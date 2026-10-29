@@ -116,15 +116,15 @@
   }
 }
 
-/* Solid green so it reads as an active option next to the microphone, not as a disabled button. */
+/* Solid burgundy so it reads as an active option next to the gold microphone, not as a disabled button. */
 .keyboard-button {
   width: 56px;
   height: 56px;
   font-size: 24px;
-  --background: var(--ion-color-success);
-  --background-activated: var(--ion-color-success-shade);
-  --color: var(--ion-color-success-contrast);
-  --box-shadow: 0 4px 12px rgba(var(--ion-color-success-rgb), 0.4);
+  --background: var(--ion-color-secondary);
+  --background-activated: var(--ion-color-secondary-shade);
+  --color: var(--ion-color-secondary-contrast);
+  --box-shadow: 0 4px 12px rgba(var(--ion-color-secondary-rgb), 0.4);
 }
 
 .switch-voice-button {
@@ -177,8 +177,9 @@
   margin: 6px 0;
   padding: 4px 0;
   border-radius: 10px;
-  background: var(--ion-color-primary);
+  background: linear-gradient(135deg, var(--ion-color-primary-tint), var(--ion-color-primary-shade));
   color: var(--ion-color-primary-contrast);
+  box-shadow: 0 3px 10px rgba(var(--ion-color-primary-rgb), 0.35);
   line-height: 1.1;
 }
 
@@ -192,19 +193,111 @@
   text-transform: uppercase;
 }
 
-/* Badge and cancel button stacked at the end of each appointment. */
-.row-actions {
+/* Appointment cards: separate rounded blocks on the charcoal background. */
+.appt-list {
+  padding: 6px 0 12px;
+  background: transparent;
+}
+
+/* The left border takes the state color (set inline from stateColor()). */
+.appt-card {
+  margin: 8px 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --background: var(--ion-item-background);
+  border: 1px solid var(--app-card-border);
+  border-left: 4px solid var(--state-color, var(--ion-color-primary));
+  border-radius: var(--app-radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.appt-body {
+  width: 100%;
+  padding: 12px 0;
+}
+
+.appt-header {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.appt-time {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ion-color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.appt-client {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appt-badges {
+  display: flex;
+  gap: 4px;
+
+  ion-badge {
+    --padding-start: 8px;
+    --padding-end: 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.appt-detail p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.appt-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+
+  strong {
+    font-size: 17px;
+    color: var(--ion-text-color);
+  }
+}
+
+/* One row of equal-size actions under a thin divider. */
+.appt-actions {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
   gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--app-card-border);
+
+  ion-button {
+    margin: 0;
+    height: 34px;
+    font-size: 12px;
+    font-weight: 700;
+    --border-radius: 10px;
+  }
 }
 
 /* A cancelled appointment stays in the list, dimmed and struck through. */
-ion-item.cancelled {
+.appt-card.cancelled {
   opacity: 0.6;
 
-  h2 {
+  .appt-client {
     text-decoration: line-through;
   }
 }
