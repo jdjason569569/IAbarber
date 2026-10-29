@@ -6,6 +6,7 @@ import { RegisterWalkInUseCase } from './application/use-cases/register-walk-in.
 import { ScheduleAppointmentUseCase } from './application/use-cases/schedule-appointment.use-case.js';
 import { SetAppointmentCancelledUseCase } from './application/use-cases/set-appointment-cancelled.use-case.js';
 import { SetAppointmentCompletedUseCase } from './application/use-cases/set-appointment-completed.use-case.js';
+import { UpdateAppointmentUseCase } from './application/use-cases/update-appointment.use-case.js';
 import { UpdateDayBlocksUseCase } from './application/use-cases/update-day-blocks.use-case.js';
 import { APPOINTMENT_REPOSITORY } from './domain/ports/appointment.repository.js';
 import { AppointmentsController } from './infrastructure/http/appointments.controller.js';
@@ -25,6 +26,7 @@ const useSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SER
     RegisterWalkInUseCase,
     SetAppointmentCancelledUseCase,
     SetAppointmentCompletedUseCase,
+    UpdateAppointmentUseCase,
     UpdateDayBlocksUseCase,
     ...(useSupabase ? [supabaseProvider] : []),
     {

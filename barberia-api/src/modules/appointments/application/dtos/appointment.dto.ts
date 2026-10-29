@@ -21,6 +21,11 @@ export interface ScheduleAppointmentInput {
   extras: AppointmentExtra[];
 }
 
+export interface UpdateAppointmentInput {
+  client: string;
+  serviceCost: number;
+}
+
 export interface WalkInInput {
   serviceCost: number;
 }

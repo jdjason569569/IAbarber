@@ -309,3 +309,12 @@ This file records, in chronological order, every change made to the backend.
 
 **Pendiente / notas**
 - Primero hay que desplegar este API en Render y **después** correr la migración. Si se hace al revés, el API viejo deja de poder crear citas.
+
+---
+
+## 2026-10-29 · Editar nombre y precio de una cita
+
+**Qué se hizo**
+- Nuevo `PATCH /appointments/:id` con body `{ client, serviceCost }` para corregir el nombre del cliente o el precio de cualquier cita, también de las casuales y en cualquier estado.
+- `Appointment.withDetails(client, serviceCost)` valida que el nombre no esté vacío y que el precio sea un número mayor o igual a 0 (`InvalidAppointmentError` → 400). `UpdateAppointmentUseCase` responde 404 si la cita no existe.
+- No cambia la fecha, la hora ni los extras. Tampoco hace falta migración.

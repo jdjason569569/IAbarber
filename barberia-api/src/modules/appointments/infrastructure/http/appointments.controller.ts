@@ -14,6 +14,7 @@ import { ListAppointmentsUseCase } from '../../application/use-cases/list-appoin
 import { ScheduleAppointmentUseCase } from '../../application/use-cases/schedule-appointment.use-case.js';
 import { SetAppointmentCancelledUseCase } from '../../application/use-cases/set-appointment-cancelled.use-case.js';
 import { SetAppointmentCompletedUseCase } from '../../application/use-cases/set-appointment-completed.use-case.js';
+import { UpdateAppointmentUseCase } from '../../application/use-cases/update-appointment.use-case.js';
 import { AppointmentConflictError } from '../../domain/errors/appointment-conflict.error.js';
 import { BarberUnavailableError } from '../../domain/errors/barber-unavailable.error.js';
 import { OutsideBusinessHoursError } from '../../domain/errors/outside-business-hours.error.js';
@@ -23,6 +24,7 @@ import type {
   ScheduleAppointmentRequest,
   SetCancelledRequest,
   SetCompletedRequest,
+  UpdateAppointmentRequest,
 } from './schedule-appointment.request.js';
 
 @Controller('appointments')
@@ -32,6 +34,7 @@ export class AppointmentsController {
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
     private readonly setCancelled: SetAppointmentCancelledUseCase,
     private readonly setCompleted: SetAppointmentCompletedUseCase,
+    private readonly updateAppointment: UpdateAppointmentUseCase,
   ) {}
 
   @Get()
@@ -50,6 +53,18 @@ export class AppointmentsController {
         extras: Array.isArray(body?.extras)
           ? body.extras.map((e) => ({ name: String(e.name), price: Number(e.price) }))
           : [],
+      });
+    } catch (error) {
+      throw this.toHttpError(error);
+    }
+  }
+
+  @Patch(':id')
+  async update(@Param('id', ParseIntPipe) id: number, @Body() body: UpdateAppointmentRequest) {
+    try {
+      return await this.updateAppointment.execute(id, {
+        client: String(body?.client ?? ''),
+        serviceCost: Number(body?.serviceCost),
       });
     } catch (error) {
       throw this.toHttpError(error);

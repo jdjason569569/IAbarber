@@ -67,6 +67,17 @@ export class Appointment {
     return new Appointment(props);
   }
 
+  /** Fixes the client name or the price (the barber may have said them wrong). */
+  withDetails(client: string, serviceCost: number): Appointment {
+    if (!client.trim()) {
+      throw new InvalidAppointmentError('Client name is required');
+    }
+    if (!Number.isFinite(serviceCost) || serviceCost < 0) {
+      throw new InvalidAppointmentError('Service cost cannot be negative');
+    }
+    return new Appointment({ ...this.props, client: client.trim(), serviceCost });
+  }
+
   withCancelled(cancelled: boolean): Appointment {
     if (cancelled && this.props.completed) {
       throw new InvalidAppointmentError('A completed appointment cannot be cancelled');
