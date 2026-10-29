@@ -1,7 +1,9 @@
 import { Body, Controller, HttpException, HttpStatus, Post } from '@nestjs/common';
-import type { BookingDraft } from '../../application/dtos/booking.dto.js';
+import type { BookingAnswers, BookingDraft, BookingStep } from '../../application/dtos/booking.dto.js';
 import { HandleBookingTurnUseCase } from '../../application/use-cases/handle-booking-turn.use-case.js';
 import { HandleVoiceCommandUseCase } from '../../application/use-cases/handle-voice-command.use-case.js';
+
+const BOOKING_STEPS: BookingStep[] = ['client', 'date', 'time', 'price'];
 
 interface CommandRequest {
   text?: string;
@@ -16,11 +18,12 @@ export class AssistantController {
   ) {}
 
   @Post('booking')
-  async booking(@Body() body: { text?: string; draft?: BookingDraft }) {
+  async booking(@Body() body: { text?: string; draft?: BookingDraft; answers?: Record<string, unknown> }) {
     try {
       return await this.handleBookingTurn.execute({
         text: typeof body?.text === 'string' ? body.text : '',
         draft: body?.draft ?? {},
+        answers: pickAnswers(body?.answers),
       });
     } catch (error) {
       throw new HttpException(
@@ -45,4 +48,15 @@ export class AssistantController {
       );
     }
   }
+}
+
+/** Keeps only the known steps with a non-empty text answer. */
+function pickAnswers(raw: Record<string, unknown> | undefined): BookingAnswers | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const answers: BookingAnswers = {};
+  for (const step of BOOKING_STEPS) {
+    const value = raw[step];
+    if (typeof value === 'string' && value.trim()) answers[step] = value.trim();
+  }
+  return Object.keys(answers).length > 0 ? answers : undefined;
 }

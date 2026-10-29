@@ -10,7 +10,7 @@ import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { parseIsoDate, toLocalIsoDate } from '../../../shared/utils/date.util';
 import { SendProgressComponent } from '../../assistant/components/send-progress/send-progress.component';
-import { BookingDraft, BookingTurnResult } from '../../assistant/models/assistant.model';
+import { BookingAnswers, BookingDraft, BookingStep, BookingTurnResult } from '../../assistant/models/assistant.model';
 import { VoiceError } from '../../assistant/models/voice-error';
 import { Appointment } from '../models/appointment.model';
 import { AssistantService } from '../../assistant/services/assistant.service';
@@ -33,6 +33,13 @@ const SEND_PROGRESS_CAP = 90;
 const SEND_PROGRESS_TICK_MS = 200;
 /** How long the full bar stays visible before the next question. */
 const SEND_PROGRESS_DONE_MS = 300;
+
+const QUESTION_KEYS: Record<BookingStep, MessageKey> = {
+  client: 'assistant.question.client',
+  date: 'assistant.question.date',
+  time: 'assistant.question.time',
+  price: 'assistant.question.price',
+};
 
 /** Extra attempts per question (not hearing the answer, or failing to send it) before the dialog gives up. */
 const MAX_RETRIES = 2;
@@ -198,29 +205,38 @@ export class AppointmentListPage {
     }
     this.textMode.set(startInText);
     this.dialogActive.set(true);
-    this.assistantReply.set(this.i18n.t('assistant.connecting'));
     this.cancelled = new Promise<never>((_, reject) => (this.cancelDialog = () => reject(new DialogCancelled())));
     // Nothing may be waiting on it when the user cancels; that is not an unhandled error.
     this.cancelled.catch(() => undefined);
     try {
       let draft: BookingDraft = initialDraft;
-      let turn = await this.withSendRetries(() =>
-        this.untilCancelled(firstValueFrom(this.assistant.bookingTurn('', draft))),
-      );
+      // The questions are asked locally; the API only gets one request with every answer.
+      // A rejected answer (day closed, hour taken...) comes back as a reply that asks it again.
+      let rejected: BookingTurnResult | null = null;
       while (true) {
-        this.assistantReply.set(turn.reply);
-        draft = turn.draft;
-        await this.untilCancelled(this.voice.speak(turn.reply));
-        if (turn.status !== 'asking') {
-          if (turn.status === 'created') {
-            this.refresh();
-          }
-          return;
+        const answers: BookingAnswers = {};
+        for (const step of missingSteps(draft)) {
+          const question = rejected?.reply ?? this.i18n.t(QUESTION_KEYS[step]);
+          const seconds = rejected?.listenSeconds ?? LISTEN_SECONDS;
+          rejected = null;
+          this.assistantReply.set(question);
+          await this.untilCancelled(this.voice.speak(question));
+          answers[step] = await this.awaitAnswer(question, seconds);
+          this.assistantReply.set(`"${answers[step]}"`);
         }
-        const answer = await this.awaitAnswer(turn.reply, turn.listenSeconds ?? LISTEN_SECONDS);
-        this.assistantReply.set(`"${answer}"`);
         const sentDraft = draft;
-        turn = await this.withSendRetries(() => this.sendAnswer(answer, sentDraft));
+        const turn = await this.withSendRetries(() => this.sendAnswers(answers, sentDraft));
+        draft = turn.draft;
+        if (turn.status === 'asking') {
+          rejected = turn;
+          continue;
+        }
+        this.assistantReply.set(turn.reply);
+        await this.untilCancelled(this.voice.speak(turn.reply));
+        if (turn.status === 'created') {
+          this.refresh();
+        }
+        return;
       }
     } catch (error) {
       if (error instanceof DialogCancelled) {
@@ -371,8 +387,8 @@ export class AppointmentListPage {
     }
   }
 
-  /** Sends one answer to the assistant while a progress bar fills up from 0 to 100 %. */
-  private async sendAnswer(answer: string, draft: BookingDraft): Promise<BookingTurnResult> {
+  /** Sends every answer to the assistant while a progress bar fills up from 0 to 100 %. */
+  private async sendAnswers(answers: BookingAnswers, draft: BookingDraft): Promise<BookingTurnResult> {
     this.sendProgress.set(0);
     const timer = setInterval(() => {
       const current = this.sendProgress() ?? 0;
@@ -380,7 +396,7 @@ export class AppointmentListPage {
       this.sendProgress.set(Math.ceil(current + (SEND_PROGRESS_CAP - current) / 10));
     }, SEND_PROGRESS_TICK_MS);
     try {
-      const turn = await this.untilCancelled(firstValueFrom(this.assistant.bookingTurn(answer, draft)));
+      const turn = await this.untilCancelled(firstValueFrom(this.assistant.submitBooking(answers, draft)));
       clearInterval(timer);
       this.sendProgress.set(100);
       await new Promise((resolve) => setTimeout(resolve, SEND_PROGRESS_DONE_MS));
@@ -552,6 +568,19 @@ function toMinutes(time: string): number {
 }
 
 /** A request that never got an answer: HttpErrorResponse (status 0 included) or the 20 s timeout. */
+/** Questions still to ask, in the same order the API expects them; a walk-in only needs the price. */
+function missingSteps(draft: BookingDraft): BookingStep[] {
+  if (draft.walkIn) {
+    return draft.price === undefined ? ['price'] : [];
+  }
+  const steps: BookingStep[] = [];
+  if (!draft.client) steps.push('client');
+  if (!draft.date) steps.push('date');
+  if (!draft.time) steps.push('time');
+  if (draft.price === undefined) steps.push('price');
+  return steps;
+}
+
 function isNetworkError(error: unknown): boolean {
   return error instanceof HttpErrorResponse || (error instanceof Error && error.name === 'TimeoutError');
 }

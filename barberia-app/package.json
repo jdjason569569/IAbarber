@@ -1,6 +1,6 @@
 {
   "name": "barberia-app",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "author": "Ionic Framework",
   "homepage": "https://ionicframework.com/",
   "scripts": {
@@ -15,6 +15,7 @@
     "android:sync": "ng build --configuration development && CAP_ENV=development cap sync android",
     "android:open": "npm run android:sync && CAPACITOR_ANDROID_STUDIO_PATH=${CAPACITOR_ANDROID_STUDIO_PATH:-/snap/android-studio/current/bin/studio.sh} cap open android",
     "install_app": "ng build --configuration development && CAP_ENV=development cap sync android && CAP_ENV=development ionic capacitor run android --no-build",
+    "install_app:prod": "ng build --configuration production && cap sync android && cd android && ./gradlew installDebug",
     "version:bump": "node scripts/bump-version.mjs",
     "hooks:install": "git config core.hooksPath barberia-app/.githooks",
     "prepare": "git config core.hooksPath barberia-app/.githooks || true"
@@ -31,6 +32,7 @@
     "android:sync": "Development build (apiUrl http://localhost:3000) and copy of www/ into android/. Run it after every front-end change, then press Run in Android Studio.",
     "android:open": "Runs android:sync and opens the android/ project in Android Studio (snap path by default; override with CAPACITOR_ANDROID_STUDIO_PATH).",
     "install_app": "Development build, sync and install on the USB phone without Android Studio (--no-build stops Ionic from rebuilding in production). Needs adb reverse tcp:3000 tcp:3000 and the backend running.",
+    "install_app:prod": "Production build (apiUrl https://iabarber.onrender.com), sync without cleartext and install on the USB phone. Needs neither the local backend nor adb reverse.",
     "version:bump": "Bumps the patch version in package.json, package-lock.json and the Android build (versionName and versionCode). The pre-commit hook runs it automatically.",
     "hooks:install": "Points git to barberia-app/.githooks so the pre-commit hook bumps the version on every commit that touches the app.",
     "prepare": "Runs on npm install and installs the git hooks (same as hooks:install)."

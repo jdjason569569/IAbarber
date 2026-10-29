@@ -318,3 +318,16 @@ This file records, in chronological order, every change made to the backend.
 - Nuevo `PATCH /appointments/:id` con body `{ client, serviceCost }` para corregir el nombre del cliente o el precio de cualquier cita, también de las casuales y en cualquier estado.
 - `Appointment.withDetails(client, serviceCost)` valida que el nombre no esté vacío y que el precio sea un número mayor o igual a 0 (`InvalidAppointmentError` → 400). `UpdateAppointmentUseCase` responde 404 si la cita no existe.
 - No cambia la fecha, la hora ni los extras. Tampoco hace falta migración.
+
+---
+
+## 2026-10-29 · Asistente: todas las respuestas en una sola petición
+
+**Qué se hizo**
+- `POST /assistant/booking` acepta `answers` (`client`, `date`, `time`, `price`, cada uno el texto que dijo o escribió el usuario). Con `answers` se hace **una sola llamada a Gemini**: el mensaje lleva una línea con su etiqueta por respuesta y usa un prompt propio (`buildAnswersPrompt`).
+- Las validaciones no cambian (fecha pasada, día cerrado, horario, bloqueos, nombre repetido, choque de hora). Si algo falla, devuelve `asking` con el `draft` sin ese dato y la pregunta para repetirlo.
+- Si una respuesta llegó pero no se pudo interpretar, el mensaje empieza con "No te he entendido.".
+- Se sigue aceptando `text` para que las versiones anteriores de la app sigan funcionando.
+
+**Pendiente / notas**
+- Desplegar en Render antes de instalar la nueva versión de la app.

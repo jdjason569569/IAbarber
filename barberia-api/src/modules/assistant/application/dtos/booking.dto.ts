@@ -14,10 +14,15 @@ export interface BookingDraft {
 
 export type BookingStep = 'client' | 'date' | 'time' | 'price';
 
+/** Raw answer the user gave to each question, collected by the app before a single request. */
+export type BookingAnswers = Partial<Record<BookingStep, string>>;
+
 export interface BookingTurnInput {
   /** What the user just said; empty on the first turn. */
   text: string;
   draft: BookingDraft;
+  /** All the answers at once; when present, `text` is ignored. */
+  answers?: BookingAnswers;
 }
 
 export interface BookingTurnResult {

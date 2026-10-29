@@ -758,3 +758,29 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Pendiente / notas**
 - Para verlo en el teléfono hay que volver a compilar y sincronizar (skill build-sync-android).
+
+---
+
+## 2026-10-29 · Instalar en el teléfono apuntando al API de producción
+
+**Qué se hizo**
+- Script nuevo `npm run install_app:prod`: hace la compilación de producción (`apiUrl` `https://iabarber.onrender.com`), sincroniza sin cleartext e instala en el teléfono USB con `./gradlew installDebug`.
+- No necesita el backend local ni `adb reverse`.
+- Se instaló en el teléfono la versión que usa el API de producción.
+
+**Pendiente / notas**
+- `ionic capacitor run` no sirve para instalar porque busca `app-debug.apk`, y Gradle genera `barberia-<versión>-debug.apk`. Eso también afecta a `install_app`.
+- Para volver a desarrollo local: `npm run install_app` + backend local + `adb reverse tcp:3000 tcp:3000`.
+
+---
+
+## 2026-10-29 · Crear cita con una sola petición al final
+
+**Qué se hizo**
+- El diálogo de voz o texto hace las preguntas en la app (cliente, fecha, hora, precio; en cliente casual solo el precio) y envía todas las respuestas juntas al terminar (`AssistantService.submitBooking`). Ya no hay una petición por pregunta ni una petición inicial.
+- Si el API rechaza un dato (día cerrado, hora ocupada, nombre repetido, respuesta no entendida), la app repite solo esa pregunta con el mensaje del API y vuelve a enviar.
+- Textos nuevos `assistant.question.*` y se elimina `assistant.connecting`. El tiempo de espera del envío sube a 30 s.
+
+**Pendiente / notas**
+- Necesita el API con soporte de `answers` desplegado.
+- Si se dice "cancelar" como respuesta, solo se detecta al enviar al final. El botón Cancelar corta el diálogo al momento.

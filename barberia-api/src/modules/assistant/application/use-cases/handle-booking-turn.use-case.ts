@@ -19,6 +19,7 @@ import { localIsoDate } from '../../../../shared/utils/local-date.js';
 import { LLM_PORT } from '../../domain/ports/llm.port.js';
 import type { LlmPort, LlmTool } from '../../domain/ports/llm.port.js';
 import type {
+  BookingAnswers,
   BookingDraft,
   BookingStep,
   BookingTurnInput,
@@ -84,12 +85,13 @@ export class HandleBookingTurnUseCase {
 
   async execute(input: BookingTurnInput): Promise<BookingTurnResult> {
     let draft: BookingDraft = sanitize(input.draft);
-    const text = input.text.trim();
+    const answers = input.answers;
+    const text = answers ? labelAnswers(answers) : input.text.trim();
 
     if (text) {
       const expecting = nextStep(draft);
       const response = await this.llm.complete({
-        system: this.buildSystemPrompt(draft, expecting),
+        system: answers ? this.buildAnswersPrompt(draft) : this.buildSystemPrompt(draft, expecting),
         user: text,
         tools: TOOLS,
       });
@@ -137,7 +139,8 @@ export class HandleBookingTurnUseCase {
 
     const missing = nextStep(draft);
     if (missing) {
-      const retry = text && missing === nextStep(sanitize(input.draft));
+      // The step was answered but could not be read: say so before asking again.
+      const retry = answers ? Boolean(answers[missing]) : text && missing === nextStep(sanitize(input.draft));
       const prompt = question(missing);
       return {
         reply: retry ? `No te he entendido. ${prompt}` : prompt,
@@ -213,6 +216,22 @@ export class HandleBookingTurnUseCase {
       }
       throw error;
     }
+  }
+
+  /** Prompt for the single request that carries every answer of the dialog, each one labeled. */
+  private buildAnswersPrompt(draft: BookingDraft): string {
+    if (draft.walkIn) {
+      return this.buildSystemPrompt(draft, 'price');
+    }
+    return [
+      'You help book a barbershop appointment. The user answered several questions in Spanish, by voice or typed text.',
+      'Each line of the message is labeled with the field it answers (client, date, time or price).',
+      `Today is ${localIsoDate()}. Resolve relative dates ("mañana", "el viernes") to ISO dates.`,
+      'Barbershop hours are daytime: "a las 4" means 16:00 unless the user says morning.',
+      PRICE_HINT,
+      `Already collected: ${JSON.stringify(draft)}.`,
+      'Call fill_booking with every detail you can extract from the answers. If an answer says they want to stop, call abort_booking.',
+    ].join('\n');
   }
 
   private buildSystemPrompt(draft: BookingDraft, expecting: BookingStep | null): string {
@@ -307,6 +326,14 @@ function pickDefined(args: Record<string, unknown>): BookingDraft {
   const price = toPrice(args['price']);
   if (price !== undefined) out.price = price;
   return out;
+}
+
+/** `client: "Juan"` one per line, in the order the questions are asked. */
+function labelAnswers(answers: BookingAnswers): string {
+  return (['client', 'date', 'time', 'price'] as const)
+    .filter((step) => answers[step])
+    .map((step) => `${step}: ${JSON.stringify(answers[step])}`)
+    .join('\n');
 }
 
 function nextStep(draft: BookingDraft): BookingStep | null {

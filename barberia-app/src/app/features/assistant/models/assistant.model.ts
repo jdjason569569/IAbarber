@@ -8,6 +8,11 @@ export interface BookingDraft {
   walkIn?: boolean;
 }
 
+export type BookingStep = 'client' | 'date' | 'time' | 'price';
+
+/** Raw answer the user gave to each question; the app sends them all in one request. */
+export type BookingAnswers = Partial<Record<BookingStep, string>>;
+
 export interface BookingTurnResult {
   reply: string;
   draft: BookingDraft;

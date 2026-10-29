@@ -75,7 +75,10 @@ export const MESSAGES_ES = {
   'appointments.cancel.error': 'No se pudo cancelar la cita. Inténtalo de nuevo.',
 
   // Voice assistant
-  'assistant.connecting': 'Conectando con el asistente...',
+  'assistant.question.client': '¿Cuál es el nombre del cliente?',
+  'assistant.question.date': '¿Para qué fecha es la cita?',
+  'assistant.question.time': '¿A qué hora?',
+  'assistant.question.price': '¿Cuánto cuesta el servicio?',
   'assistant.sending': 'Enviando respuesta...',
   'assistant.sent': 'Respuesta enviada',
   'assistant.retry.listen': 'No te escuché. {question}',
