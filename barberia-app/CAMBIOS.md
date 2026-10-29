@@ -574,3 +574,59 @@ npx ionic capacitor add android   # añadir plataforma Android
 **Qué se hizo**
 - `.cancel-button` tenía un fondo rojo al 14 % y texto rojo. En el tema oscuro parecía un botón deshabilitado.
 - Ahora es rojo sólido (`--ion-color-danger`) con texto blanco, sombra roja y efecto al pulsarlo. Además es un poco más grande (40 px de alto, texto de 15 px en negrita).
+
+---
+
+## 2026-10-28 · Disponibilidad: bloquear horas del día actual
+
+**Qué se hizo**
+- En Configuración > Disponibilidad, el horario semanal se reemplazó por el día actual. El barbero agrega uno o varios tramos "Desde / Hasta" en los que no estará disponible, los quita con la papelera y guarda.
+- Si dos tramos se cruzan, se avisa y no se deja guardar.
+- Si hay citas activas dentro de un tramo, la API no guarda y la app muestra cuáles son (por ejemplo, "10:00 Ana"). Hay que cancelarlas primero.
+- Las horas bloqueadas no se pueden agendar: tampoco por voz ni reactivando una cita cancelada. Tampoco aparecen en el botón "Disponibilidad" de la lista de citas.
+- Se eliminó el componente `business-hours-editor` y se añadió `day-blocks-editor`. Las claves `settings.hours.*` se reemplazaron por `settings.blocks.*`.
+
+**Pendiente / notas**
+- Hace falta crear la tabla `unavailable_slots` en Supabase (ver `barberia-api/docs/schema.sql`).
+- El horario semanal que ya estaba guardado sigue aplicándose, aunque ya no se ve en la app.
+
+---
+
+## 2026-10-28 · Botón "Escribir" en verde
+
+**Qué se hizo**
+- El botón del teclado junto al micrófono tenía un fondo pálido y parecía desactivado. Ahora es verde sólido (`--ion-color-success`), con el icono en blanco y una sombra suave (`.keyboard-button` en `appointment-list.page.scss`).
+
+---
+
+## 2026-10-28 · Subida automática de versión antes de cada commit
+
+**Qué se hizo**
+- Nuevo script `scripts/bump-version.mjs` (`npm run version:bump`): sube el patch de `version` en `package.json` y `package-lock.json`, y en `android/app/build.gradle` pone `versionName` igual a esa versión e incrementa `versionCode` en 1.
+- Nuevo hook de git `.githooks/pre-commit`: si el commit incluye archivos de `barberia-app/`, ejecuta el script y añade al commit los tres archivos modificados. Los commits que solo tocan `barberia-api/` no suben la versión.
+- Scripts `hooks:install` y `prepare` (corre con `npm install`) que configuran `git config core.hooksPath barberia-app/.githooks`. Ya quedó instalado en este repo.
+
+**Pendiente / notas**
+- Para hacer un commit sin subir la versión: `SKIP_VERSION_BUMP=1 git commit ...`.
+- Si `node` no está en el PATH (IDEs que no cargan nvm), el hook intenta cargar `~/.nvm/nvm.sh`; si aun así no lo encuentra, bloquea el commit.
+
+---
+
+## 2026-10-28 · Versión de la app visible en pantalla
+
+**Qué se hizo**
+- Debajo de la barra de pestañas (`core/layout/tabs.page.*`) se muestra en letra pequeña y gris "Versión X.Y.Z". La línea toma el margen inferior del área segura que antes tenía la barra.
+- La versión sale de `src/app/core/config/app-version.ts` (`APP_VERSION`), que genera `scripts/bump-version.mjs`. El hook `pre-commit` ahora también agrega ese archivo al commit.
+- Nueva clave i18n `app.version` (`Versión {version}`).
+
+---
+
+## 2026-10-28 · Nueva APK de release
+
+**Qué se hizo**
+- Se generó `android/app/build/outputs/apk/release/app-release.apk` (4,2 MB) con `ng build --configuration production`, `npx cap sync android` (sin `CAP_ENV`) y `./gradlew assembleRelease`.
+- Verificado: firmada con el keystore de release (`CN=David Sarria, O=BarberIA`) y apunta a `https://iabarber.onrender.com` (sin `localhost:3000`).
+
+**Pendiente / notas**
+- `android/` quedó sincronizado en modo producción. Antes de probar con el API local, ejecutar `npm run android:sync`.
+- Aviso del build: `appointment-list.page.scss` supera el presupuesto de 2 kB (3,17 kB). No bloquea la compilación.

@@ -230,3 +230,32 @@ This file records, in chronological order, every change made to the backend.
 
 **Pending / notes**
 - `business_hours` table created in Supabase (migration `create_business_hours`, RLS enabled). Pending: deploy the API to Render.
+
+---
+
+## 2026-10-28 · Unavailable hours for a date (day blocks)
+
+**What was done**
+- `business-hours` module: domain `DayBlocks` (whole-hour blocks, start before end, no overlaps), `DAY_BLOCKS_REPOSITORY` (Supabase + in-memory), use cases `GetDayBlocks` / `SaveDayBlocks`.
+- `GET /business-hours/blocks/:date` returns `[{ fromHour, toHour }]` for a `YYYY-MM-DD` date.
+- `PUT /business-hours/blocks/:date` replaces the blocks of that date. It returns 400 for invalid or overlapping blocks. It returns 409 with `{ message, appointments }` when active appointments fall inside the blocks; nothing is saved in that case.
+- The controller and `UpdateDayBlocksUseCase` live in the `appointments` module, because saving must check the appointments. This avoids a circular module import.
+- `ScheduleAppointmentUseCase` and reactivating a cancelled appointment reject blocked times (`BarberUnavailableError` → 400).
+- Voice assistant: a blocked time gets "De X a Y no hay disponibilidad. ¿A qué otra hora?" and keeps the other answers.
+- `docs/schema.sql`: `unavailable_slots` table.
+
+**Pending / notes**
+- Create the `unavailable_slots` table in Supabase (SQL at the end of `docs/schema.sql`). Until then the new endpoints and scheduling fail with 500.
+- The weekly hours (`/business-hours`) are still enforced, but the app no longer edits them.
+
+---
+
+## 2026-10-28 · "Today" follows the shop's time zone, not UTC
+
+**What was done**
+- Bug: at 9 pm on Oct 27 in Bogotá, the assistant said the day had already passed. Render runs in UTC (already 02:00 on Oct 28), and `toISOString()` and the server's local time gave the UTC date.
+- `src/env.ts` sets `process.env.TZ = SHOP_TIMEZONE || 'America/Bogota'`. Every `Date` in the API now uses the shop's clock. This covers the "past appointment" check in `ScheduleAppointmentUseCase` and the "past date" check in the assistant.
+- New `src/shared/utils/local-date.ts` (`localIsoDate`). It replaces the copy in `HandleBookingTurnUseCase` and `toISOString().slice(...)` in the booking and voice-command prompts (the "today" date sent to the LLM) and in the monthly statistics.
+
+**Pending / notes**
+- Deploy the API to Render. Optional: set `SHOP_TIMEZONE` if the shop is not in Bogotá's time zone.

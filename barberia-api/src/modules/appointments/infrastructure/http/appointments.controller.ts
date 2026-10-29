@@ -14,6 +14,7 @@ import { ListAppointmentsUseCase } from '../../application/use-cases/list-appoin
 import { ScheduleAppointmentUseCase } from '../../application/use-cases/schedule-appointment.use-case.js';
 import { SetAppointmentCancelledUseCase } from '../../application/use-cases/set-appointment-cancelled.use-case.js';
 import { AppointmentConflictError } from '../../domain/errors/appointment-conflict.error.js';
+import { BarberUnavailableError } from '../../domain/errors/barber-unavailable.error.js';
 import { OutsideBusinessHoursError } from '../../domain/errors/outside-business-hours.error.js';
 import { AppointmentNotFoundError } from '../../domain/errors/appointment-not-found.error.js';
 import { InvalidAppointmentError } from '../../domain/errors/invalid-appointment.error.js';
@@ -65,6 +66,7 @@ export class AppointmentsController {
   private toHttpError(error: unknown): unknown {
     if (error instanceof InvalidAppointmentError) return new BadRequestException(error.message);
     if (error instanceof OutsideBusinessHoursError) return new BadRequestException(error.message);
+    if (error instanceof BarberUnavailableError) return new BadRequestException(error.message);
     if (error instanceof AppointmentConflictError) return new ConflictException(error.message);
     if (error instanceof AppointmentNotFoundError) return new NotFoundException(error.message);
     return error;

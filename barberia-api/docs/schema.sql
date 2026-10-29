@@ -64,3 +64,15 @@ create table if not exists business_hours (
   check (open_hour < close_hour)
 );
 alter table business_hours enable row level security;
+
+-- Hours the barber is not available on a given date (managed from the app's Settings tab).
+-- Whole hours; to_hour 24 = midnight. Appointments cannot start inside a block.
+create table if not exists unavailable_slots (
+  id        bigint generated always as identity primary key,
+  date      date     not null,
+  from_hour smallint not null check (from_hour between 0 and 23),
+  to_hour   smallint not null check (to_hour between 1 and 24),
+  check (from_hour < to_hour)
+);
+create index if not exists unavailable_slots_date on unavailable_slots (date);
+alter table unavailable_slots enable row level security;

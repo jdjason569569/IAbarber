@@ -6,6 +6,7 @@ import type {
   TopService,
 } from '../../domain/entities/statistics-summary.js';
 import type { StatisticsRepository } from '../../domain/ports/statistics.repository.js';
+import { localIsoDate } from '../../../../shared/utils/local-date.js';
 
 /** Builds the summary from the stored appointments of the current month. */
 @Injectable()
@@ -14,7 +15,7 @@ export class AppointmentStatisticsRepository implements StatisticsRepository {
 
   async getSummary(): Promise<StatisticsSummary> {
     const all = await this.listAppointments.execute();
-    const month = new Date().toISOString().slice(0, 7);
+    const month = localIsoDate().slice(0, 7);
     const thisMonth = all.filter((a) => a.date.startsWith(month));
     const active = thisMonth.filter((a) => !a.cancelled);
     const cancelled = thisMonth.length - active.length;

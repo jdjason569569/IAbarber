@@ -116,10 +116,15 @@
   }
 }
 
+/* Solid green so it reads as an active option next to the microphone, not as a disabled button. */
 .keyboard-button {
   width: 56px;
   height: 56px;
   font-size: 24px;
+  --background: var(--ion-color-success);
+  --background-activated: var(--ion-color-success-shade);
+  --color: var(--ion-color-success-contrast);
+  --box-shadow: 0 4px 12px rgba(var(--ion-color-success-rgb), 0.4);
 }
 
 .switch-voice-button {

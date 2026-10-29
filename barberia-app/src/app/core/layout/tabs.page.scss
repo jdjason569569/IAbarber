@@ -1,0 +1,12 @@
+// The version line sits below the tab bar, so it takes over the safe-area padding.
+ion-tab-bar {
+  padding-bottom: 0;
+}
+
+.app-version {
+  padding: 2px 0 calc(4px + var(--ion-safe-area-bottom, 0px));
+  text-align: center;
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  background: var(--ion-tab-bar-background, var(--ion-background-color, #fff));
+}

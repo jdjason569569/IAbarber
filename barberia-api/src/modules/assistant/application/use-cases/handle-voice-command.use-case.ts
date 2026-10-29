@@ -4,6 +4,7 @@ import { ScheduleAppointmentUseCase } from '../../../appointments/application/us
 import { SetAppointmentCancelledUseCase } from '../../../appointments/application/use-cases/set-appointment-cancelled.use-case.js';
 import type { AppointmentDto } from '../../../appointments/application/dtos/appointment.dto.js';
 import { AppointmentConflictError } from '../../../appointments/domain/errors/appointment-conflict.error.js';
+import { BarberUnavailableError } from '../../../appointments/domain/errors/barber-unavailable.error.js';
 import { InvalidAppointmentError } from '../../../appointments/domain/errors/invalid-appointment.error.js';
 import { AppointmentNotFoundError } from '../../../appointments/domain/errors/appointment-not-found.error.js';
 import type { ServiceDto } from '../../../services/application/dtos/service.dto.js';
@@ -11,6 +12,7 @@ import { ListServicesUseCase } from '../../../services/application/use-cases/lis
 import { LLM_PORT } from '../../domain/ports/llm.port.js';
 import type { LlmPort, LlmTool, LlmToolCall } from '../../domain/ports/llm.port.js';
 import type { AssistantCommandInput, AssistantResult } from '../dtos/assistant.dto.js';
+import { localIsoDate } from '../../../../shared/utils/local-date.js';
 
 const TOOLS: LlmTool[] = [
   {
@@ -142,6 +144,9 @@ export class HandleVoiceCommandUseCase {
       if (error instanceof AppointmentConflictError) {
         return { reply: 'Ese horario ya está ocupado. Elige otra hora.', action: 'none' };
       }
+      if (error instanceof BarberUnavailableError) {
+        return { reply: 'A esa hora no hay disponibilidad. Elige otra hora.', action: 'none' };
+      }
       if (error instanceof InvalidAppointmentError || error instanceof AppointmentNotFoundError) {
         return { reply: error.message, action: 'none' };
       }
@@ -162,7 +167,7 @@ export class HandleVoiceCommandUseCase {
   }
 
   private buildSystemPrompt(existing: AppointmentDto[], services: ServiceDto[]): string {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localIsoDate();
     const active = existing
       .filter((a) => !a.cancelled)
       .map((a) => `#${a.id} ${a.client} ${a.date} ${a.time} (${a.service})`)

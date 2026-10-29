@@ -1,0 +1,20 @@
+.hint {
+  margin: 0 16px 4px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.empty {
+  color: var(--ion-color-medium);
+}
+
+/* "From" and "To" side by side, with the remove button at the end. */
+.block-row {
+  ion-select {
+    flex: 1;
+  }
+
+  ion-select + ion-select {
+    margin-left: 16px;
+  }
+}

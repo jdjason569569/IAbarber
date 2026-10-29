@@ -100,11 +100,14 @@ export class AppointmentListPage {
     this.selectedDate.set(toLocalIsoDate(date));
   }
 
-  /** Alert listing today's hours that are still free (open, not taken and not already past). */
+  /** Alert listing today's hours that are still free (open, not blocked, not taken and not already past). */
   protected async showAvailability(): Promise<void> {
     const now = new Date();
     const today = toLocalIsoDate(now);
-    const week = await firstValueFrom(this.businessHours.get()).catch(() => null);
+    const [week, blocks] = await Promise.all([
+      firstValueFrom(this.businessHours.get()).catch(() => null),
+      firstValueFrom(this.businessHours.getBlocks(today)).catch(() => []),
+    ]);
     const hours = week?.find((d) => d.weekday === now.getDay()) ?? FALLBACK_HOURS;
     const taken = new Set(
       this.appointments()
@@ -114,7 +117,8 @@ export class AppointmentListPage {
     const free: string[] = [];
     for (let hour = hours.openHour; hours.open && hour < hours.closeHour; hour++) {
       const time = `${String(hour).padStart(2, '0')}:00`;
-      if (hour > now.getHours() && !taken.has(time)) {
+      const blocked = blocks.some((b) => hour >= b.fromHour && hour < b.toHour);
+      if (hour > now.getHours() && !taken.has(time) && !blocked) {
         free.push(time);
       }
     }

@@ -6,3 +6,9 @@ export interface DayHours {
   openHour: number;
   closeHour: number;
 }
+
+/** Hours of one date when the barber is not available. Whole hours; `toHour` 24 means midnight. */
+export interface TimeBlock {
+  fromHour: number;
+  toHour: number;
+}

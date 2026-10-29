@@ -3,12 +3,16 @@ import { ListAppointmentsUseCase } from '../../../appointments/application/use-c
 import { ScheduleAppointmentUseCase } from '../../../appointments/application/use-cases/schedule-appointment.use-case.js';
 import { AppointmentConflictError } from '../../../appointments/domain/errors/appointment-conflict.error.js';
 import { AppointmentInPastError } from '../../../appointments/domain/errors/appointment-in-past.error.js';
+import { BarberUnavailableError } from '../../../appointments/domain/errors/barber-unavailable.error.js';
 import { InvalidAppointmentError } from '../../../appointments/domain/errors/invalid-appointment.error.js';
 import { OutsideBusinessHoursError } from '../../../appointments/domain/errors/outside-business-hours.error.js';
 import { GetBusinessHoursUseCase } from '../../../business-hours/application/use-cases/get-business-hours.use-case.js';
+import { GetDayBlocksUseCase } from '../../../business-hours/application/use-cases/get-day-blocks.use-case.js';
+import type { TimeBlock } from '../../../business-hours/domain/entities/day-blocks.entity.js';
 import type { DayHours } from '../../../business-hours/domain/entities/weekly-hours.entity.js';
 import type { ServiceDto } from '../../../services/application/dtos/service.dto.js';
 import { ListServicesUseCase } from '../../../services/application/use-cases/list-services.use-case.js';
+import { localIsoDate } from '../../../../shared/utils/local-date.js';
 import { LLM_PORT } from '../../domain/ports/llm.port.js';
 import type { LlmPort, LlmTool } from '../../domain/ports/llm.port.js';
 import type {
@@ -73,6 +77,7 @@ export class HandleBookingTurnUseCase {
     private readonly listAppointments: ListAppointmentsUseCase,
     private readonly listServices: ListServicesUseCase,
     private readonly businessHours: GetBusinessHoursUseCase,
+    private readonly dayBlocks: GetDayBlocksUseCase,
   ) {}
 
   async execute(input: BookingTurnInput): Promise<BookingTurnResult> {
@@ -113,6 +118,11 @@ export class HandleBookingTurnUseCase {
       if (draft.time && !hours.allows(draft.date, draft.time)) {
         const { time: _outside, ...keep } = draft;
         return { reply: outsideHoursReply(day), draft: keep, status: 'asking' };
+      }
+      const block = draft.time ? (await this.dayBlocks.execute(draft.date)).covering(draft.time) : undefined;
+      if (block) {
+        const { time: _blocked, ...keep } = draft;
+        return { reply: blockedReply(block), draft: keep, status: 'asking' };
       }
     }
 
@@ -180,6 +190,15 @@ export class HandleBookingTurnUseCase {
         const day = (await this.businessHours.execute()).forDate(draft.date ?? '');
         return { reply: outsideHoursReply(day), draft: keep, status: 'asking' };
       }
+      if (error instanceof BarberUnavailableError) {
+        const { time: _blocked, ...keep } = draft;
+        const block = (await this.dayBlocks.execute(draft.date ?? '')).covering(draft.time ?? '');
+        return {
+          reply: block ? blockedReply(block) : '¿A qué otra hora?',
+          draft: keep,
+          status: 'asking',
+        };
+      }
       if (error instanceof AppointmentInPastError) {
         return { reply: PAST_REPLY, draft: {}, status: 'cancelled' };
       }
@@ -195,7 +214,7 @@ export class HandleBookingTurnUseCase {
     expecting: BookingStep | null,
     services: ServiceDto[],
   ): string {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localIsoDate();
     return [
       'You help book a barbershop appointment by voice or typed text. The user answers in Spanish, one question at a time.',
       `Today is ${today}. Resolve relative dates ("mañana", "el viernes") to ISO dates.`,
@@ -210,6 +229,10 @@ export class HandleBookingTurnUseCase {
 
 function outsideHoursReply(day: DayHours): string {
   return `Ese día atendemos de ${spokenHour(day.openHour)} a ${spokenHour(day.closeHour)}. ¿A qué otra hora?`;
+}
+
+function blockedReply(block: TimeBlock): string {
+  return `De ${spokenHour(block.fromHour)} a ${spokenHour(block.toHour)} no hay disponibilidad. ¿A qué otra hora?`;
 }
 
 /** `7` -> "07:00"; `24` -> "medianoche". */
@@ -230,11 +253,6 @@ function sanitize(draft: BookingDraft, services: ServiceDto[]): BookingDraft {
 }
 
 /** `YYYY-MM-DD` in server local time, the same clock `ScheduleAppointmentUseCase` uses. */
-function localIsoDate(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-}
 
 function pickDefined(args: Record<string, unknown>): BookingDraft {
   const out: BookingDraft = {};

@@ -1,0 +1,76 @@
+<ion-list-header>{{ 'settings.blocks.title' | t }}</ion-list-header>
+<p class="hint">{{ 'settings.blocks.hint' | t: { date: todayLabel } }}</p>
+
+@if (loading()) {
+  <ion-item lines="none">
+    <ion-label class="ion-text-center">{{ 'settings.loading' | t }}</ion-label>
+  </ion-item>
+} @else if (!hours().open) {
+  <ion-item lines="none">
+    <ion-label class="ion-text-center">{{ 'settings.blocks.closedToday' | t }}</ion-label>
+  </ion-item>
+} @else {
+  <ion-list>
+    @for (block of blocks(); track $index; let i = $index) {
+      <ion-item class="block-row">
+        <ion-select
+          interface="popover"
+          [label]="'settings.blocks.from' | t"
+          labelPlacement="stacked"
+          [value]="block.fromHour"
+          (ionChange)="setFrom(i, $event.detail.value)"
+        >
+          @for (hour of startHours(); track hour) {
+            <ion-select-option [value]="hour">{{ hourLabel(hour) }}</ion-select-option>
+          }
+        </ion-select>
+        <ion-select
+          interface="popover"
+          [label]="'settings.blocks.to' | t"
+          labelPlacement="stacked"
+          [value]="block.toHour"
+          (ionChange)="setTo(i, $event.detail.value)"
+        >
+          @for (hour of endHours(); track hour) {
+            <ion-select-option [value]="hour" [disabled]="hour <= block.fromHour">{{ hourLabel(hour) }}</ion-select-option>
+          }
+        </ion-select>
+        <ion-button
+          slot="end"
+          fill="clear"
+          color="danger"
+          [attr.aria-label]="'settings.blocks.remove' | t"
+          (click)="remove(i)"
+        >
+          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+        </ion-button>
+      </ion-item>
+    } @empty {
+      <ion-item lines="none">
+        <ion-label class="ion-text-center empty">{{ 'settings.blocks.empty' | t }}</ion-label>
+      </ion-item>
+    }
+  </ion-list>
+
+  <div class="ion-padding-horizontal">
+    <ion-button fill="outline" expand="block" [disabled]="!canAdd()" (click)="add()">
+      <ion-icon slot="start" name="add-outline"></ion-icon>
+      {{ 'settings.blocks.add' | t }}
+    </ion-button>
+  </div>
+
+  @if (overlapping()) {
+    <ion-text color="danger">
+      <p class="ion-padding-horizontal">{{ 'settings.blocks.errors.overlap' | t }}</p>
+    </ion-text>
+  } @else if (message(); as msg) {
+    <ion-text [color]="msg.error ? 'danger' : 'success'">
+      <p class="ion-padding-horizontal">{{ msg.text }}</p>
+    </ion-text>
+  }
+  <div class="ion-padding">
+    <ion-button expand="block" [disabled]="!dirty() || saving() || overlapping()" (click)="save()">
+      {{ 'settings.blocks.save' | t }}
+    </ion-button>
+  </div>
+}

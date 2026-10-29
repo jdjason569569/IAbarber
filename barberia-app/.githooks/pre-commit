@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+# Bumps the barberia-app version before each commit that touches the app.
+# Skip it with: SKIP_VERSION_BUMP=1 git commit ...
+
+[ "$SKIP_VERSION_BUMP" = "1" ] && exit 0
+
+APP_DIR="barberia-app"
+
+# Only bump when the commit includes app changes.
+git diff --cached --name-only -- "$APP_DIR" | grep -q . || exit 0
+
+# Git GUIs and IDEs may not load nvm, so try it before giving up.
+if ! command -v node >/dev/null 2>&1 && [ -s "$HOME/.nvm/nvm.sh" ]; then
+  . "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
+fi
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit: node not found, the app version was not bumped." >&2
+  exit 1
+fi
+
+node "$APP_DIR/scripts/bump-version.mjs" || exit 1
+git add "$APP_DIR/package.json" "$APP_DIR/package-lock.json" "$APP_DIR/android/app/build.gradle" "$APP_DIR/src/app/core/config/app-version.ts"
