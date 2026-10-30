@@ -331,3 +331,50 @@ This file records, in chronological order, every change made to the backend.
 
 **Pendiente / notas**
 - Desplegar en Render antes de instalar la nueva versión de la app.
+
+---
+
+## 2026-10-29 · Fotos del cliente con cada corte (FLUX.1 Kontext en Hugging Face)
+
+**Qué se hizo**
+- Nuevo módulo `haircut-preview` con `POST /haircut-preview`. Recibe `{ photo, haircutId }` (la foto como data URL base64) y responde `{ image }` con la foto del cliente con ese corte.
+- Puerto `HairstyleEditor` con el adaptador `FluxKontextHairstyleEditor`, que usa `@gradio/client` para llamar a la Space gratuita `black-forest-labs/FLUX.1-Kontext-Dev` (ZeroGPU). La instrucción pide cambiar solo el pelo y mantener la cara, la barba, la ropa y el fondo (`domain/entities/haircut-style.ts`).
+- Errores: corte desconocido o foto inválida → 400. Space caída, ocupada, sin cuota o más de 150 s → 503.
+- `main.ts`: el límite del body JSON sube a 12 MB para que quepa la foto.
+- La foto no se guarda.
+
+**Pendiente / notas**
+- Variables opcionales: `HF_TOKEN` (token gratuito de Hugging Face; sin él la cuota anónima de GPU alcanza solo para pocas imágenes al día) y `HAIRCUT_PREVIEW_SPACE` (otra Space compatible).
+- Se probó Gemini (`gemini-*-image`): con la key del plan gratuito da 429 porque la cuota es 0. HairFastGAN tampoco sirve: la Space oficial depende de un servidor externo que no responde.
+- Desplegar en Render antes de instalar la nueva versión de la app.
+
+---
+
+## 2026-10-30 · Haircut recommendations from the catalog in Supabase (replaces the AI preview)
+
+**What was done**
+- Removed the `haircut-preview` module (FLUX.1 Kontext on Hugging Face) and the `@gradio/client` dependency. `main.ts` is back to the default JSON body limit.
+- New module `haircut-advisor` with `POST /haircut-recommendations`. It receives `{ metrics }` (the four face proportions measured on the phone, no photo) and responds `{ faceShape, recommendations }`: the shape with its probability ranking, and the top 5 cuts with `name`, `description`, `score` and `images`.
+- The face shape classifier moved from the app to `domain/entities/face-shape.entity.ts`; the ranking is in `domain/entities/haircut.entity.ts`. Invalid metrics → 400.
+- Port `HaircutCatalogRepository` with `SupabaseHaircutCatalogRepository` (table `haircuts`; example pictures listed from the public Storage bucket `haircut-images/<cut id>/`) and `InMemoryHaircutCatalogRepository` (default catalog, no pictures) when Supabase is not configured.
+- `docs/schema.sql`: table `haircuts` seeded with the 9 cuts, and the `haircut-images` bucket.
+
+**Current state**
+- Tested with the in-memory catalog: a round face gets pompadour/quiff first, an oblong face gets fringe first.
+
+**Pending / notes**
+- Run the new block of `docs/schema.sql` on Supabase; until then the endpoint answers 500 ("Could not find the table 'public.haircuts'").
+- Upload example pictures (jpg, png or webp) to `haircut-images/<cut id>/`. New cuts are rows in `haircuts`; no deploy needed.
+- `HF_TOKEN` in `.env` is no longer used.
+- Deploy to Render before installing the new app version.
+
+## 2026-10-30 · Haircut catalog created in Supabase
+
+**What was done**
+- Applied the haircut-advisor block of `docs/schema.sql` to Supabase (migration `create_haircuts_catalog`): `haircuts` table with the 9 cuts and the public `haircut-images` bucket. Without it `POST /haircut-recommendations` returned 500 and the app showed "No se pudieron obtener los cortes recomendados".
+
+**Current state**
+- `POST /haircut-recommendations` responds 200 with the face shape and ranked cuts.
+
+**Pending / notes**
+- The bucket is empty: cuts show the placeholder until pictures are uploaded to `haircut-images/<cut id>/`.

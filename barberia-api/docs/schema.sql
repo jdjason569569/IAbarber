@@ -83,3 +83,42 @@ alter table unavailable_slots enable row level security;
 -- (stored in service_cost). Run it once after deploying the API without services; it is safe to repeat.
 alter table appointments drop column if exists service;
 drop table if exists services;
+
+-- Haircut advisor catalog. The app measures the face on the phone and the API ranks these cuts
+-- by `suitability` (0 to 1 per face shape: oval, round, square, oblong, heart, diamond, triangle).
+-- Example pictures go in the public Storage bucket `haircut-images`, in a folder named after the
+-- cut id (e.g. `haircut-images/pompadour/1.jpg`); the API lists that folder. Run once; it is safe to repeat.
+create table if not exists haircuts (
+  id          text primary key,
+  name        text     not null,
+  description text     not null default '',
+  suitability jsonb    not null default '{}'::jsonb,
+  sort_order  smallint not null default 0,
+  active      boolean  not null default true
+);
+alter table haircuts enable row level security;
+
+insert into haircuts (id, name, description, suitability, sort_order) values
+  ('buzz', 'Rapado', 'Pelo muy corto y parejo en toda la cabeza. Resalta la mandíbula.',
+    '{"oval":0.8,"square":0.9,"oblong":0.3,"diamond":0.4,"heart":0.3,"round":0.2,"triangle":0.3}', 1),
+  ('crewCut', 'Crew cut', 'Arriba un poco más largo y lados en degradado. Clásico y fácil de llevar.',
+    '{"oval":0.9,"square":1,"oblong":0.6,"diamond":0.5,"heart":0.4,"round":0.5,"triangle":0.5}', 2),
+  ('sidePart', 'Raya al lado', 'Corte clásico peinado hacia un lado con la raya marcada.',
+    '{"oval":0.9,"square":0.9,"oblong":0.7,"diamond":0.6,"heart":0.7,"round":0.7,"triangle":0.7}', 3),
+  ('pompadour', 'Pompadour', 'Mucho volumen hacia arriba y atrás en el frente, lados en degradado.',
+    '{"oval":0.8,"round":1,"triangle":0.9,"square":0.6,"diamond":0.5,"heart":0.4,"oblong":0.1}', 4),
+  ('quiff', 'Tupé', 'Frente levantado con textura y lados cortos. Da altura sin ser tan formal.',
+    '{"oval":0.9,"round":0.9,"triangle":0.9,"diamond":0.7,"square":0.6,"heart":0.5,"oblong":0.2}', 5),
+  ('texturedCrop', 'Crop texturizado', 'Arriba corto y con textura hacia adelante, flequillo corto y degradado.',
+    '{"oval":0.9,"oblong":0.9,"square":0.8,"diamond":0.9,"heart":0.8,"round":0.3,"triangle":0.5}', 6),
+  ('undercut', 'Undercut', 'Lados y nuca muy cortos con contraste fuerte; arriba largo peinado hacia atrás o al lado.',
+    '{"oval":0.8,"round":0.8,"square":0.8,"triangle":0.6,"diamond":0.5,"heart":0.4,"oblong":0.3}', 7),
+  ('fringe', 'Flequillo', 'El pelo cae hacia adelante y cubre parte de la frente. Acorta visualmente el rostro.',
+    '{"oblong":1,"heart":0.9,"diamond":0.9,"oval":0.7,"square":0.5,"triangle":0.4,"round":0.1}', 8),
+  ('mediumFlow', 'Medio largo', 'Largo medio con movimiento, cubre parte de las orejas y la nuca.',
+    '{"heart":1,"diamond":0.9,"oblong":0.8,"triangle":0.8,"oval":0.8,"square":0.6,"round":0.3}', 9)
+on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public)
+values ('haircut-images', 'haircut-images', true)
+on conflict (id) do nothing;
