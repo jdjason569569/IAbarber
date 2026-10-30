@@ -49,6 +49,7 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
       .eq('time', time)
       .eq('cancelled', false)
       .eq('walk_in', false)
+      .eq('completed', false)
       .limit(1)
       .maybeSingle();
     if (error) throw new Error(error.message);

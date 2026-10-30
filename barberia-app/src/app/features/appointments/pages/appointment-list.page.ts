@@ -10,7 +10,13 @@ import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { parseIsoDate, toLocalIsoDate } from '../../../shared/utils/date.util';
 import { SendProgressComponent } from '../../assistant/components/send-progress/send-progress.component';
-import { BookingAnswers, BookingDraft, BookingStep, BookingTurnResult } from '../../assistant/models/assistant.model';
+import {
+  BookedAppointment,
+  BookingAnswers,
+  BookingDraft,
+  BookingStep,
+  BookingTurnResult,
+} from '../../assistant/models/assistant.model';
 import { VoiceError } from '../../assistant/models/voice-error';
 import { Appointment } from '../models/appointment.model';
 import { AssistantService } from '../../assistant/services/assistant.service';
@@ -155,9 +161,9 @@ export class AppointmentListPage {
       firstValueFrom(this.businessHours.getBlocks(today)).catch(() => []),
     ]);
     const hours = week?.find((d) => d.weekday === now.getDay()) ?? FALLBACK_HOURS;
-    // Walk-ins do not hold a slot; a booking moved to :30 takes the two hours it overlaps.
+    // Walk-ins and completed appointments do not hold a slot; a booking moved to :30 takes the two hours it overlaps.
     const taken = this.appointments()
-      .filter((a) => a.date === today && !a.cancelled && !a.walkIn)
+      .filter((a) => a.date === today && !a.cancelled && !a.walkIn && !a.completed)
       .map((a) => toMinutes(a.time));
     const free: string[] = [];
     for (let hour = hours.openHour; hours.open && hour < hours.closeHour; hour++) {
@@ -232,14 +238,20 @@ export class AppointmentListPage {
     this.cancelled = new Promise<never>((_, reject) => (this.cancelDialog = () => reject(new DialogCancelled())));
     // Nothing may be waiting on it when the user cancels; that is not an unhandled error.
     this.cancelled.catch(() => undefined);
+    // What was saved; its summary is shown once the voice modal has closed.
+    let booked: BookingDraft | null = null;
     try {
       let draft: BookingDraft = initialDraft;
-      // The questions are asked locally; the API only gets one request with every answer.
+      // The questions are asked locally; the API reads every answer in one preview request and
+      // returns the clean values, which the user reviews before the draft is sent again to be saved.
       // A rejected answer (day closed, hour taken...) comes back as a reply that asks it again.
       let rejected: BookingTurnResult | null = null;
+      // Answers fixed in the review; they are read again without asking their questions.
+      let edited: BookingAnswers = {};
       while (true) {
-        const answers: BookingAnswers = {};
-        for (const step of missingSteps(draft)) {
+        const answers: BookingAnswers = edited;
+        edited = {};
+        for (const step of missingSteps(draft).filter((s) => !answers[s])) {
           const question = rejected?.reply ?? this.i18n.t(QUESTION_KEYS[step]);
           const seconds = rejected?.listenSeconds ?? LISTEN_SECONDS;
           rejected = null;
@@ -250,9 +262,21 @@ export class AppointmentListPage {
           this.dialogAnswer.set(answers[step]!);
           this.logAnswer(step, answers[step]!);
         }
-        const reviewed = await this.reviewAnswers(answers, draft);
-        const turn = await this.withSendRetries(() => this.sendAnswers(reviewed.answers, reviewed.draft));
+        let turn = await this.withSendRetries(() => this.sendAnswers(answers, draft, true));
+        // Last draft read by the API; a saved booking comes back with an empty draft.
+        const sent = turn.draft;
         draft = turn.draft;
+        this.showDraft(draft);
+        if (turn.status === 'ready') {
+          edited = await this.reviewDraft();
+          if (Object.keys(edited).length > 0) {
+            draft = withoutSteps(draft, Object.keys(edited) as BookingStep[]);
+            continue;
+          }
+          const confirmed = draft;
+          turn = await this.withSendRetries(() => this.sendAnswers({}, confirmed));
+          draft = turn.draft;
+        }
         if (turn.status === 'asking') {
           rejected = turn;
           continue;
@@ -262,6 +286,7 @@ export class AppointmentListPage {
         await this.untilCancelled(this.voice.speak(turn.reply));
         if (turn.status === 'created') {
           this.refresh();
+          booked = bookedDraft(turn.appointment, sent);
         }
         return;
       }
@@ -282,17 +307,17 @@ export class AppointmentListPage {
       this.reviewChoice = null;
       this.textMode.set(false);
       this.dialogActive.set(false);
+      if (booked) {
+        void this.showBookedSummary(booked);
+      }
     }
   }
 
   /**
-   * Shows every answer with Confirm / Edit / Cancel and waits until the user confirms. Editing an
-   * answer the API already accepted takes it out of the draft so it is read again.
+   * Shows the values the API read with Confirm / Edit / Cancel and waits for the user. Resolves
+   * with no answers on Confirm, or with the fields the user changed so they are read again.
    */
-  private async reviewAnswers(
-    answers: BookingAnswers,
-    draft: BookingDraft,
-  ): Promise<{ answers: BookingAnswers; draft: BookingDraft }> {
+  private async reviewDraft(): Promise<BookingAnswers> {
     const prompt = this.i18n.t('assistant.review.title');
     this.assistantReply.set(prompt);
     this.reviewing.set(true);
@@ -302,15 +327,15 @@ export class AppointmentListPage {
         void this.voice.speak(prompt);
         if ((await this.untilCancelled(choice)) === 'confirm') {
           this.voice.stopSpeaking();
-          return { answers, draft };
+          return {};
         }
         this.voice.stopSpeaking();
         const edited = await this.editAnswers();
-        for (const [step, answer] of Object.entries(edited) as [BookingStep, string][]) {
-          answers = { ...answers, [step]: answer };
-          const { [step]: _replaced, ...rest } = draft;
-          draft = rest;
-          this.logAnswer(step, answer);
+        if (Object.keys(edited).length > 0) {
+          for (const [step, answer] of Object.entries(edited) as [BookingStep, string][]) {
+            this.logAnswer(step, answer);
+          }
+          return edited;
         }
       }
     } finally {
@@ -319,6 +344,49 @@ export class AppointmentListPage {
       this.editingAnswers.set(false);
       this.reviewing.set(false);
     }
+  }
+
+  /** Replaces the answers shown in the modal with the clean values the API read from them. */
+  private showDraft(draft: BookingDraft): void {
+    const steps: BookingStep[] = draft.walkIn ? ['price'] : ['client', 'date', 'time', 'price'];
+    this.dialogLog.set(
+      steps.flatMap((step) => {
+        const value = this.formatDraftValue(step, draft);
+        return value === null ? [] : [{ step, answer: value }];
+      }),
+    );
+  }
+
+  /** How a value of the draft reads in the review: "sábado, 31 de octubre de 2026", "$20.000". */
+  private formatDraftValue(step: BookingStep, draft: BookingDraft): string | null {
+    switch (step) {
+      case 'client':
+        return draft.client ?? null;
+      case 'date':
+        return draft.date
+          ? new Intl.DateTimeFormat(this.i18n.locale, { dateStyle: 'full' }).format(parseIsoDate(draft.date))
+          : null;
+      case 'time':
+        return draft.time ?? null;
+      case 'price':
+        return draft.price === undefined ? null : `$${new Intl.NumberFormat(this.i18n.locale).format(draft.price)}`;
+    }
+  }
+
+  /** Alert telling what the assistant just saved, so the barber can check it. */
+  private async showBookedSummary(draft: BookingDraft): Promise<void> {
+    const steps: BookingStep[] = draft.walkIn ? ['price'] : ['client', 'date', 'time', 'price'];
+    const lines = steps.flatMap((step) => {
+      const value = this.formatDraftValue(step, draft);
+      return value === null ? [] : [`${this.i18n.t(STEP_LABEL_KEYS[step])}: ${value}`];
+    });
+    const alert = await this.alertController.create({
+      header: this.i18n.t(draft.walkIn ? 'assistant.booked.walkInTitle' : 'assistant.booked.title'),
+      message: lines.join('\n'),
+      cssClass: 'booked-summary-alert',
+      buttons: [this.i18n.t('assistant.booked.ok')],
+    });
+    await alert.present();
   }
 
   /** Turns the review rows into fields; resolves with the answers that changed (none on Back). */
@@ -511,7 +579,7 @@ export class AppointmentListPage {
   }
 
   /** Sends every answer to the assistant while a progress bar fills up from 0 to 100 %. */
-  private async sendAnswers(answers: BookingAnswers, draft: BookingDraft): Promise<BookingTurnResult> {
+  private async sendAnswers(answers: BookingAnswers, draft: BookingDraft, preview = false): Promise<BookingTurnResult> {
     this.sendProgress.set(0);
     const timer = setInterval(() => {
       const current = this.sendProgress() ?? 0;
@@ -519,7 +587,7 @@ export class AppointmentListPage {
       this.sendProgress.set(Math.ceil(current + (SEND_PROGRESS_CAP - current) / 10));
     }, SEND_PROGRESS_TICK_MS);
     try {
-      const turn = await this.untilCancelled(firstValueFrom(this.assistant.submitBooking(answers, draft)));
+      const turn = await this.untilCancelled(firstValueFrom(this.assistant.submitBooking(answers, draft, preview)));
       clearInterval(timer);
       this.sendProgress.set(100);
       await new Promise((resolve) => setTimeout(resolve, SEND_PROGRESS_DONE_MS));
@@ -702,6 +770,25 @@ function missingSteps(draft: BookingDraft): BookingStep[] {
   if (!draft.time) steps.push('time');
   if (draft.price === undefined) steps.push('price');
   return steps;
+}
+
+/** What was saved, as a draft for the summary; the draft sent is used if the API omits it. */
+function bookedDraft(appointment: BookedAppointment | undefined, sent: BookingDraft): BookingDraft {
+  if (!appointment) {
+    return sent;
+  }
+  return appointment.walkIn
+    ? { walkIn: true, price: appointment.serviceCost }
+    : { client: appointment.client, date: appointment.date, time: appointment.time, price: appointment.serviceCost };
+}
+
+/** The draft without the given steps, so their new answers are read again. */
+function withoutSteps(draft: BookingDraft, steps: BookingStep[]): BookingDraft {
+  const rest = { ...draft };
+  for (const step of steps) {
+    delete rest[step];
+  }
+  return rest;
 }
 
 function isNetworkError(error: unknown): boolean {

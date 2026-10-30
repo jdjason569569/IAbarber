@@ -47,7 +47,7 @@ export class RegisterWalkInUseCase {
     });
 
     const today = (await this.appointments.findAll())
-      .filter((a) => a.isActive && !a.walkIn && a.date === date)
+      .filter((a) => a.holdsSlot && a.date === date)
       .sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
     // First booking whose hour overlaps the walk-in: the late client, or the next one about to come.
     const first = today.findIndex((a) => {

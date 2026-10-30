@@ -17,11 +17,11 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
   }
 
   async findActiveAt(date: string, time: string): Promise<Appointment | null> {
-    return this.items.find((a) => a.isActive && !a.walkIn && a.date === date && a.time === time) ?? null;
+    return this.items.find((a) => a.holdsSlot && a.date === date && a.time === time) ?? null;
   }
 
   async save(appointment: Appointment): Promise<Appointment> {
-    const taken = appointment.isActive && !appointment.walkIn
+    const taken = appointment.holdsSlot
       ? await this.findActiveAt(appointment.date, appointment.time)
       : null;
     if (taken && taken.id !== appointment.id) {

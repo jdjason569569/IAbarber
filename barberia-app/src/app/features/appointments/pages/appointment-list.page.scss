@@ -319,13 +319,23 @@
 }
 
 .voice-dialog {
+  /* Two equal empty halves keep the middle row centered whatever the answers list below holds;
+     a list taller than its half overflows and the modal scrolls. */
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+  min-height: 100%;
+  row-gap: 18px;
+  /* The full-screen modal starts under the status bar. */
+  padding-top: calc(8px + var(--ion-safe-area-top, 0px));
+  text-align: center;
+}
+
+.voice-main {
+  grid-row: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 18px;
-  /* The full-screen modal starts under the status bar. */
-  padding-top: calc(8px + var(--ion-safe-area-top, 0px));
-  text-align: center;
 }
 
 .voice-question {
@@ -423,6 +433,7 @@
 
 /* Answers given so far, one row per question, under the modal actions. */
 .voice-log {
+  grid-row: 3;
   display: flex;
   flex-direction: column;
   gap: 8px;

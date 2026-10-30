@@ -23,13 +23,18 @@ export interface BookingTurnInput {
   draft: BookingDraft;
   /** All the answers at once; when present, `text` is ignored. */
   answers?: BookingAnswers;
+  /** Read and check the answers without saving: a complete draft comes back as `ready`. */
+  preview?: boolean;
 }
 
 export interface BookingTurnResult {
   reply: string;
   draft: BookingDraft;
-  /** `asking` while data is missing; `created` once saved; `cancelled` if the user gave up. */
-  status: 'asking' | 'created' | 'cancelled';
+  /**
+   * `asking` while data is missing; `ready` when a preview is complete and valid (nothing saved);
+   * `created` once saved; `cancelled` if the user gave up.
+   */
+  status: 'asking' | 'ready' | 'created' | 'cancelled';
   appointment?: AppointmentDto;
   /** Overrides the app's default listening window for the next answer. */
   listenSeconds?: number;

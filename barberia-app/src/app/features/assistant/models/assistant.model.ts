@@ -16,7 +16,19 @@ export type BookingAnswers = Partial<Record<BookingStep, string>>;
 export interface BookingTurnResult {
   reply: string;
   draft: BookingDraft;
-  status: 'asking' | 'created' | 'cancelled';
+  /** `ready`: a preview read every answer and found them valid; nothing is saved yet. */
+  status: 'asking' | 'ready' | 'created' | 'cancelled';
   /** Listening window for the next answer; the app default applies when absent. */
   listenSeconds?: number;
+  /** The appointment saved, when `status` is `created` (the draft comes back empty then). */
+  appointment?: BookedAppointment;
+}
+
+/** Appointment as the API returns it after the assistant saves it. */
+export interface BookedAppointment {
+  client: string;
+  date: string;
+  time: string;
+  serviceCost: number;
+  walkIn: boolean;
 }

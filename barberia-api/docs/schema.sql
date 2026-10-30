@@ -122,3 +122,10 @@ on conflict (id) do nothing;
 insert into storage.buckets (id, name, public)
 values ('haircut-images', 'haircut-images', true)
 on conflict (id) do nothing;
+
+-- Migration: a completed appointment frees its slot (the client may be served earlier than booked),
+-- so the unique (date, time) index ignores completed appointments too. Run once; it is safe to repeat.
+drop index if exists appointments_active_slot_unique;
+create unique index appointments_active_slot_unique
+  on appointments (date, time)
+  where not cancelled and not walk_in and not completed;

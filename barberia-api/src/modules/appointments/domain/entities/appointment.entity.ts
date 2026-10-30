@@ -108,10 +108,13 @@ export class Appointment {
 
   get isActive(): boolean { return !this.props.cancelled; }
 
-  /** True when both are active bookings (not walk-ins) of the same day less than one slot apart. */
+  /** True for a pending booking: cancelled, completed and walk-in appointments leave the slot free. */
+  get holdsSlot(): boolean { return !this.props.cancelled && !this.props.walkIn && !this.props.completed; }
+
+  /** True when both hold a slot of the same day and start less than one slot apart. */
   clashesWith(other: Appointment): boolean {
     return (
-      this.isActive && other.isActive && !this.walkIn && !other.walkIn &&
+      this.holdsSlot && other.holdsSlot &&
       this.date === other.date &&
       Math.abs(toMinutes(this.time) - toMinutes(other.time)) < APPOINTMENT_MINUTES
     );

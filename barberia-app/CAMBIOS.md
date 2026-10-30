@@ -882,3 +882,58 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Pending / notes**
 - Native change: the app must be reinstalled on the phone (`npm run install_app`).
+
+---
+
+## 2026-10-30 · Resumen de la cita agendada por voz
+
+**Qué se hizo**
+- Cuando el asistente guarda la cita (`status: 'created'`), se abre un alerta con lo que se agendó: Cliente, Fecha (completa), Hora y Precio, uno por línea, con el botón **Aceptar**. En cliente casual solo sale el precio y el título cambia.
+- Método `showBookedSummary` en `AppointmentListPage`; reutiliza `formatDraftValue` de la revisión.
+- Textos nuevos `assistant.booked.title`, `assistant.booked.walkInTitle` y `assistant.booked.ok`.
+- Clase global `.booked-summary-alert` en `global.scss` para respetar los saltos de línea (Ionic no permite HTML en el mensaje del alerta).
+- Corrección: el alerta se abría mientras el modal de voz seguía abierto y no se veía. Ahora se muestra al cerrar el diálogo (en el `finally` de `onMicClick`). Se compiló y sincronizó con Android.
+
+---
+
+## 2026-10-30 · App de producción instalada en el teléfono
+
+**Qué se hizo**
+- Compilación de producción (`ng build` + `cap sync android` sin `CAP_ENV`): el API es `https://iabarber.onrender.com` y el tráfico sin HTTPS queda apagado.
+- APK armado con `./gradlew assembleDebug`. Gradle lo nombra `barberia-<versión>-debug.apk`, por eso `ionic capacitor run` no lo encuentra (busca `app-debug.apk`); se instaló con `adb install`.
+- La app anterior tenía otra firma y Android rechazaba la actualización: se desinstaló y se instaló de nuevo.
+
+**Pendiente / notas**
+- El API publicado en Render todavía no tiene el modo `preview` (cambios del API sin commit). Mientras no se publique, el primer envío guarda la cita directamente, sin pasar por la pantalla de revisión.
+
+---
+
+## 2026-10-30 · El resumen de la cita agendada salía vacío
+
+**Qué se hizo**
+- Al guardar, el API devuelve `draft: {}` y la cita guardada en `appointment`. El alerta "Cita agendada" usaba el borrador y salía sin datos.
+- Nuevo tipo `BookedAppointment` y campo `appointment` en `BookingTurnResult`. La función `bookedDraft` arma el resumen con la cita guardada (cliente, fecha, hora, precio; en cliente casual solo el precio). Si el API no la manda, usa el último borrador enviado.
+- Compilado en producción e instalado en el teléfono.
+
+---
+
+## 2026-10-30 · Pregunta del asistente en el centro de la pantalla
+
+**Qué se hizo**
+- En el modal de voz, la pregunta, el contador y la respuesta quedan centrados verticalmente (`.voice-dialog` con `justify-content: center` y `min-height: 100%`). Antes quedaban arriba y la mitad de abajo de la pantalla estaba vacía. Si la lista de la revisión es larga, se puede desplazar.
+- Compilado en producción e instalado en el teléfono.
+
+**Pendiente / notas**
+- La hoja de estilos de la página supera el presupuesto de 5 kB de Angular (7,86 kB). Es solo un aviso; la compilación pasa.
+- Corrección: la pregunta se iba desplazando hacia arriba a medida que crecía la lista "Lo que has dicho", porque se centraba todo junto. Ahora la pregunta, el contador y la respuesta van en `.voice-main`, en la fila del medio de una grilla con dos mitades vacías iguales (`minmax(0, 1fr) auto minmax(0, 1fr)`), y la lista va en la fila de abajo. La pregunta queda fija aunque la lista crezca; si la lista no cabe, el modal se desplaza.
+- El presupuesto de error de la hoja de estilos es de 8 kB y quedó en 7,99 kB. El próximo estilo que se agregue a esta página lo va a superar: hay que aligerar el archivo o subir el límite en `angular.json`.
+
+---
+
+## 2026-10-30 · Una cita completada libera su hora
+
+**Qué se hizo**
+- El botón de disponibilidad del día ya no cuenta como ocupadas las horas de citas completadas (el cliente pudo ser atendido antes de su hora). Va junto con el cambio del API que permite agendar en esa hora.
+
+**Pendiente / notas**
+- Compilar e instalar en el teléfono para ver la disponibilidad corregida.

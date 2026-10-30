@@ -38,6 +38,18 @@ const CLOSED_DAY_REPLY = 'Ese día no atendemos. ¿Para qué otra fecha?';
 
 const PRICE_HINT = "The price is a number in pesos: 'quince mil' -> 15000, '20 mil' -> 20000, 'doce mil quinientos' -> 12500.";
 
+/**
+ * The barbershop is noisy (music, clippers, other people talking), so the speech recognizer often
+ * mixes the barber's answer with background speech.
+ */
+const NOISE_HINT = [
+  'Answers come from a speech recognizer in a noisy barbershop and may contain background speech, music lyrics or unrelated phrases mixed in.',
+  'Extract only the part that answers the question and ignore the rest. Example: "a las tres pásame la toalla y media" -> time 15:30.',
+  'The client is only a person\'s name (first name and maybe surnames): drop any other words around it. Example: "Carlos Gómez oye bájale a la música" -> "Carlos Gómez".',
+  'If nothing in an answer fits its field, omit that field instead of guessing, so the question is asked again.',
+  'Call abort_booking only when the whole answer clearly asks to stop or cancel the booking, never because a background phrase contains words like "no", "ya" or "cancelar".',
+].join('\n');
+
 function question(step: BookingStep): string {
   switch (step) {
     case 'client':
@@ -148,6 +160,10 @@ export class HandleBookingTurnUseCase {
         status: 'asking',
       };
     }
+    if (input.preview) {
+      // The app shows these clean values for review and sends the draft back to save it.
+      return { reply: '', draft, status: 'ready' };
+    }
     return draft.walkIn ? this.createWalkIn(draft) : this.create(draft);
   }
 
@@ -229,6 +245,7 @@ export class HandleBookingTurnUseCase {
       `Today is ${localIsoDate()}. Resolve relative dates ("mañana", "el viernes") to ISO dates.`,
       'Barbershop hours are daytime: "a las 4" means 16:00 unless the user says morning.',
       PRICE_HINT,
+      NOISE_HINT,
       `Already collected: ${JSON.stringify(draft)}.`,
       'Call fill_booking with every detail you can extract from the answers. If an answer says they want to stop, call abort_booking.',
     ].join('\n');
@@ -241,6 +258,7 @@ export class HandleBookingTurnUseCase {
         'You help register a walk-in client being served right now at a barbershop. The user answers in Spanish.',
         'Only the price of the service is needed: never ask for or record the client name, date or time.',
         PRICE_HINT,
+        NOISE_HINT,
         'Call fill_booking with only the price. If they want to stop, call abort_booking.',
       ].join('\n');
     }
@@ -249,6 +267,7 @@ export class HandleBookingTurnUseCase {
       `Today is ${today}. Resolve relative dates ("mañana", "el viernes") to ISO dates.`,
       'Barbershop hours are daytime: "a las 4" means 16:00 unless the user says morning.',
       PRICE_HINT,
+      NOISE_HINT,
       `Already collected: ${JSON.stringify(draft)}.`,
       `The question just asked was about: ${expecting ?? 'confirmation'}.`,
       'Call fill_booking with ONLY the details present in the last answer (the user may give several at once). If they want to stop, call abort_booking.',

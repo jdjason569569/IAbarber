@@ -106,34 +106,37 @@
   <ng-template>
     <ion-content class="ion-padding">
       <div class="voice-dialog">
-        <!-- Tracked by the question counter: each new question is a new element, so the flash replays. -->
-        @for (tick of [questionTick()]; track tick) {
-          <p class="voice-question" [class.flash]="!reviewing()">{{ assistantReply() }}</p>
-        }
+        <!-- Question, timer and answer stay in the middle; the answers list below never moves them. -->
+        <div class="voice-main">
+          <!-- Tracked by the question counter: each new question is a new element, so the flash replays. -->
+          @for (tick of [questionTick()]; track tick) {
+            <p class="voice-question" [class.flash]="!reviewing()">{{ assistantReply() }}</p>
+          }
 
-        @if (!reviewing()) {
-          <div class="voice-timer" [class.active]="listening()">
-            @if (listening()) {
-              <span class="voice-countdown">{{ countdown() }}</span>
-              <span class="voice-listening">{{ 'assistant.listening' | t }}</span>
-            } @else {
-              <ion-icon name="mic"></ion-icon>
-            }
-          </div>
+          @if (!reviewing()) {
+            <div class="voice-timer" [class.active]="listening()">
+              @if (listening()) {
+                <span class="voice-countdown">{{ countdown() }}</span>
+                <span class="voice-listening">{{ 'assistant.listening' | t }}</span>
+              } @else {
+                <ion-icon name="mic"></ion-icon>
+              }
+            </div>
 
-          <div class="voice-answer">
-            <span class="voice-answer-label">{{ 'assistant.modal.answer' | t }}</span>
-            @if (dialogAnswer(); as answer) {
-              <p class="voice-answer-text">"{{ answer }}"</p>
-            } @else {
-              <p class="voice-answer-text pending">{{ 'assistant.modal.waiting' | t }}</p>
-            }
-          </div>
-        }
+            <div class="voice-answer">
+              <span class="voice-answer-label">{{ 'assistant.modal.answer' | t }}</span>
+              @if (dialogAnswer(); as answer) {
+                <p class="voice-answer-text">"{{ answer }}"</p>
+              } @else {
+                <p class="voice-answer-text pending">{{ 'assistant.modal.waiting' | t }}</p>
+              }
+            </div>
+          }
+        </div>
 
         @if (dialogLog().length > 0) {
           <div class="voice-log">
-            <span class="voice-answer-label">{{ 'assistant.modal.log' | t }}</span>
+            <span class="voice-answer-label">{{ (reviewing() ? 'assistant.review.summary' : 'assistant.modal.log') | t }}</span>
             @for (entry of dialogLog(); track entry.step) {
               @if (editingAnswers()) {
                 <ion-input

@@ -18,12 +18,15 @@ export class AssistantController {
   ) {}
 
   @Post('booking')
-  async booking(@Body() body: { text?: string; draft?: BookingDraft; answers?: Record<string, unknown> }) {
+  async booking(
+    @Body() body: { text?: string; draft?: BookingDraft; answers?: Record<string, unknown>; preview?: boolean },
+  ) {
     try {
       return await this.handleBookingTurn.execute({
         text: typeof body?.text === 'string' ? body.text : '',
         draft: body?.draft ?? {},
         answers: pickAnswers(body?.answers),
+        preview: body?.preview === true,
       });
     } catch (error) {
       throw new HttpException(

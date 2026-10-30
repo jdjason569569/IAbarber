@@ -12,11 +12,16 @@ export class AssistantService {
 
   /**
    * Sends every answer of the dialog at once plus the draft so far; the API reads them with a
-   * single LLM call. Skips the global overlay: the page shows its own send progress bar.
+   * single LLM call. With `preview` nothing is saved: a valid draft comes back as `ready` for review.
+   * Skips the global overlay: the page shows its own send progress bar.
    */
-  submitBooking(answers: BookingAnswers, draft: BookingDraft): Observable<BookingTurnResult> {
+  submitBooking(answers: BookingAnswers, draft: BookingDraft, preview = false): Observable<BookingTurnResult> {
     return this.http
-      .post<BookingTurnResult>(this.url, { answers, draft }, { context: new HttpContext().set(SKIP_LOADING, true) })
+      .post<BookingTurnResult>(
+        this.url,
+        { answers, draft, preview },
+        { context: new HttpContext().set(SKIP_LOADING, true) },
+      )
       .pipe(timeout(30000));
   }
 }

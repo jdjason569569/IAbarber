@@ -378,3 +378,33 @@ This file records, in chronological order, every change made to the backend.
 
 **Pending / notes**
 - The bucket is empty: cuts show the placeholder until pictures are uploaded to `haircut-images/<cut id>/`.
+
+---
+
+## 2026-10-30 · Voice booking: ignore background noise in the answers
+
+**What was done**
+- `handle-booking-turn.use-case.ts`: new `NOISE_HINT` added to the three booking prompts (all answers at once, one question at a time and walk-in). It tells Gemini that the transcript comes from a noisy barbershop and may include background speech or music: extract only what answers each question, keep only the person's name as client, omit a field when nothing fits (so the question is asked again) and call `abort_booking` only when the whole answer asks to stop.
+
+**Current state**
+- Tested with Gemini and the in-memory repositories: "Carlos Gómez oye bájale a la música" → `Carlos Gómez`; "a las tres pásame la toalla y media" → `15:30`; a song lyric as the name → asked again; "quince mil ese partido lo van a cancelar" → price 15000, not cancelled; "no, cancela, ya no quiero agendar" → cancelled.
+
+**Pending / notes**
+- Deploy to Render. Only the API changed; the app does not need to be reinstalled.
+
+---
+
+## 2026-10-30 · A completed appointment frees its slot
+
+**What was done**
+- Bug: a booking served earlier than planned (booked 15:00, done at 14:00 and marked completed) kept holding its slot, so a new 15:00 booking was rejected as already booked.
+- `appointment.entity.ts`: new `holdsSlot` getter (not cancelled, not walk-in, not completed); `clashesWith` uses it.
+- `set-appointment-completed.use-case.ts`: unmarking a completed appointment takes the slot again, so it checks barber blocks and clashes first (same as reactivating a cancelled one).
+- `set-appointment-cancelled.use-case.ts`, `register-walk-in.use-case.ts` (completed bookings are no longer shifted by a walk-in), both repositories' `findActiveAt`/`save` use the same rule.
+- `docs/schema.sql` and Supabase (migration `completed_appointments_free_slot`): the unique `(date, time)` index also ignores completed appointments.
+
+**Current state**
+- `npm run build` passes. Index applied in Supabase.
+
+**Pending / notes**
+- Deploy to Render.

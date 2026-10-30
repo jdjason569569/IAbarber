@@ -42,3 +42,8 @@ ion-title {
   letter-spacing: 0.5px;
   color: var(--ion-color-primary);
 }
+
+/* Summary shown after the assistant saves an appointment: one field per line. */
+.booked-summary-alert .alert-message {
+  white-space: pre-line;
+}
