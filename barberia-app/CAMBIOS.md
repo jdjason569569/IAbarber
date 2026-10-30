@@ -797,3 +797,88 @@ npx ionic capacitor add android   # añadir plataforma Android
 - Bajo los botones del modal se apunta cada respuesta con su pregunta (Cliente, Fecha, Hora, Precio), con la señal `dialogLog`. Si una pregunta se repite, su respuesta se reemplaza. Textos nuevos `assistant.modal.log` y `assistant.step.*`.
 - Corrección: la lista de respuestas iba debajo de los botones y quedaba fuera de la pantalla en teléfonos pequeños. Ahora va justo debajo de "Tu respuesta". Los botones están fijos en un pie del modal, y la pregunta deja el margen de la barra de estado.
 - Paso de revisión antes de enviar: con todas las respuestas, el modal muestra "Revisa los datos antes de enviar" con **Confirmar** (envía), **Editar** y **Cancelar**. Sale también si se respondió escribiendo. **Editar** convierte cada fila en un campo con su etiqueta, con **Guardar** y **Volver**. Si se edita una respuesta que el API ya había aceptado, sale del `draft` y se vuelve a interpretar. Textos nuevos `assistant.review.*`.
+
+---
+
+## 2026-10-29 · Asesor de cortes: forma del rostro con la cámara y vista 3D
+
+**Qué se hizo**
+- Investigación: ninguna librería (open source ni de pago) devuelve cortes en 3D a partir de una foto. La investigación de pelo 3D desde una foto (HairStep, SRM-Hair, Im2Haircut) necesita GPU, y las APIs de pago (Perfect Corp Hair API, Banuba) solo hacen pruebas en 2D. Se eligió un enfoque híbrido que corre en el teléfono.
+- Pestaña nueva **Cortes** (`features/haircut-advisor/`, ruta `haircut-advisor`). El barbero toma o elige una foto del cliente (`core/camera/camera.service.ts`, `@capacitor/camera`).
+- `FaceAnalysisService` usa MediaPipe Face Landmarker (`@mediapipe/tasks-vision`, Apache-2.0) en el teléfono. Mide las proporciones del rostro y rechaza fotos con la cabeza girada más de 15°. La foto no se guarda ni se envía.
+- `face-shape.classifier.ts` da la forma (ovalado, redondo, cuadrado, alargado, corazón, diamante, triangular) con su porcentaje, comparando con prototipos calibrados sobre la cara canónica de MediaPipe.
+- `HaircutRecommendationService` ordena el catálogo (`data/haircut-catalog.ts`, 9 cortes) según la forma.
+- Vista 3D con three.js (`haircut-3d-viewer`): una cabeza ajustada a las proporciones del cliente con el pelo de cada corte generado por código (se gira y se hace zoom). Si un corte tiene `modelPath`, carga ese GLB en su lugar.
+- El runtime WASM se copia desde `node_modules` por `angular.json`, y el modelo va en `src/assets/mediapipe/face_landmarker.task` (3,7 MB), así que funciona sin conexión.
+- Permiso `CAMERA` en `AndroidManifest.xml`. Textos `tabs.haircutAdvisor` y `haircutAdvisor.*`.
+
+**Estado**
+- Probado en Chrome sin interfaz con una foto real: detecta la cara, clasifica y muestra los cortes y la vista 3D.
+
+**Pendiente / notas**
+- Los umbrales de forma son heurísticos: calibrar con fotos reales de clientes.
+- El pelo 3D es esquemático. Para algo realista, añadir modelos GLB por corte (`modelPath`).
+- Falta probar en el teléfono: `npm run install_app`.
+
+---
+
+## 2026-10-29 · Fix camera permission not requested on Android
+
+**What was done**
+- `@capacitor/camera` was only in `node_modules`, not in `package.json`, so `cap sync` never registered it in Android and the app fell back to the web file picker (no permission prompt). Added it to `package.json` (`^8.2.6`).
+- Running `npm install` pruned other untracked packages; added them to `package.json` too: `three`, `@mediapipe/tasks-vision` and `@types/three` (dev).
+- Rebuilt in development and ran `npx cap sync android`; the camera plugin now appears in `android/capacitor.settings.gradle` and `capacitor.plugins.json`.
+
+**Current state**
+- The app requests the `CAMERA` permission (already declared in `AndroidManifest.xml`) when taking a photo.
+
+**Pending / notes**
+- The app must be reinstalled on the phone (native plugin change).
+
+---
+
+## 2026-10-29 · Haircut advisor: AI pictures of the client instead of the 3D head
+
+**What was done**
+- Removed the procedural 3D viewer (`components/haircut-3d-viewer/`) and the `three` / `@types/three` dependencies. `Haircut` no longer has `style` or `modelPath`.
+- New `HaircutPreviewService` (`POST /haircut-preview`, skips the global overlay, 180 s timeout) and `HaircutPreviewComponent` (picture, spinner while generating, error with retry, "AI picture" disclaimer).
+- `HaircutAdvisorPage` generates the picture of a cut the first time it is selected (the top cut right after the analysis) and keeps one per cut until a new photo is taken.
+- i18n: `haircutAdvisor.preview.*` added, `viewerHint` removed, privacy text now says the photo is sent to an AI service (Hugging Face) and not stored.
+
+**Current state**
+- Face shape still runs on the phone with MediaPipe; only the cut pictures use the API.
+
+**Pending / notes**
+- Needs the API with the `haircut-preview` module running (restart the local API; deploy to Render for production).
+- Each picture takes about 20–60 s. The free Hugging Face GPU quota allows only a few pictures per day without `HF_TOKEN`.
+
+---
+
+## 2026-10-30 · Haircut advisor: recommendations and example pictures from the API
+
+**What was done**
+- The face is still measured on the phone with MediaPipe, but only the four proportions are sent to `POST /haircut-recommendations`; the API classifies the shape and returns the cuts with their example pictures from Supabase. The photo never leaves the device.
+- Removed `services/face-shape.classifier.ts`, `data/haircut-catalog.ts`, `services/haircut-preview.service.ts`, `models/haircut-preview.model.ts` and `components/haircut-preview/`.
+- `HaircutRecommendationService` now calls the API (20 s timeout, page spinner instead of the global overlay). `HaircutRecommendation` carries `name`, `description` and `images` from the API.
+- New `HaircutExamplesComponent`: sideways gallery of the example pictures, or a placeholder when the cut has none.
+- i18n: removed `haircutAdvisor.preview.*` and `haircutAdvisor.cuts.*` (cut texts now come from the catalog); added `haircutAdvisor.examples.*` and `haircutAdvisor.errors.network` (replaces `errors.unknown`); privacy text updated.
+
+**Current state**
+- `ng build --configuration development` passes.
+
+**Pending / notes**
+- Needs the API with the `haircut-advisor` module and the `haircuts` table in Supabase.
+- Reinstall on the phone: `npm run install_app`.
+
+## 2026-10-30 · Fix: camera not working on Android
+
+**What was done**
+- `@capacitor/camera` (8.2.6) and `@mediapipe/tasks-vision` were missing from `package.json`, so the camera plugin was never synced to the Android project (absent from `capacitor.settings.gradle`) and the permission was never requested. Both are now real dependencies.
+- `AndroidManifest.xml`: added `READ_MEDIA_IMAGES` and `READ_EXTERNAL_STORAGE` (maxSdkVersion 32) for picking from the gallery, next to `CAMERA`.
+- Removed stray blank lines from the `package.json` scripts.
+
+**Current state**
+- Dev build + `cap sync android` pass; Capacitor lists `@capacitor/camera@8.2.6`.
+
+**Pending / notes**
+- Native change: the app must be reinstalled on the phone (`npm run install_app`).

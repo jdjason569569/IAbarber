@@ -1,0 +1,19 @@
+<div class="photo">
+  @if (photo(); as photo) {
+    <img [src]="photo" [alt]="'haircutAdvisor.capture.photoAlt' | t" />
+  } @else {
+    <ion-icon name="person-circle-outline" aria-hidden="true"></ion-icon>
+    <p>{{ 'haircutAdvisor.capture.hint' | t }}</p>
+  }
+  @if (busy()) {
+    <div class="busy">
+      <ion-spinner></ion-spinner>
+      <span>{{ 'haircutAdvisor.analyzing' | t }}</span>
+    </div>
+  }
+</div>
+<ion-button expand="block" [disabled]="busy()" (click)="capture.emit()">
+  <ion-icon slot="start" name="camera-outline"></ion-icon>
+  {{ (photo() ? 'haircutAdvisor.capture.retake' : 'haircutAdvisor.capture.take') | t }}
+</ion-button>
+<p class="privacy">{{ 'haircutAdvisor.capture.privacy' | t }}</p>

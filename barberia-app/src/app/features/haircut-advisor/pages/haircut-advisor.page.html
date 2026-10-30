@@ -1,0 +1,40 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ 'haircutAdvisor.title' | t }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <app-face-capture [photo]="photo()" [busy]="analyzing()" (capture)="capture()" />
+
+  @if (error(); as error) {
+    <ion-text color="danger">
+      <p class="error">{{ error }}</p>
+    </ion-text>
+  }
+
+  @if (faceShape(); as faceShape) {
+    <section class="section">
+      <app-face-shape-result [result]="faceShape" />
+    </section>
+
+    <section class="section">
+      <h2>{{ 'haircutAdvisor.recommended' | t }}</h2>
+      <div class="cuts">
+        @for (recommendation of recommended(); track recommendation.id) {
+          <ion-chip [outline]="recommendation !== selected()" color="primary" (click)="selectCut(recommendation.id)">
+            <ion-label>{{ recommendation.name }} · {{ matchPercent(recommendation) }}%</ion-label>
+          </ion-chip>
+        }
+      </div>
+    </section>
+
+    @if (selected(); as selected) {
+      <section class="section">
+        <app-haircut-examples [images]="selected.images" [name]="selected.name" />
+        <h3>{{ selected.name }}</h3>
+        <p>{{ selected.description }}</p>
+      </section>
+    }
+  }
+</ion-content>

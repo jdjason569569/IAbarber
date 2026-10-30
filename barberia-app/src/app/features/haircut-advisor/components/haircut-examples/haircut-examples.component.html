@@ -1,0 +1,16 @@
+@if (images().length) {
+  <div class="gallery">
+    @for (image of images(); track image; let i = $index) {
+      <img
+        [src]="image"
+        [alt]="'haircutAdvisor.examples.alt' | t: { name: name(), number: i + 1 }"
+        loading="lazy"
+      />
+    }
+  </div>
+} @else {
+  <div class="empty">
+    <ion-icon name="image-outline" aria-hidden="true"></ion-icon>
+    <span>{{ 'haircutAdvisor.examples.none' | t }}</span>
+  </div>
+}

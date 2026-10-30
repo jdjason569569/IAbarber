@@ -21,6 +21,13 @@ const routes: Routes = [
         loadChildren: () =>
           import('./features/settings/settings.routes').then((m) => m.SETTINGS_ROUTES),
       },
+      {
+        path: 'haircut-advisor',
+        loadChildren: () =>
+          import('./features/haircut-advisor/haircut-advisor.routes').then(
+            (m) => m.HAIRCUT_ADVISOR_ROUTES,
+          ),
+      },
       { path: '', redirectTo: 'appointments', pathMatch: 'full' },
     ],
   },

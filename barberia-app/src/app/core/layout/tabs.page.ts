@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { IonicModule } from '@ionic/angular/lazy';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { addIcons } from 'ionicons';
-import { calendarOutline, settingsOutline, statsChartOutline } from 'ionicons/icons';
+import { calendarOutline, cutOutline, settingsOutline, statsChartOutline } from 'ionicons/icons';
 import { APP_VERSION } from '../config/app-version';
 
 @Component({
@@ -16,6 +16,6 @@ export class TabsPage {
   protected readonly version = APP_VERSION;
 
   constructor() {
-    addIcons({ calendarOutline, settingsOutline, statsChartOutline });
+    addIcons({ calendarOutline, cutOutline, settingsOutline, statsChartOutline });
   }
 }

@@ -1,0 +1,6 @@
+file '/home/develop/Escritorio/barberIA/video-agendar-por-voz/assets/scene1_intro.mp4'
+file '/home/develop/Escritorio/barberIA/video-agendar-por-voz/assets/scene2_activation.mp4'
+file '/home/develop/Escritorio/barberIA/video-agendar-por-voz/assets/scene3_dialog.mp4'
+file '/home/develop/Escritorio/barberIA/video-agendar-por-voz/assets/scene4_resilience.mp4'
+file '/home/develop/Escritorio/barberIA/video-agendar-por-voz/assets/scene5_review.mp4'
+file '/home/develop/Escritorio/barberIA/video-agendar-por-voz/assets/scene6_outro.mp4'

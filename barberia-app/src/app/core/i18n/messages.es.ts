@@ -6,11 +6,59 @@ export const MESSAGES_ES = {
   // Tabs
   'tabs.appointments': 'Citas',
   'tabs.statistics': 'Estadísticas',
+  'tabs.haircutAdvisor': 'Cortes',
   'tabs.settings': 'Configuración',
   'app.version': 'Versión {version}',
 
   // Global loading overlay (every API request except assistant booking turns)
   'loading.sending': 'Enviando…',
+
+  // Haircut advisor (face shape measured on the phone; cuts and example pictures from the API)
+  'haircutAdvisor.title': 'Asesor de cortes',
+  'haircutAdvisor.analyzing': 'Analizando el rostro…',
+  'haircutAdvisor.recommended': 'Cortes recomendados',
+  'haircutAdvisor.examples.alt': 'Ejemplo {number} del corte {name}',
+  'haircutAdvisor.examples.none': 'Aún no hay fotos de ejemplo de este corte.',
+  'haircutAdvisor.capture.take': 'Tomar foto del cliente',
+  'haircutAdvisor.capture.retake': 'Tomar otra foto',
+  'haircutAdvisor.capture.hint': 'Foto de frente, con la cara despejada y buena luz.',
+  'haircutAdvisor.capture.photoAlt': 'Foto del cliente',
+  'haircutAdvisor.capture.privacy':
+    'La foto se analiza en el teléfono y no se envía ni se guarda. Al API solo llegan las proporciones del rostro.',
+  'haircutAdvisor.capture.promptHeader': 'Foto del cliente',
+  'haircutAdvisor.capture.promptCamera': 'Usar la cámara',
+  'haircutAdvisor.capture.promptGallery': 'Elegir de la galería',
+  'haircutAdvisor.capture.promptCancel': 'Cancelar',
+  'haircutAdvisor.result.title': 'Forma del rostro',
+  'haircutAdvisor.result.confidence': 'Coincidencia: {percent}%',
+  'haircutAdvisor.result.alternative': 'También se parece a: {shape}',
+  'haircutAdvisor.errors.camera': 'No se pudo abrir la cámara. Revisa el permiso de cámara de la app.',
+  'haircutAdvisor.errors.modelLoad': 'No se pudo cargar el analizador de rostros. Intenta de nuevo.',
+  'haircutAdvisor.errors.imageLoad': 'No se pudo leer la foto. Toma otra.',
+  'haircutAdvisor.errors.noFace': 'No se encontró una cara en la foto. Toma otra de frente y con buena luz.',
+  'haircutAdvisor.errors.headTurned': 'La cabeza está girada o inclinada. Pide al cliente que mire de frente a la cámara.',
+  'haircutAdvisor.errors.network': 'No se pudieron obtener los cortes recomendados. Revisa la conexión e intenta de nuevo.',
+  'haircutAdvisor.shapes.oval.name': 'Ovalado',
+  'haircutAdvisor.shapes.oval.advice':
+    'Rostro equilibrado: casi cualquier corte le queda bien. Evita taparle la cara con mucho flequillo.',
+  'haircutAdvisor.shapes.round.name': 'Redondo',
+  'haircutAdvisor.shapes.round.advice':
+    'Conviene dar altura arriba y llevar los lados cortos para alargar el rostro. Evita flequillos rectos y volumen a los lados.',
+  'haircutAdvisor.shapes.square.name': 'Cuadrado',
+  'haircutAdvisor.shapes.square.advice':
+    'Mandíbula marcada: lucen bien los cortes cortos y limpios o con algo de textura para suavizar los ángulos.',
+  'haircutAdvisor.shapes.oblong.name': 'Alargado',
+  'haircutAdvisor.shapes.oblong.advice':
+    'Conviene no sumar altura arriba y cubrir parte de la frente con flequillo; un poco de volumen a los lados ayuda.',
+  'haircutAdvisor.shapes.heart.name': 'Corazón',
+  'haircutAdvisor.shapes.heart.advice':
+    'Frente ancha y mentón fino: flequillo y algo de largo a los lados equilibran la parte de arriba.',
+  'haircutAdvisor.shapes.diamond.name': 'Diamante',
+  'haircutAdvisor.shapes.diamond.advice':
+    'Pómulos anchos con frente y mentón estrechos: flequillo con textura y algo de largo suavizan los pómulos.',
+  'haircutAdvisor.shapes.triangle.name': 'Triangular',
+  'haircutAdvisor.shapes.triangle.advice':
+    'Mandíbula más ancha que la frente: volumen arriba y lados no tan cortos equilibran la cara.',
 
   // Appointments
   'appointments.title': 'Citas',
