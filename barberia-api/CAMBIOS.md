@@ -408,3 +408,20 @@ This file records, in chronological order, every change made to the backend.
 
 **Pending / notes**
 - Deploy to Render.
+
+---
+
+## 2026-10-31 · WhatsApp bot: greeting with the free slots
+
+**What was done**
+- New use case `ListAvailableSlotsUseCase` in `appointments` (exported): for each given date it returns the whole-hour start times still bookable. It drops past times, hours outside the business hours, hours blocked by the barber and times that clash with a booking (same `clashesWith` rule as scheduling).
+- New module `whatsapp` with `POST /whatsapp/reply`. Body `{ text, clientName? }` → `{ reply }`: a Spanish greeting (with the client's WhatsApp name when given) and the free slots of today and tomorrow. Empty `text` → 400. For now every message gets this reply.
+- The open-wa bot in `~/Escritorio/claude-whastapp/bot.js` no longer has keyword rules: it forwards each client message to this endpoint (`BACKEND_URL`, default `https://iabarber.onrender.com`) and sends back the reply.
+
+**Current state**
+- `npm run build` and `npm run lint` pass. Tested with the in-memory repositories: past hours of today are left out, and a booking at 10:00 and a 12–14 block remove those hours from tomorrow's list.
+
+**Pending / notes**
+- Deploy to Render; until then the bot gets 404 from Render (use `BACKEND_URL=http://localhost:3000`).
+- The endpoint has no auth (it only exposes free hours). Add a shared token if booking through WhatsApp is added.
+- Next step: let the client pick a time and book it from WhatsApp.

@@ -30,6 +30,12 @@ export interface WalkInInput {
   serviceCost: number;
 }
 
+/** Start times (`HH:mm`) still free for a booking on one date. */
+export interface DaySlotsDto {
+  date: string;
+  times: string[];
+}
+
 export interface WalkInResult {
   appointment: AppointmentDto;
   /** Bookings moved WALK_IN_MINUTES later, in agenda order, with their new time. */

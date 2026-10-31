@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { supabaseProvider } from '../../shared/supabase/supabase.provider.js';
 import { BusinessHoursModule } from '../business-hours/business-hours.module.js';
 import { ListAppointmentsUseCase } from './application/use-cases/list-appointments.use-case.js';
+import { ListAvailableSlotsUseCase } from './application/use-cases/list-available-slots.use-case.js';
 import { RegisterWalkInUseCase } from './application/use-cases/register-walk-in.use-case.js';
 import { ScheduleAppointmentUseCase } from './application/use-cases/schedule-appointment.use-case.js';
 import { SetAppointmentCancelledUseCase } from './application/use-cases/set-appointment-cancelled.use-case.js';
@@ -22,6 +23,7 @@ const useSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SER
   controllers: [AppointmentsController, DayBlocksController],
   providers: [
     ListAppointmentsUseCase,
+    ListAvailableSlotsUseCase,
     ScheduleAppointmentUseCase,
     RegisterWalkInUseCase,
     SetAppointmentCancelledUseCase,
@@ -36,6 +38,7 @@ const useSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SER
   ],
   exports: [
     ListAppointmentsUseCase,
+    ListAvailableSlotsUseCase,
     ScheduleAppointmentUseCase,
     RegisterWalkInUseCase,
     SetAppointmentCancelledUseCase,
