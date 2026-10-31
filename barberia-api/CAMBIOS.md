@@ -425,3 +425,20 @@ This file records, in chronological order, every change made to the backend.
 - Deploy to Render; until then the bot gets 404 from Render (use `BACKEND_URL=http://localhost:3000`).
 - The endpoint has no auth (it only exposes free hours). Add a shared token if booking through WhatsApp is added.
 - Next step: let the client pick a time and book it from WhatsApp.
+
+---
+
+## 2026-10-31 · WhatsApp bot: clients book by sending their name and time
+
+**What was done**
+- `whatsapp/domain/entities/booking-message.entity.ts`: `BookingMessage.parse(text)` reads a fixed-format message (no AI): the client name, `hoy`/`mañana` (optional) and a time (`15:00`, `15`, `15h`, `3 pm`, `3 de la tarde`, `7:30 p.m.`). Filler words ("hola", "soy", "quiero una cita", "a las"...) are dropped from the name. An hour without am/pm before 12 is tried as morning first, then afternoon.
+- `ReplyToClientMessageUseCase`: when the message has a time and a name, it books the first matching free slot of today/tomorrow (the day given, or the first day that has it free) through `ScheduleAppointmentUseCase` with price $0, and confirms the date and time. Without a name it asks for it. A time that is not free gets the slot list again. A message with no time gets the greeting, which now explains how to book.
+- If the slot is taken between listing and booking, the domain error is caught and the fresh list is sent.
+
+**Current state**
+- `npm run build` and `npm run lint` pass. Tested with the in-memory repositories: bookings for "Juan Pérez mañana 15:00", "Carlos hoy 5 pm" and "Luis 9" are created at $0. A taken slot, a past hour and 10:30 (not a listed slot) get the list again. A message without a name gets asked for it.
+
+**Pending / notes**
+- Deploy to Render. The bot (`bot.js`) does not change.
+- No limit per client: one chat can book several slots. The appointment has no phone field yet.
+- The barber sets the real price in the app.
