@@ -218,8 +218,16 @@
 
 .appt-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
+}
+
+.appt-when {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .appt-time {
@@ -230,8 +238,6 @@
 }
 
 .appt-client {
-  flex: 1;
-  min-width: 0;
   margin: 0;
   font-size: 16px;
   font-weight: 600;

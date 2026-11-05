@@ -162,7 +162,8 @@ export const MESSAGES_ES = {
   'assistant.review.back': 'Volver',
   'assistant.booked.title': 'Cita agendada',
   'assistant.booked.walkInTitle': 'Cliente casual registrado',
-  'assistant.booked.ok': 'Aceptar',
+  'assistant.booked.subtitle': 'Revisa que los datos estén bien.',
+  'assistant.booked.ok': 'Listo',
   'assistant.step.client': 'Cliente',
   'assistant.step.date': 'Fecha',
   'assistant.step.time': 'Hora',
@@ -213,6 +214,8 @@ export const MESSAGES_ES = {
   'settings.blocks.errors.overlap': 'Hay tramos que se cruzan. Ajústalos o quita uno.',
   'settings.blocks.errors.clash':
     'No se guardó: hay citas en esos horarios ({appointments}). Cancélalas primero si quieres bloquear ese tramo.',
+  'time.am': 'a. m.',
+  'time.pm': 'p. m.',
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_ES;

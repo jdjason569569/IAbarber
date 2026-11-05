@@ -10,6 +10,7 @@ import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { toLocalIsoDate } from '../../../../shared/utils/date.util';
 import { DayHours, TimeBlock } from '../../models/business-hours.model';
 import { BusinessHoursService } from '../../services/business-hours.service';
+import { formatTimeRange } from '../../../../shared/utils/time.util';
 
 /** Used when the business hours cannot be loaded: 07:00 to midnight. */
 const FALLBACK_HOURS: Pick<DayHours, 'open' | 'openHour' | 'closeHour'> = { open: true, openHour: 7, closeHour: 24 };
@@ -128,7 +129,9 @@ export class DayBlocksEditorComponent implements OnInit {
   private errorText(err: HttpErrorResponse): string {
     if (err.status === 409) {
       const appointments = (err.error?.appointments ?? []) as ClashingAppointment[];
-      const list = appointments.map((a) => `${a.time.slice(0, 5)} ${a.client}`).join(', ');
+      const list = appointments
+        .map((a) => `${formatTimeRange(a.time, this.i18n.meridiemLabels())} ${a.client}`)
+        .join(', ');
       return this.i18n.t('settings.blocks.errors.clash', { appointments: list });
     }
     const key: MessageKey = err.status === 400 ? 'settings.blocks.errors.invalid' : 'settings.errors.server';

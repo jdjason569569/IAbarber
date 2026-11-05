@@ -1,6 +1,6 @@
 {
   "name": "barberia-app",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "author": "Ionic Framework",
   "homepage": "https://ionicframework.com/",
   "scripts": {
@@ -15,7 +15,7 @@
     "android:sync": "ng build --configuration development && CAP_ENV=development cap sync android",
     "android:open": "npm run android:sync && CAPACITOR_ANDROID_STUDIO_PATH=${CAPACITOR_ANDROID_STUDIO_PATH:-/snap/android-studio/current/bin/studio.sh} cap open android",
     "install_app": "ng build --configuration development && CAP_ENV=development cap sync android && CAP_ENV=development ionic capacitor run android --no-build",
-    "install_app:prod": "ng build --configuration production && cap sync android && cd android && ./gradlew installDebug",
+    "install_app:prod": "ng build --configuration production && cap sync android && cd android && ./gradlew installRelease",
     "version:bump": "node scripts/bump-version.mjs",
     "hooks:install": "git config core.hooksPath barberia-app/.githooks",
     "prepare": "git config core.hooksPath barberia-app/.githooks || true"

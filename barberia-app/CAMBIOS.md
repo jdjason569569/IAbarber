@@ -995,3 +995,31 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Qué se hizo**
 - `global.scss`: la alerta `.booked-summary-alert` (resumen tras agendar o registrar cliente casual) ahora tiene fondo verde oscuro, borde y brillo verde, cabecera verde (`--ion-color-success`), texto blanco y botón "Aceptar" verde, para que no se confunda con el resto de la pantalla oscura/dorada.
+
+## 2026-11-05 · Horas en formato de 12 horas con rango de 30 minutos
+
+**Qué se hizo**
+- Nuevo `shared/utils/time.util.ts`: `APPOINTMENT_MINUTES` (30) compartido, `toMinutes`, `formatTime12` ("1:00 p. m.") y `formatTimeRange` ("1:00 – 1:30 p. m."; si cruza mediodía: "11:30 a. m. – 12:00 p. m.").
+- Nuevo pipe `timeRange` (`shared/pipes/time-range.pipe.ts`) y `I18nService.meridiemLabels()`; textos "a. m." / "p. m." en el catálogo (`time.am`, `time.pm`).
+- Lista de citas: cada tarjeta muestra el rango (`1:00 – 1:30 p. m.`) en vez de `13:00:00`.
+- Resumen "Cita agendada" y revisión del asistente: la hora sale como rango de 12 horas.
+- "Horas disponibles hoy": una franja por línea en formato de 12 horas (clase `.multiline-alert` en `global.scss`).
+- Diálogos de cancelar / completar / reactivar: "a las 1:00 p. m.".
+- Editor de bloqueos: el aviso de citas en conflicto usa el rango de 12 horas.
+
+## 2026-11-05 · Nombre del cliente debajo del horario
+
+**Qué se hizo**
+- Tarjeta de cita (`appointment-list.page.html/.scss`): la hora y el nombre van en un bloque `.appt-when` en columna; el rango horario arriba y el nombre del cliente justo debajo. Las insignias (Activa, Casual) quedan a la derecha.
+
+---
+
+## 2026-11-05 · Instalación en producción en el teléfono
+
+**Qué se hizo**
+- `angular.json`: el presupuesto `anyComponentStyle` sube de 8 kB a 12 kB (error), porque `appointment-list.page.scss` (8,05 kB) frenaba el build de producción.
+- `package.json`: `install_app:prod` ahora usa `./gradlew installRelease` en lugar de `installDebug`. El teléfono tiene la app firmada con `barberia-release.keystore`, y el APK debug (otra firma) fallaba con `INSTALL_FAILED_UPDATE_INCOMPATIBLE`.
+- Se instaló la v0.0.14 release (API en Render) en el teléfono SM-A225M.
+- `global.scss`: el modal de resumen de cita creada (`.booked-summary-alert`) pasa de verde a dorado, reutilizando `--ion-color-primary` (cabecera y botón dorados con texto oscuro, fondo oscuro con tinte dorado).
+- Nuevo `features/assistant/components/booked-summary/`: el resumen de cita creada deja de ser un `ion-alert` y pasa a ser un modal tipo tarjeta (centrado y con la altura de su contenido). Lleva un check dorado, un título, un subtítulo (`assistant.booked.subtitle`), filas con icono para cliente, fecha y hora, el precio destacado y un botón ancho "Listo". En `global.scss`, `.booked-summary-alert` se sustituye por `ion-modal.booked-summary-modal`.
+- Corrección: el modal `booked-summary` no aparecía. Con `@ionic/angular/lazy`, `ModalController` entrega los `componentProps` con `Object.assign`, que pisaba los `input()` de señal. Ahora son propiedades normales.

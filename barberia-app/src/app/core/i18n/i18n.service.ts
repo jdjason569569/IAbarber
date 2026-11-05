@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { MESSAGES_ES, MessageKey } from './messages.es';
+import { MeridiemLabels } from '../../shared/utils/time.util';
 
 export type MessageParams = Record<string, string | number>;
 
@@ -25,5 +26,10 @@ export class I18nService {
     return template.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
       name in params ? String(params[name]) : placeholder,
     );
+  }
+
+  /** "a. m." / "p. m." for times shown on the 12-hour clock. */
+  meridiemLabels(): MeridiemLabels {
+    return { am: this.t('time.am'), pm: this.t('time.pm') };
   }
 }

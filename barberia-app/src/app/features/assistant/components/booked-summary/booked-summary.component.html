@@ -1,0 +1,30 @@
+<div class="card">
+  <div class="badge">
+    <ion-icon name="checkmark" aria-hidden="true"></ion-icon>
+  </div>
+  <h2 class="title">{{ title | t }}</h2>
+  <p class="subtitle">{{ 'assistant.booked.subtitle' | t }}</p>
+
+  @if (rows.length) {
+    <ul class="rows">
+      @for (row of rows; track row.label) {
+        <li class="row">
+          <span class="row-icon"><ion-icon [name]="row.icon" aria-hidden="true"></ion-icon></span>
+          <span class="row-text">
+            <span class="row-label">{{ row.label | t }}</span>
+            <span class="row-value">{{ row.value }}</span>
+          </span>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (price; as value) {
+    <div class="price">
+      <span class="price-label">{{ 'assistant.step.price' | t }}</span>
+      <span class="price-value">{{ value }}</span>
+    </div>
+  }
+
+  <ion-button class="ok" expand="block" (click)="close()">{{ 'assistant.booked.ok' | t }}</ion-button>
+</div>

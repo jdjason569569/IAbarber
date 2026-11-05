@@ -42,8 +42,11 @@
       >
         <div class="appt-body">
           <div class="appt-header">
-            <span class="appt-time">{{ appointment.time }}</span>
-            <h2 class="appt-client">{{ appointment.clientName }}</h2>
+            <!-- Time range on top, client name right below it. -->
+            <div class="appt-when">
+              <span class="appt-time">{{ appointment.time | timeRange }}</span>
+              <h2 class="appt-client">{{ appointment.clientName }}</h2>
+            </div>
             <div class="appt-badges">
               @if (appointment.walkIn) {
                 <ion-badge color="tertiary">{{ 'appointments.walkIn.badge' | t }}</ion-badge>

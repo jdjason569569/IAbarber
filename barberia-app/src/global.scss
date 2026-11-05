@@ -43,31 +43,25 @@ ion-title {
   color: var(--ion-color-primary);
 }
 
-/* Summary shown after the assistant saves an appointment: green "success" look so it stands
-   out from the dark/gold screens behind it, one field per line. */
-.booked-summary-alert {
-  --background: #10301f;
-  --backdrop-opacity: 0.7;
+/* Card shown after the assistant saves an appointment (BookedSummaryComponent): centered,
+   as tall as its content, with a gold edge. */
+ion-modal.booked-summary-modal {
+  --width: min(92vw, 400px);
+  --height: auto;
+  --border-radius: 22px;
+  --backdrop-opacity: 0.75;
 }
-.booked-summary-alert .alert-wrapper {
-  border: 2px solid var(--ion-color-success);
-  box-shadow: 0 0 24px rgba(var(--ion-color-success-rgb), 0.45);
+ion-modal.booked-summary-modal::part(content) {
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.5);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
-.booked-summary-alert .alert-head {
-  background: var(--ion-color-success);
+ion-modal.booked-summary-modal .ion-page {
+  position: relative;
+  display: block;
+  contain: content;
 }
-.booked-summary-alert .alert-title {
-  color: var(--ion-color-success-contrast);
-  font-weight: 700;
-}
-.booked-summary-alert .alert-message {
+
+/* Alerts whose message is a list, one item per line (e.g. today's free half hours). */
+.multiline-alert .alert-message {
   white-space: pre-line;
-  color: #ffffff;
-  padding-top: 16px;
-}
-.booked-summary-alert .alert-button {
-  color: #ffffff;
-  font-weight: 700;
-  background: var(--ion-color-success);
-  border-radius: 8px;
 }

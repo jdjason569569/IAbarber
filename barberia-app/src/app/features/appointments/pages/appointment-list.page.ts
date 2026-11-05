@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
-import { AlertController, IonicModule, ToastController } from '@ionic/angular/lazy';
+import { AlertController, IonicModule, ModalController, ToastController } from '@ionic/angular/lazy';
 import type { RefresherCustomEvent } from '@ionic/core';
 import { addIcons } from 'ionicons';
 import { checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send } from 'ionicons/icons';
@@ -9,6 +9,10 @@ import { I18nService } from '../../../core/i18n/i18n.service';
 import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { parseIsoDate, toLocalIsoDate } from '../../../shared/utils/date.util';
+import {
+  BookedSummaryComponent,
+  BookedSummaryRow,
+} from '../../assistant/components/booked-summary/booked-summary.component';
 import { SendProgressComponent } from '../../assistant/components/send-progress/send-progress.component';
 import {
   BookedAppointment,
@@ -24,12 +28,11 @@ import { VoiceService } from '../../assistant/services/voice.service';
 import { AppointmentService } from '../services/appointment.service';
 import { DayHours } from '../../settings/models/business-hours.model';
 import { BusinessHoursService } from '../../settings/services/business-hours.service';
+import { TimeRangePipe } from '../../../shared/pipes/time-range.pipe';
+import { APPOINTMENT_MINUTES, formatTime12, formatTimeRange, toMinutes } from '../../../shared/utils/time.util';
 
 /** Used when the business hours cannot be loaded: 07:00 to midnight. */
 const FALLBACK_HOURS: Pick<DayHours, 'open' | 'openHour' | 'closeHour'> = { open: true, openHour: 7, closeHour: 24 };
-
-/** Minutes a booking takes (half-hour slots: 16:00, 16:30...); must match the API. */
-const APPOINTMENT_MINUTES = 30;
 
 /** Default seconds the user has to answer each question. */
 const LISTEN_SECONDS = 10;
@@ -70,7 +73,7 @@ class DialogCancelled extends Error {}
   templateUrl: 'appointment-list.page.html',
   styleUrls: ['appointment-list.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonicModule, TranslatePipe, SendProgressComponent],
+  imports: [IonicModule, TranslatePipe, TimeRangePipe, SendProgressComponent],
 })
 export class AppointmentListPage {
   private readonly appointmentService = inject(AppointmentService);
@@ -79,6 +82,7 @@ export class AppointmentListPage {
   private readonly businessHours = inject(BusinessHoursService);
   private readonly i18n = inject(I18nService);
   private readonly alertController = inject(AlertController);
+  private readonly modalController = inject(ModalController);
   private readonly toastController = inject(ToastController);
 
   protected readonly loading = signal(false);
@@ -182,7 +186,10 @@ export class AppointmentListPage {
     }
     const alert = await this.alertController.create({
       header: this.i18n.t('appointments.availability.title'),
-      message: free.length > 0 ? free.join(', ') : this.i18n.t('appointments.availability.none'),
+      message: free.length > 0
+        ? free.map((time) => formatTimeRange(time, this.i18n.meridiemLabels())).join('\n')
+        : this.i18n.t('appointments.availability.none'),
+      cssClass: 'multiline-alert',
       buttons: [this.i18n.t('appointments.availability.close')],
     });
     await alert.present();
@@ -373,26 +380,35 @@ export class AppointmentListPage {
           ? new Intl.DateTimeFormat(this.i18n.locale, { dateStyle: 'full' }).format(parseIsoDate(draft.date))
           : null;
       case 'time':
-        return draft.time ?? null;
+        // The booking's half hour on the 12-hour clock: "1:00 – 1:30 p. m.".
+        return draft.time ? formatTimeRange(draft.time, this.i18n.meridiemLabels()) : null;
       case 'price':
         return draft.price === undefined ? null : `$${new Intl.NumberFormat(this.i18n.locale).format(draft.price)}`;
     }
   }
 
-  /** Alert telling what the assistant just saved, so the barber can check it. */
+  /** Card telling what the assistant just saved, so the barber can check it. */
   private async showBookedSummary(draft: BookingDraft): Promise<void> {
-    const steps: BookingStep[] = draft.walkIn ? ['price'] : ['client', 'date', 'time', 'price'];
-    const lines = steps.flatMap((step) => {
+    const icons: Record<Exclude<BookingStep, 'price'>, string> = {
+      client: 'person-outline',
+      date: 'calendar-outline',
+      time: 'time-outline',
+    };
+    const steps = draft.walkIn ? [] : (['client', 'date', 'time'] as const);
+    const rows: BookedSummaryRow[] = steps.flatMap((step) => {
       const value = this.formatDraftValue(step, draft);
-      return value === null ? [] : [`${this.i18n.t(STEP_LABEL_KEYS[step])}: ${value}`];
+      return value === null ? [] : [{ icon: icons[step], label: STEP_LABEL_KEYS[step], value }];
     });
-    const alert = await this.alertController.create({
-      header: this.i18n.t(draft.walkIn ? 'assistant.booked.walkInTitle' : 'assistant.booked.title'),
-      message: lines.join('\n'),
-      cssClass: 'booked-summary-alert',
-      buttons: [this.i18n.t('assistant.booked.ok')],
+    const modal = await this.modalController.create({
+      component: BookedSummaryComponent,
+      componentProps: {
+        title: draft.walkIn ? 'assistant.booked.walkInTitle' : 'assistant.booked.title',
+        rows,
+        price: this.formatDraftValue('price', draft),
+      },
+      cssClass: 'booked-summary-modal',
     });
-    await alert.present();
+    await modal.present();
   }
 
   /** Turns the review rows into fields; resolves with the answers that changed (none on Back). */
@@ -708,7 +724,7 @@ export class AppointmentListPage {
       message: this.i18n.t(`appointments.${action}.message`, {
         client: appointment.clientName,
         date: appointment.date,
-        time: appointment.time,
+        time: formatTime12(appointment.time, this.i18n.meridiemLabels()),
       }),
       buttons: [
         { text: this.i18n.t(`appointments.${action}.no`), role: 'cancel' },
@@ -758,11 +774,6 @@ export class AppointmentListPage {
   }
 }
 
-/** `HH:mm` -> minutes since midnight. */
-function toMinutes(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-}
 
 /** A request that never got an answer: HttpErrorResponse (status 0 included) or the 20 s timeout. */
 /** Questions still to ask, in the same order the API expects them; a walk-in only needs the price. */
