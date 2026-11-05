@@ -464,4 +464,4 @@ This file records, in chronological order, every change made to the backend.
 - `phone` migration applied to Supabase (migration `appointments_client_phone`).
 - Render env vars: `WHATSAPP_TOKEN` (permanent system-user token), `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`.
 - Webhook URL in Meta: `https://iabarber.onrender.com/whatsapp/webhook`, field `messages`.
-- Once Meta is live, remove `POST /whatsapp/reply` and stop open-wa: it has no auth and can book appointments.
+- Both channels stay: the user alternates between Meta (`/whatsapp/webhook`) and open-wa (`POST /whatsapp/reply`, bot in `~/Escritorio/claude-whastapp`) depending on the day. Do not remove `/whatsapp/reply`. It has no auth and can book appointments, so protecting it with a shared key is still pending.
