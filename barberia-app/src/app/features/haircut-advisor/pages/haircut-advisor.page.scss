@@ -20,3 +20,10 @@ h3 {
   display: flex;
   flex-wrap: wrap;
 }
+
+.reason {
+  padding: 8px 12px;
+  border-left: 3px solid var(--ion-color-primary);
+  background: var(--ion-color-light);
+  border-radius: 4px;
+}

@@ -13,7 +13,8 @@ export interface FaceAnalysis {
   pitchDegrees: number;
 }
 
-export type FaceAnalysisErrorCode = 'modelLoad' | 'imageLoad' | 'noFace' | 'headTurned';
+export type FaceAnalysisErrorCode =
+  'modelLoad' | 'imageLoad' | 'noFace' | 'headTurned';
 
 export class FaceAnalysisError extends Error {
   constructor(readonly code: FaceAnalysisErrorCode) {

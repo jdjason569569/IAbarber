@@ -7,3 +7,20 @@ ion-card {
   font-size: 13px;
   color: var(--ion-color-medium);
 }
+
+.hair {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ion-color-step-150, var(--ion-color-light));
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ion-text-color);
+  }
+
+  ion-note {
+    font-size: 12px;
+  }
+}

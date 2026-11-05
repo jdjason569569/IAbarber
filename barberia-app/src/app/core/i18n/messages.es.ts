@@ -13,7 +13,7 @@ export const MESSAGES_ES = {
   // Global loading overlay (every API request except assistant booking turns)
   'loading.sending': 'Enviando…',
 
-  // Haircut advisor (face shape measured on the phone; cuts and example pictures from the API)
+  // Haircut advisor (photo analyzed by Gemini in the API; cuts and example pictures from the catalog)
   'haircutAdvisor.title': 'Asesor de cortes',
   'haircutAdvisor.analyzing': 'Analizando el rostro…',
   'haircutAdvisor.recommended': 'Cortes recomendados',
@@ -24,7 +24,7 @@ export const MESSAGES_ES = {
   'haircutAdvisor.capture.hint': 'Foto de frente, con la cara despejada y buena luz.',
   'haircutAdvisor.capture.photoAlt': 'Foto del cliente',
   'haircutAdvisor.capture.privacy':
-    'La foto se analiza en el teléfono y no se envía ni se guarda. Al API solo llegan las proporciones del rostro.',
+    'La foto se envía a Gemini (IA de Google) para elegir los cortes y no se guarda en la barbería.',
   'haircutAdvisor.capture.promptHeader': 'Foto del cliente',
   'haircutAdvisor.capture.promptCamera': 'Usar la cámara',
   'haircutAdvisor.capture.promptGallery': 'Elegir de la galería',
@@ -32,6 +32,13 @@ export const MESSAGES_ES = {
   'haircutAdvisor.result.title': 'Forma del rostro',
   'haircutAdvisor.result.confidence': 'Coincidencia: {percent}%',
   'haircutAdvisor.result.alternative': 'También se parece a: {shape}',
+  'haircutAdvisor.reasonLabel': 'Por qué le queda bien:',
+  'haircutAdvisor.hair.title': 'Pelo',
+  'haircutAdvisor.hair.aiNote': 'Análisis hecho con IA (Gemini). Confírmalo con el cliente.',
+  'haircutAdvisor.hair.types.straight': 'Liso',
+  'haircutAdvisor.hair.types.wavy': 'Ondulado',
+  'haircutAdvisor.hair.types.curly': 'Rizado',
+  'haircutAdvisor.hair.types.coily': 'Afro',
   'haircutAdvisor.errors.camera': 'No se pudo abrir la cámara. Revisa el permiso de cámara de la app.',
   'haircutAdvisor.errors.modelLoad': 'No se pudo cargar el analizador de rostros. Intenta de nuevo.',
   'haircutAdvisor.errors.imageLoad': 'No se pudo leer la foto. Toma otra.',

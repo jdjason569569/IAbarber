@@ -1,4 +1,12 @@
-export const FACE_SHAPES = ['oval', 'round', 'square', 'oblong', 'heart', 'diamond', 'triangle'] as const;
+export const FACE_SHAPES = [
+  'oval',
+  'round',
+  'square',
+  'oblong',
+  'heart',
+  'diamond',
+  'triangle',
+] as const;
 
 export type FaceShape = (typeof FACE_SHAPES)[number];
 

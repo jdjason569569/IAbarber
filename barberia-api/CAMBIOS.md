@@ -465,3 +465,22 @@ This file records, in chronological order, every change made to the backend.
 - Render env vars: `WHATSAPP_TOKEN` (permanent system-user token), `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`.
 - Webhook URL in Meta: `https://iabarber.onrender.com/whatsapp/webhook`, field `messages`.
 - Both channels stay: the user alternates between Meta (`/whatsapp/webhook`) and open-wa (`POST /whatsapp/reply`, bot in `~/Escritorio/claude-whastapp`) depending on the day. Do not remove `/whatsapp/reply`. It has no auth and can book appointments, so protecting it with a shared key is still pending.
+
+---
+
+## 2026-11-05 · Asesor de cortes con Gemini (visión)
+
+**Qué se hizo**
+- `POST /haircut-recommendations` acepta además `photo` (data URL JPEG/PNG/WebP, máx. ~3 MB). Con foto y `GEMINI_API_KEY`, Gemini mira la foto y responde (JSON con `responseSchema`): probabilidad de cada forma de rostro, tipo de pelo (`straight`/`wavy`/`curly`/`coily`), un resumen en español (pelo, entradas, barba) y hasta 5 cortes **del catálogo de Supabase** con `score` y `reason` (por qué le queda bien a ese cliente).
+- Puerto `FacePhotoAnalyzer` (`domain/ports/face-photo-analyzer.port.ts`) con el adaptador `GeminiFacePhotoAnalyzer` (`infrastructure/ai/`, REST `generateContent`, timeout 25 s). Solo se aceptan formas válidas e ids que existen en el catálogo.
+- Respaldo: sin foto, sin key o si Gemini falla (cuota 429, red, respuesta inválida), se usa el clasificador por proporciones de antes. La respuesta indica `source: 'gemini' | 'metrics'`; `hair` es `null` y `reason` es `null` con `metrics`.
+- `toFaceShapeResult` en `face-shape.entity.ts` normaliza las probabilidades de Gemini. Foto inválida → 400 (`InvalidPhotoError`).
+- `main.ts`: límite del body JSON a 5 MB (`useBodyParser`; el webhook de WhatsApp sigue recibiendo `rawBody`).
+- Variable opcional `GEMINI_HAIRCUT_MODEL` (por defecto `gemini-3.5-flash`; el asistente sigue con `GEMINI_MODEL`). La foto no se guarda.
+
+**Estado**
+- `npm run build` y `npm run lint` pasan. Probado en local con una foto real: Gemini respondió en ~12 s con forma, pelo y 4 cortes con su motivo. Sin foto → `source: metrics`; foto inválida → 400.
+
+**Pendiente / notas**
+- Publicar en Render para que la app de producción lo use (la key `GEMINI_API_KEY` ya está).
+- Prettier (`.prettierrc` sin `printWidth`) reformateó a 80 columnas los archivos del módulo `haircut-advisor`; es solo formato.

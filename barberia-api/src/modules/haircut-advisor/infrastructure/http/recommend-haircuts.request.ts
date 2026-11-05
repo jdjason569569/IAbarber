@@ -5,4 +5,6 @@ export interface RecommendHaircutsRequest {
     jawToCheek?: number;
     chinToCheek?: number;
   };
+  /** Optional data URL of the client's photo, analyzed by Gemini and not stored. */
+  photo?: string;
 }

@@ -19,7 +19,9 @@ const IMAGE_FILE = /\.(jpe?g|png|webp)$/i;
 
 @Injectable()
 export class SupabaseHaircutCatalogRepository implements HaircutCatalogRepository {
-  constructor(@Inject(SUPABASE_CLIENT) private readonly supabase: SupabaseClient) {}
+  constructor(
+    @Inject(SUPABASE_CLIENT) private readonly supabase: SupabaseClient,
+  ) {}
 
   async findActive(): Promise<Haircut[]> {
     const { data, error } = await this.supabase
@@ -38,7 +40,9 @@ export class SupabaseHaircutCatalogRepository implements HaircutCatalogRepositor
 
   async findImages(haircutId: string): Promise<string[]> {
     const storage = this.supabase.storage.from(BUCKET);
-    const { data, error } = await storage.list(haircutId, { sortBy: { column: 'name', order: 'asc' } });
+    const { data, error } = await storage.list(haircutId, {
+      sortBy: { column: 'name', order: 'asc' },
+    });
     // A missing picture must not break the recommendation: show the cut without examples.
     if (error) {
       console.error(`Haircut images of ${haircutId} failed:`, error.message);
@@ -46,6 +50,9 @@ export class SupabaseHaircutCatalogRepository implements HaircutCatalogRepositor
     }
     return data
       .filter((file) => IMAGE_FILE.test(file.name))
-      .map((file) => storage.getPublicUrl(`${haircutId}/${file.name}`).data.publicUrl);
+      .map(
+        (file) =>
+          storage.getPublicUrl(`${haircutId}/${file.name}`).data.publicUrl,
+      );
   }
 }

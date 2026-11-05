@@ -1,14 +1,29 @@
 <ion-card>
   <ion-card-header>
-    <ion-card-subtitle>{{ 'haircutAdvisor.result.title' | t }}</ion-card-subtitle>
+    <ion-card-subtitle>{{
+      "haircutAdvisor.result.title" | t
+    }}</ion-card-subtitle>
     <ion-card-title>{{ shapeName() }}</ion-card-title>
   </ion-card-header>
   <ion-card-content>
     <ion-progress-bar [value]="result().confidence"></ion-progress-bar>
-    <p class="confidence">{{ 'haircutAdvisor.result.confidence' | t: { percent: confidence() } }}</p>
+    <p class="confidence">
+      {{ "haircutAdvisor.result.confidence" | t: { percent: confidence() } }}
+    </p>
     @if (alternative(); as alternative) {
-      <p class="confidence">{{ 'haircutAdvisor.result.alternative' | t: { shape: alternative } }}</p>
+      <p class="confidence">
+        {{ "haircutAdvisor.result.alternative" | t: { shape: alternative } }}
+      </p>
     }
     <p>{{ advice() }}</p>
+    @if (hair(); as hair) {
+      <div class="hair">
+        <h3>{{ "haircutAdvisor.hair.title" | t }} · {{ hairType() }}</h3>
+        @if (hair.summary) {
+          <p>{{ hair.summary }}</p>
+        }
+        <ion-note>{{ "haircutAdvisor.hair.aiNote" | t }}</ion-note>
+      </div>
+    }
   </ion-card-content>
 </ion-card>

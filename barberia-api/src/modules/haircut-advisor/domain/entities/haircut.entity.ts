@@ -20,12 +20,17 @@ export interface RankedHaircut {
  * Ranks the cuts by suitability weighted with every shape's probability, so a face that is
  * half oval and half round gets cuts that work for both.
  */
-export function rankHaircuts(haircuts: Haircut[], faceShape: FaceShapeResult, limit: number): RankedHaircut[] {
+export function rankHaircuts(
+  haircuts: Haircut[],
+  faceShape: FaceShapeResult,
+  limit: number,
+): RankedHaircut[] {
   return haircuts
     .map((haircut) => ({
       haircut,
       score: faceShape.ranking.reduce(
-        (sum, { shape, probability }) => sum + probability * (haircut.suitability[shape] ?? 0),
+        (sum, { shape, probability }) =>
+          sum + probability * (haircut.suitability[shape] ?? 0),
         0,
       ),
     }))

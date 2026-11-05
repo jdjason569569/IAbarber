@@ -937,3 +937,21 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Pendiente / notas**
 - Compilar e instalar en el teléfono para ver la disponibilidad corregida.
+
+---
+
+## 2026-11-05 · Asesor de cortes con Gemini
+
+**Qué se hizo**
+- MediaPipe sigue en el teléfono como filtro rápido (hay cara, mira de frente) y mide las proporciones. Luego la foto, reducida a JPEG de 1024 px (`shared/utils/image.util.ts`, `toJpegDataUrl`), se envía con las proporciones a `POST /haircut-recommendations`, donde Gemini elige los cortes del catálogo.
+- `HaircutRecommendations` trae `source`, `hair` (tipo y resumen) y cada corte un `reason`. Timeout del servicio: 45 s.
+- La tarjeta de forma del rostro muestra el pelo (tipo y resumen) con la nota "Análisis hecho con IA (Gemini)". Debajo del corte elegido sale "Por qué le queda bien: …".
+- Si Gemini falla, el API usa las proporciones y la pantalla se ve como antes (sin pelo ni motivo).
+- i18n: `haircutAdvisor.reasonLabel`, `haircutAdvisor.hair.*`; texto de privacidad actualizado (la foto se envía a Gemini y no se guarda).
+
+**Estado**
+- `ng build --configuration development` pasa.
+
+**Pendiente / notas**
+- Necesita el API nuevo (local o publicado en Render). Reinstalar en el teléfono: `npm run install_app`.
+- Prettier reformateó algunos archivos de `features/haircut-advisor` que no tenían ese formato; es solo formato.

@@ -7,7 +7,10 @@ import { DEFAULT_HAIRCUTS } from './default-haircuts.js';
 @Injectable()
 export class InMemoryHaircutCatalogRepository implements HaircutCatalogRepository {
   async findActive(): Promise<Haircut[]> {
-    return DEFAULT_HAIRCUTS.map((h) => ({ ...h, suitability: { ...h.suitability } }));
+    return DEFAULT_HAIRCUTS.map((h) => ({
+      ...h,
+      suitability: { ...h.suitability },
+    }));
   }
 
   async findImages(): Promise<string[]> {

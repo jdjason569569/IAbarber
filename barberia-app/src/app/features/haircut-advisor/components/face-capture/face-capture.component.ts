@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  input,
+  output,
+} from '@angular/core';
 import { IonicModule } from '@ionic/angular/lazy';
 import { addIcons } from 'ionicons';
 import { cameraOutline, personCircleOutline } from 'ionicons/icons';
