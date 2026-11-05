@@ -129,3 +129,8 @@ drop index if exists appointments_active_slot_unique;
 create unique index appointments_active_slot_unique
   on appointments (date, time)
   where not cancelled and not walk_in and not completed;
+
+-- Migration: client phone (international format without "+", e.g. 573001234567), set when the
+-- client books on WhatsApp. Null for bookings made from the app. Run once; it is safe to repeat.
+alter table appointments add column if not exists phone text;
+create index if not exists appointments_phone_idx on appointments (phone) where phone is not null;

@@ -11,6 +11,7 @@ export interface AppointmentDto {
   cancelled: boolean;
   walkIn: boolean;
   completed: boolean;
+  phone: string | null;
 }
 
 export interface ScheduleAppointmentInput {
@@ -19,6 +20,8 @@ export interface ScheduleAppointmentInput {
   time: string;
   serviceCost: number;
   extras: AppointmentExtra[];
+  /** Set when the client booked on WhatsApp. */
+  phone?: string;
 }
 
 export interface UpdateAppointmentInput {
@@ -57,5 +60,6 @@ export function toAppointmentDto(a: Appointment): AppointmentDto {
     cancelled: a.cancelled,
     walkIn: a.walkIn,
     completed: a.completed,
+    phone: a.phone,
   };
 }

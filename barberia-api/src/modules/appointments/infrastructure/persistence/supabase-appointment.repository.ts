@@ -16,6 +16,7 @@ interface AppointmentRow {
   cancelled: boolean;
   walk_in: boolean;
   completed: boolean;
+  phone: string | null;
 }
 
 const TABLE = 'appointments';
@@ -66,6 +67,7 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
       cancelled: appointment.cancelled,
       walk_in: appointment.walkIn,
       completed: appointment.completed,
+      phone: appointment.phone,
     };
     const query =
       appointment.id === UNSAVED_APPOINTMENT_ID
@@ -94,5 +96,6 @@ function toEntity(row: AppointmentRow): Appointment {
     cancelled: row.cancelled,
     walkIn: row.walk_in ?? false,
     completed: row.completed ?? false,
+    phone: row.phone ?? null,
   });
 }

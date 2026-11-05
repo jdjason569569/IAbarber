@@ -442,3 +442,26 @@ This file records, in chronological order, every change made to the backend.
 - Deploy to Render. The bot (`bot.js`) does not change.
 - No limit per client: one chat can book several slots. The appointment has no phone field yet.
 - The barber sets the real price in the app.
+
+---
+
+## 2026-10-31 · Official WhatsApp Cloud API (Meta) webhook
+
+**What was done**
+- `GET /whatsapp/webhook`: Meta's verification (`hub.mode=subscribe` and `hub.verify_token` equal to `WHATSAPP_VERIFY_TOKEN` → returns `hub.challenge`; otherwise 403).
+- `POST /whatsapp/webhook`: checks `X-Hub-Signature-256` (HMAC-SHA256 of the raw body with `WHATSAPP_APP_SECRET`, 403 when invalid). For each text message it calls `HandleIncomingWhatsappMessageUseCase`, which answers with `ReplyToClientMessageUseCase` and sends the reply. Statuses, audios and images are ignored. It answers 200 even when a reply fails, and logs the error, so Meta does not retry forever.
+- Repeated deliveries (same message id, last 1000 ids in memory) are skipped, so a retry cannot book twice.
+- Port `WhatsappMessenger` with the `MetaCloudWhatsappMessenger` adapter: `POST https://graph.facebook.com/{WHATSAPP_GRAPH_VERSION, default v23.0}/{WHATSAPP_PHONE_NUMBER_ID}/messages` with `WHATSAPP_TOKEN`.
+- `main.ts`: `rawBody: true` (needed for the signature check).
+- Appointments have a new optional `phone` (international format without "+"). WhatsApp bookings store the client's number. A number with a pending future booking gets that booking back instead of a new one.
+- `docs/schema.sql`: `phone` column and partial index.
+- `POST /whatsapp/reply` (used by the open-wa bot) still works, but it does not get the phone, so the one-booking rule does not apply there.
+
+**Current state**
+- `npm run build` and `npm run lint` pass. Tested locally against simulated Meta calls: verification ok/403, invalid signature 403, booking created with phone, repeated id skipped, second booking from the same number refused. The call to the Graph API reaches Meta, which answered 401 for the fake token.
+
+**Pending / notes**
+- `phone` migration applied to Supabase (migration `appointments_client_phone`).
+- Render env vars: `WHATSAPP_TOKEN` (permanent system-user token), `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`.
+- Webhook URL in Meta: `https://iabarber.onrender.com/whatsapp/webhook`, field `messages`.
+- Once Meta is live, remove `POST /whatsapp/reply` and stop open-wa: it has no auth and can book appointments.

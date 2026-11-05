@@ -18,6 +18,8 @@ export interface AppointmentProps {
   walkIn: boolean;
   /** true = the barber confirmed the service was done. Only active appointments can be completed. */
   completed: boolean;
+  /** Client phone in international format without "+" (e.g. 573001234567); null when unknown. */
+  phone: string | null;
 }
 
 /** Id assigned to an appointment that has not been persisted yet. */
@@ -47,7 +49,9 @@ function isValidDate(value: string): boolean {
 export class Appointment {
   private constructor(private readonly props: AppointmentProps) {}
 
-  static create(props: Omit<AppointmentProps, 'id' | 'cancelled' | 'walkIn' | 'completed'> & { walkIn?: boolean }): Appointment {
+  static create(
+    props: Omit<AppointmentProps, 'id' | 'cancelled' | 'walkIn' | 'completed' | 'phone'> & { walkIn?: boolean; phone?: string | null },
+  ): Appointment {
     if (!props.client.trim()) {
       throw new InvalidAppointmentError('Client name is required');
     }
@@ -60,7 +64,8 @@ export class Appointment {
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(props.time)) {
       throw new InvalidAppointmentError(`Invalid time: ${props.time}`);
     }
-    return new Appointment({ ...props, id: UNSAVED_APPOINTMENT_ID, cancelled: false, walkIn: props.walkIn ?? false, completed: false });
+    const phone = props.phone?.replace(/\D/g, '') || null;
+    return new Appointment({ ...props, id: UNSAVED_APPOINTMENT_ID, cancelled: false, walkIn: props.walkIn ?? false, completed: false, phone });
   }
 
   static restore(props: AppointmentProps): Appointment {
@@ -105,6 +110,7 @@ export class Appointment {
   get cancelled(): boolean { return this.props.cancelled; }
   get walkIn(): boolean { return this.props.walkIn; }
   get completed(): boolean { return this.props.completed; }
+  get phone(): string | null { return this.props.phone; }
 
   get isActive(): boolean { return !this.props.cancelled; }
 

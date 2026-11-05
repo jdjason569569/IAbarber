@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { ListAppointmentsUseCase } from '../../../appointments/application/use-cases/list-appointments.use-case.js';
 import { ListAvailableSlotsUseCase } from '../../../appointments/application/use-cases/list-available-slots.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../../appointments/application/use-cases/schedule-appointment.use-case.js';
-import type { DaySlotsDto } from '../../../appointments/application/dtos/appointment.dto.js';
+import type { AppointmentDto, DaySlotsDto } from '../../../appointments/application/dtos/appointment.dto.js';
 import { DomainError } from '../../../../shared/errors/domain.error.js';
 import { localIsoDate } from '../../../../shared/utils/local-date.js';
 import { BookingMessage } from '../../domain/entities/booking-message.entity.js';
@@ -21,17 +22,28 @@ const dateFormat = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'num
 
 /**
  * Answers a client who writes on WhatsApp. A message with a name and a time books that slot;
- * anything else gets a greeting with the free slots of today and tomorrow.
+ * anything else gets a greeting with the free slots of today and tomorrow. When the phone is known,
+ * a client can hold only one pending booking.
  */
 @Injectable()
 export class ReplyToClientMessageUseCase {
   constructor(
     private readonly availableSlots: ListAvailableSlotsUseCase,
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
+    private readonly listAppointments: ListAppointmentsUseCase,
   ) {}
 
   async execute(input: ClientMessageInput): Promise<ClientMessageReply> {
     const message = BookingMessage.parse(input.text);
+    const pending = input.phone ? await this.findPendingBooking(input.phone) : undefined;
+    if (pending) {
+      return {
+        reply:
+          `Hola ${pending.client} 👋, ya tienes una cita agendada para el ` +
+          `${formatDate(pending.date)} a las ${pending.time}. Si necesitas cambiarla o cancelarla, ` +
+          'escríbenos y te ayudamos.',
+      };
+    }
     const days = await this.listSlots();
     if (!message.hasTime) {
       return { reply: greeting(input.clientName, days) };
@@ -53,6 +65,7 @@ export class ReplyToClientMessageUseCase {
         time: slot.time,
         serviceCost: WHATSAPP_SERVICE_COST,
         extras: [],
+        phone: input.phone,
       });
     } catch (error) {
       // Someone else may have taken the slot between listing and booking.
@@ -66,6 +79,16 @@ export class ReplyToClientMessageUseCase {
         `✅ Listo ${message.client}, tu cita quedó agendada para ` +
         `${DAY_LABELS[slot.day].toLowerCase()} ${formatDate(slot.date)} a las ${slot.time}. ¡Te esperamos! 💈`,
     };
+  }
+
+  /** The client's booking that still holds a future slot, if any. */
+  private async findPendingBooking(phone: string): Promise<AppointmentDto | undefined> {
+    const now = Date.now();
+    return (await this.listAppointments.execute()).find(
+      (a) =>
+        a.phone === phone && !a.cancelled && !a.walkIn && !a.completed &&
+        new Date(`${a.date}T${a.time}:00`).getTime() > now,
+    );
   }
 
   private async listSlots(): Promise<(DaySlotsDto & { day: BookingDay })[]> {
