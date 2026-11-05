@@ -1,0 +1,33 @@
+@switch (state()?.status) {
+  @case ('loading') {
+    <div class="box">
+      <ion-spinner></ion-spinner>
+      <span>{{ 'haircutAdvisor.preview.loading' | t }}</span>
+    </div>
+  }
+  @case ('ready') {
+    @if (state(); as state) {
+      @if (state.status === 'ready') {
+        <img [src]="state.image" [alt]="'haircutAdvisor.preview.alt' | t: { name: name() }" />
+        <ion-note class="disclaimer">{{ 'haircutAdvisor.preview.disclaimer' | t }}</ion-note>
+      }
+    }
+  }
+  @case ('error') {
+    <div class="box">
+      <ion-text color="danger">
+        <p>{{ errorMessage() }}</p>
+      </ion-text>
+      <ion-button fill="outline" size="small" (click)="generate.emit()">
+        <ion-icon slot="start" name="refresh-outline"></ion-icon>
+        {{ 'haircutAdvisor.preview.retry' | t }}
+      </ion-button>
+    </div>
+  }
+  @default {
+    <ion-button expand="block" fill="outline" (click)="generate.emit()">
+      <ion-icon slot="start" name="sparkles-outline"></ion-icon>
+      {{ 'haircutAdvisor.preview.generate' | t }}
+    </ion-button>
+  }
+}

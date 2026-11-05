@@ -40,7 +40,14 @@
 
   @if (selected(); as selected) {
   <section class="section">
+    <app-haircut-preview
+      [state]="previewStates()[selected.id] ?? null"
+      [name]="selected.name"
+      (generate)="generatePreview(selected.id)"
+    />
+    @if (selected.images.length) {
     <app-haircut-examples [images]="selected.images" [name]="selected.name" />
+    }
     <h3>{{ selected.name }}</h3>
     <p>{{ selected.description }}</p>
     @if (selected.reason; as reason) {

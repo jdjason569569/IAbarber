@@ -955,3 +955,20 @@ npx ionic capacitor add android   # añadir plataforma Android
 **Pendiente / notas**
 - Necesita el API nuevo (local o publicado en Render). Reinstalar en el teléfono: `npm run install_app`.
 - Prettier reformateó algunos archivos de `features/haircut-advisor` que no tenían ese formato; es solo formato.
+
+---
+
+## 2026-11-05 · Botón "Ver cómo le queda (IA)"
+
+**Qué se hizo**
+- Debajo de los cortes recomendados, el corte elegido tiene el botón **Ver cómo le queda (IA)**. El botón llama a `POST /haircut-preview` (`HaircutPreviewService`, timeout 90 s) y muestra la foto del cliente con ese corte, generada con Gemini.
+- `HaircutPreviewComponent` maneja los estados botón, generando (spinner), imagen con el aviso "Imagen generada con IA" y error con reintentar. Cada imagen solo se genera al pedirla (cuesta una llamada) y se guarda por corte hasta tomar otra foto.
+- Si el API responde 429, sale un mensaje que dice que falta activar la facturación en Google AI Studio.
+- El recuadro "Aún no hay fotos de ejemplo" ya no aparece si el corte no tiene fotos de ejemplo.
+- i18n: `haircutAdvisor.preview.*`.
+
+**Estado**
+- `ng build --configuration development` pasa.
+
+**Pendiente / notas**
+- Funciona cuando la key de Gemini tiene facturación activa y el API está publicado. Reinstalar en el teléfono: `npm run install_app`.
