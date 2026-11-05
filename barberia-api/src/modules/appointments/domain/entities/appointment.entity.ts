@@ -25,8 +25,8 @@ export interface AppointmentProps {
 /** Id assigned to an appointment that has not been persisted yet. */
 export const UNSAVED_APPOINTMENT_ID = 0;
 
-/** Minutes a booked appointment takes in the agenda (slots are one hour). */
-export const APPOINTMENT_MINUTES = 60;
+/** Minutes a booked appointment takes in the agenda (slots are half an hour: 16:00, 16:30...). */
+export const APPOINTMENT_MINUTES = 30;
 
 /** `HH:mm` -> minutes since midnight. */
 export function toMinutes(time: string): number {

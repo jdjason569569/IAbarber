@@ -484,3 +484,27 @@ This file records, in chronological order, every change made to the backend.
 **Pendiente / notas**
 - Publicar en Render para que la app de producción lo use (la key `GEMINI_API_KEY` ya está).
 - Prettier (`.prettierrc` sin `printWidth`) reformateó a 80 columnas los archivos del módulo `haircut-advisor`; es solo formato.
+
+---
+
+## 2026-11-05 · Foto del cliente con el corte (Gemini imagen)
+
+**Qué se hizo**
+- Nuevo `POST /haircut-preview` con `{ photo, haircutId }` → `{ image }` (data URL). Gemini edita la foto para ponerle al cliente ese corte del catálogo; el prompt pide cambiar solo el pelo y mantener la cara, la barba, la ropa y el fondo.
+- Puerto `HairstyleEditor` con el adaptador `GeminiHairstyleEditor` (`responseModalities: IMAGE`, timeout 60 s). Modelo `GEMINI_IMAGE_MODEL`, por defecto `gemini-2.5-flash-image`.
+- `parsePhoto` pasó a `domain/entities/photo.entity.ts`, compartido con las recomendaciones.
+- Errores: foto inválida → 400, corte inexistente → 404 (`HaircutNotFoundError`), sin cuota de Gemini → 429 (`ImageQuotaExceededError`).
+
+**Estado**
+- Build y lint pasan. Probado en local: con la key actual responde 429. En el plan gratuito la cuota de imágenes es 0 (se confirmó con `gemini-2.5-flash-image`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image` y `gemini-nano-banana-2.1`). Un corte inexistente responde 404.
+
+**Pendiente / notas**
+- Activar la facturación de la key en Google AI Studio (~US$0,04 por imagen) y volver a probar la generación real.
+- Publicar en Render.
+
+## 2026-11-05 · Appointments last 30 minutes
+
+**What was done**
+- `appointment.entity.ts`: `APPOINTMENT_MINUTES` 60 → 30. Two bookings clash only when they start less than 30 min apart, so with one at 16:00 another can be booked at 16:30 (before it was rejected as "already booked").
+- `list-available-slots.use-case.ts`: free slots are now listed every 30 minutes (16:00, 16:30, 17:00...) instead of on whole hours, so WhatsApp and the assistant offer the half hours too.
+- Walk-in shifting keeps working with the same constant (overlap = less than 30 min).

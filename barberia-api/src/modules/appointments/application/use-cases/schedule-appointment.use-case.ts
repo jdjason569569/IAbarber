@@ -35,7 +35,7 @@ export class ScheduleAppointmentUseCase {
         `The barber is not available on ${appointment.date} at ${appointment.time}`,
       );
     }
-    // Moved appointments can start at :30, so a slot is taken by any booking less than an hour away.
+    // Each booking takes APPOINTMENT_MINUTES, so a slot is taken by any booking less than that away.
     if ((await this.appointments.findAll()).some((a) => a.clashesWith(appointment))) {
       throw new AppointmentConflictError(
         `${appointment.date} at ${appointment.time} is already booked`,

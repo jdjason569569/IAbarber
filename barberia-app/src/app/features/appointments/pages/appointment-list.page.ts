@@ -25,11 +25,11 @@ import { AppointmentService } from '../services/appointment.service';
 import { DayHours } from '../../settings/models/business-hours.model';
 import { BusinessHoursService } from '../../settings/services/business-hours.service';
 
-/** Used when the business hours cannot be loaded: one-hour slots from 07:00 to midnight. */
+/** Used when the business hours cannot be loaded: 07:00 to midnight. */
 const FALLBACK_HOURS: Pick<DayHours, 'open' | 'openHour' | 'closeHour'> = { open: true, openHour: 7, closeHour: 24 };
 
-/** Minutes a booking takes; moved bookings can start at :30, so a free hour needs this much room. */
-const APPOINTMENT_MINUTES = 60;
+/** Minutes a booking takes (half-hour slots: 16:00, 16:30...); must match the API. */
+const APPOINTMENT_MINUTES = 30;
 
 /** Default seconds the user has to answer each question. */
 const LISTEN_SECONDS = 10;
@@ -161,16 +161,22 @@ export class AppointmentListPage {
       firstValueFrom(this.businessHours.getBlocks(today)).catch(() => []),
     ]);
     const hours = week?.find((d) => d.weekday === now.getDay()) ?? FALLBACK_HOURS;
-    // Walk-ins and completed appointments do not hold a slot; a booking moved to :30 takes the two hours it overlaps.
+    // Walk-ins and completed appointments do not hold a slot; each booking takes APPOINTMENT_MINUTES.
     const taken = this.appointments()
       .filter((a) => a.date === today && !a.cancelled && !a.walkIn && !a.completed)
       .map((a) => toMinutes(a.time));
     const free: string[] = [];
-    for (let hour = hours.openHour; hours.open && hour < hours.closeHour; hour++) {
-      const time = `${String(hour).padStart(2, '0')}:00`;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    for (
+      let minutes = hours.openHour * 60;
+      hours.open && minutes < hours.closeHour * 60;
+      minutes += APPOINTMENT_MINUTES
+    ) {
+      const hour = Math.floor(minutes / 60);
+      const time = `${String(hour).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
       const blocked = blocks.some((b) => hour >= b.fromHour && hour < b.toHour);
-      const clashes = taken.some((start) => Math.abs(start - hour * 60) < APPOINTMENT_MINUTES);
-      if (hour > now.getHours() && !clashes && !blocked) {
+      const clashes = taken.some((start) => Math.abs(start - minutes) < APPOINTMENT_MINUTES);
+      if (minutes > nowMinutes && !clashes && !blocked) {
         free.push(time);
       }
     }

@@ -43,7 +43,31 @@ ion-title {
   color: var(--ion-color-primary);
 }
 
-/* Summary shown after the assistant saves an appointment: one field per line. */
+/* Summary shown after the assistant saves an appointment: green "success" look so it stands
+   out from the dark/gold screens behind it, one field per line. */
+.booked-summary-alert {
+  --background: #10301f;
+  --backdrop-opacity: 0.7;
+}
+.booked-summary-alert .alert-wrapper {
+  border: 2px solid var(--ion-color-success);
+  box-shadow: 0 0 24px rgba(var(--ion-color-success-rgb), 0.45);
+}
+.booked-summary-alert .alert-head {
+  background: var(--ion-color-success);
+}
+.booked-summary-alert .alert-title {
+  color: var(--ion-color-success-contrast);
+  font-weight: 700;
+}
 .booked-summary-alert .alert-message {
   white-space: pre-line;
+  color: #ffffff;
+  padding-top: 16px;
+}
+.booked-summary-alert .alert-button {
+  color: #ffffff;
+  font-weight: 700;
+  background: var(--ion-color-success);
+  border-radius: 8px;
 }

@@ -972,3 +972,26 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Pendiente / notas**
 - Funciona cuando la key de Gemini tiene facturación activa y el API está publicado. Reinstalar en el teléfono: `npm run install_app`.
+
+---
+
+## 2026-11-05 · Haircut advisor tab hidden
+
+**What was done**
+- Commented out the `haircut-advisor` tab button in `src/app/core/layout/tabs.page.html`.
+
+**Current state**
+- The haircut advisor no longer appears in the bottom tab bar. The route and feature code remain intact.
+
+**Pending / notes**
+- To re-enable, uncomment the tab button.
+
+## 2026-11-05 · Citas de 30 minutos
+
+**Qué se hizo**
+- `appointment-list.page.ts`: `APPOINTMENT_MINUTES` 60 → 30 (igual que en la API). "Horas disponibles hoy" ahora lista franjas cada 30 minutos (16:00, 16:30...) y una cita a las 16:00 ya no bloquea las 16:30.
+
+## 2026-11-05 · Alerta "Cita agendada" en verde
+
+**Qué se hizo**
+- `global.scss`: la alerta `.booked-summary-alert` (resumen tras agendar o registrar cliente casual) ahora tiene fondo verde oscuro, borde y brillo verde, cabecera verde (`--ion-color-success`), texto blanco y botón "Aceptar" verde, para que no se confunda con el resto de la pantalla oscura/dorada.

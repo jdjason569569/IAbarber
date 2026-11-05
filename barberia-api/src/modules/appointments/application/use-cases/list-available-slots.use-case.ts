@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { GetBusinessHoursUseCase } from '../../../business-hours/application/use-cases/get-business-hours.use-case.js';
 import { GetDayBlocksUseCase } from '../../../business-hours/application/use-cases/get-day-blocks.use-case.js';
-import { Appointment, toTime } from '../../domain/entities/appointment.entity.js';
+import { APPOINTMENT_MINUTES, Appointment, toTime } from '../../domain/entities/appointment.entity.js';
 import { APPOINTMENT_REPOSITORY } from '../../domain/ports/appointment.repository.js';
 import type { AppointmentRepository } from '../../domain/ports/appointment.repository.js';
 import type { DaySlotsDto } from '../dtos/appointment.dto.js';
 
-/** Whole-hour start times a client could still book, with the same rules as scheduling. */
+/** Half-hour start times a client could still book, with the same rules as scheduling. */
 @Injectable()
 export class ListAvailableSlotsUseCase {
   constructor(
@@ -25,8 +25,12 @@ export class ListAvailableSlotsUseCase {
       const day = hours.forDate(date);
       const blocks = await this.dayBlocks.execute(date);
       const times: string[] = [];
-      for (let hour = day.openHour; day.open && hour < day.closeHour; hour++) {
-        const time = toTime(hour * 60);
+      for (
+        let minutes = day.openHour * 60;
+        day.open && minutes < day.closeHour * 60;
+        minutes += APPOINTMENT_MINUTES
+      ) {
+        const time = toTime(minutes);
         if (new Date(`${date}T${time}:00`).getTime() <= now) continue;
         if (blocks.covering(time)) continue;
         // A candidate booking, so clashes follow the exact rule used when scheduling.
