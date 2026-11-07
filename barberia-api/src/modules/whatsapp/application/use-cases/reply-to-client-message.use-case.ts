@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ListAppointmentsUseCase } from '../../../appointments/application/use-cases/list-appointments.use-case.js';
 import { ListAvailableSlotsUseCase } from '../../../appointments/application/use-cases/list-available-slots.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../../appointments/application/use-cases/schedule-appointment.use-case.js';
+import { NotifyNewBookingUseCase } from '../../../notifications/application/use-cases/notify-new-booking.use-case.js';
 import type { AppointmentDto, DaySlotsDto } from '../../../appointments/application/dtos/appointment.dto.js';
 import { DomainError } from '../../../../shared/errors/domain.error.js';
 import { localIsoDate } from '../../../../shared/utils/local-date.js';
@@ -31,6 +32,7 @@ export class ReplyToClientMessageUseCase {
     private readonly availableSlots: ListAvailableSlotsUseCase,
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
     private readonly listAppointments: ListAppointmentsUseCase,
+    private readonly notifyNewBooking: NotifyNewBookingUseCase,
   ) {}
 
   async execute(input: ClientMessageInput): Promise<ClientMessageReply> {
@@ -73,6 +75,8 @@ export class ReplyToClientMessageUseCase {
       const fresh = await this.listSlots();
       return { reply: `Esa hora se acaba de ocupar 😕.\n\n${listSlots(fresh)}\n\n${HOW_TO_BOOK}` };
     }
+    // Tell the barber's phone; it never throws, so the client always gets the confirmation.
+    await this.notifyNewBooking.execute({ client: message.client, date: slot.date, time: slot.time });
 
     return {
       reply:

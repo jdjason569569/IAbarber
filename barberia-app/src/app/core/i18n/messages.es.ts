@@ -231,6 +231,8 @@ export const MESSAGES_ES = {
   'settings.blocks.errors.overlap': 'Hay tramos que se cruzan. Ajústalos o quita uno.',
   'settings.blocks.errors.clash':
     'No se guardó: hay citas en esos horarios ({appointments}). Cancélalas primero si quieres bloquear ese tramo.',
+  'notifications.channelName': 'Citas nuevas',
+  'notifications.channelDescription': 'Aviso cuando un cliente agenda una cita por WhatsApp',
   'time.am': 'a. m.',
   'time.pm': 'p. m.',
 } as const;

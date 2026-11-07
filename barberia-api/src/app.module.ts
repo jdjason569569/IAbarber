@@ -6,6 +6,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module.j
 import { HaircutAdvisorModule } from './modules/haircut-advisor/haircut-advisor.module.js';
 import { BusinessHoursModule } from './modules/business-hours/business-hours.module.js';
 import { StatisticsModule } from './modules/statistics/statistics.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module.js';
 
 @Module({
@@ -16,6 +17,7 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module.js';
     AssistantModule,
     BusinessHoursModule,
     HaircutAdvisorModule,
+    NotificationsModule,
     StatisticsModule,
     WhatsappModule,
   ],

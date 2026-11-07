@@ -20,6 +20,7 @@ export class AuthService {
     environment.supabaseKey,
   );
   private readonly roleState = signal<AppRole | null>(null);
+  private readonly beforeSignOut: (() => Promise<void>)[] = [];
   /** Resolves once the stored session (if any) was restored. */
   readonly ready: Promise<void>;
 
@@ -51,7 +52,13 @@ export class AuthService {
     this.roleState.set('guest');
   }
 
+  /** Runs before the session ends, while the API still accepts its token (e.g. removing the push token). */
+  onBeforeSignOut(hook: () => Promise<void>): void {
+    this.beforeSignOut.push(hook);
+  }
+
   async signOut(): Promise<void> {
+    await Promise.all(this.beforeSignOut.map((hook) => hook().catch(() => undefined)));
     setGuestFlag(false);
     this.roleState.set(null);
     await this.supabase.auth.signOut();

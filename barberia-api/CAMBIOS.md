@@ -542,3 +542,20 @@ This file records, in chronological order, every change made to the backend.
 **Pending / notes**
 - Apply the migration in Supabase **before** deploying this version. Old code breaks on the business-hours upsert after the migration; new code breaks without it.
 - Create the admin user in Supabase Auth and insert it in `workspace_members` (SQL at the end of the migration).
+
+---
+
+## 2026-11-07 · Push notifications (new WhatsApp booking → barber's phone)
+
+**What was done**
+- `docs/migrations/002_device_tokens.sql`: `device_tokens` table (token, workspace_id, platform). Applied to Supabase.
+- New `src/modules/notifications/` module: ports `DeviceTokenRepository` and `PushSender`; use cases `RegisterDeviceUseCase`, `UnregisterDeviceUseCase`, `NotifyNewBookingUseCase`; adapters `SupabaseDeviceTokenRepository` / `InMemoryDeviceTokenRepository`, `FirebasePushSender` (firebase-admin, Android channel `bookings`) / `DisabledPushSender`.
+- Endpoints: `POST /notifications/devices` `{ token, platform }` and `DELETE /notifications/devices` `{ token }` (204), in the caller's workspace.
+- `ReplyToClientMessageUseCase` (WhatsApp) notifies the admin workspace after a successful booking; the push never breaks the reply.
+- Dependency: `firebase-admin`.
+
+**Current state**
+- Verified locally: Firebase credentials authenticate against FCM; a rejected token is deleted from `device_tokens`.
+
+**Pending / notes**
+- `FIREBASE_SERVICE_ACCOUNT` = base64 (one line, `base64 -w 0`) of the service-account JSON, in `.env` and on Render. Without it, pushes are only logged.

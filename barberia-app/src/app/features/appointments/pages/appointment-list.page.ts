@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { AlertController, IonicModule, ModalController, ToastController } from '@ionic/angular/lazy';
@@ -6,6 +7,7 @@ import type { RefresherCustomEvent } from '@ionic/core';
 import { addIcons } from 'ionicons';
 import { checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send } from 'ionicons/icons';
 import { I18nService } from '../../../core/i18n/i18n.service';
+import { PushNotificationsService } from '../../../core/notifications/push-notifications.service';
 import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { parseIsoDate, toLocalIsoDate } from '../../../shared/utils/date.util';
@@ -85,6 +87,7 @@ export class AppointmentListPage {
   private readonly alertController = inject(AlertController);
   private readonly modalController = inject(ModalController);
   private readonly toastController = inject(ToastController);
+  private readonly pushNotifications = inject(PushNotificationsService);
 
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -200,6 +203,10 @@ export class AppointmentListPage {
 
   constructor() {
     addIcons({ checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send });
+    // A client just booked on WhatsApp (push received or tapped): show it without pulling to refresh.
+    this.pushNotifications.bookingReceived$
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.refresh());
     // Text mode opens the keyboard as soon as a question waits for the answer.
     effect(() => {
       const input = this.answerInput();

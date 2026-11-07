@@ -1048,3 +1048,20 @@ npx ionic capacitor add android   # añadir plataforma Android
 - `core/auth/back-to-login-button.component.ts`: a back arrow at the start of the header of every tab (citas, estadísticas, configuración, cortes). It leaves the current session (admin or guest) and returns to the login, where the other role can be chosen.
 - `AuthService.leaveToLogin()` (sign out + full reload to `/login`) is shared by the back arrow, "Cerrar sesión" and the 401 interceptor.
 - New message `auth.back`.
+
+---
+
+## 2026-11-07 · Push notifications for the admin
+
+**What was done**
+- Dependency `@capacitor/push-notifications` (8.x); `android/app/google-services.json` added (Firebase project, app `com.ia.barberia.app`).
+- `src/app/core/notifications/push-notifications.service.ts`: on the native app with an admin session, asks permission, creates the `bookings` channel, registers with FCM and sends the token to `POST /notifications/devices`. Foreground pushes show a toast; tapping a push opens `/appointments`. Guests and the browser never register.
+- `AuthService.onBeforeSignOut()`: hooks run before logout; the push service removes the token (`DELETE /notifications/devices`).
+- `AppComponent` starts the service; the appointment list reloads when a booking push arrives.
+- Messages `notifications.channelName` / `notifications.channelDescription`.
+
+**Current state**
+- `ng build`, `ng lint` and `./gradlew assembleDebug` pass (`processDebugGoogleServices` runs).
+
+**Pending / notes**
+- Needs testing on a real phone: log in as admin, allow notifications, book from WhatsApp.
