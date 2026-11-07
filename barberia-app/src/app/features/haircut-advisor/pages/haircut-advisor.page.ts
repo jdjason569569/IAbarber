@@ -23,6 +23,7 @@ import { HaircutPreviewErrorCode, HaircutPreviewState } from '../models/haircut-
 import { FaceAnalysisService } from '../services/face-analysis.service';
 import { HaircutPreviewService } from '../services/haircut-preview.service';
 import { HaircutRecommendationService } from '../services/haircut-recommendation.service';
+import { BackToLoginButtonComponent } from '../../../core/auth/back-to-login-button.component';
 
 /**
  * The barber photographs the client. The phone checks that the face is there and facing the camera
@@ -41,6 +42,7 @@ import { HaircutRecommendationService } from '../services/haircut-recommendation
     FaceShapeResultComponent,
     HaircutExamplesComponent,
     HaircutPreviewComponent,
+    BackToLoginButtonComponent,
   ],
 })
 export class HaircutAdvisorPage {

@@ -1,5 +1,6 @@
 <ion-header>
   <ion-toolbar>
+    <app-back-to-login-button />
     <ion-title>{{ 'settings.title' | t }}</ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="signOut()" [attr.aria-label]="'auth.signOut' | t">

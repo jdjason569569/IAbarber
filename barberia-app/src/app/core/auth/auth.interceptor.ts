@@ -14,8 +14,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     switchMap((headers) => next(req.clone({ setHeaders: headers }))),
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse && error.status === 401) {
-        // Full reload so no data of the ended session stays cached in memory.
-        void auth.signOut().then(() => window.location.replace('/login'));
+        void auth.leaveToLogin();
       }
       return throwError(() => error);
     }),

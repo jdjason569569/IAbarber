@@ -1039,3 +1039,12 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Current state**
 - `ng build` passes. The admin and the guest see separate appointments and settings (enforced by the API).
+
+---
+
+## 2026-11-06 · Back button to the login
+
+**What was done**
+- `core/auth/back-to-login-button.component.ts`: a back arrow at the start of the header of every tab (citas, estadísticas, configuración, cortes). It leaves the current session (admin or guest) and returns to the login, where the other role can be chosen.
+- `AuthService.leaveToLogin()` (sign out + full reload to `/login`) is shared by the back arrow, "Cerrar sesión" and the 401 interceptor.
+- New message `auth.back`.

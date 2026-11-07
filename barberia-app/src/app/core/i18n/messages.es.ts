@@ -25,6 +25,7 @@ export const MESSAGES_ES = {
   'auth.role.admin': 'Administrador',
   'auth.role.guest': 'Invitado',
   'auth.signOut': 'Cerrar sesión',
+  'auth.back': 'Volver al inicio',
 
   // Global loading overlay (every API request except assistant booking turns)
   'loading.sending': 'Enviando…',

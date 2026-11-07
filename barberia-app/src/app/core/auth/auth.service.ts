@@ -57,6 +57,12 @@ export class AuthService {
     await this.supabase.auth.signOut();
   }
 
+  /** Ends the session and opens the login with a full reload, so no data of this session stays in memory. */
+  async leaveToLogin(): Promise<void> {
+    await this.signOut();
+    window.location.replace('/login');
+  }
+
   /** Headers that identify the session to the API (the token is refreshed when needed). */
   async apiHeaders(): Promise<Record<string, string>> {
     const role = this.roleState();
