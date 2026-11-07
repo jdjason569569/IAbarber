@@ -1023,3 +1023,19 @@ npx ionic capacitor add android   # añadir plataforma Android
 - `global.scss`: el modal de resumen de cita creada (`.booked-summary-alert`) pasa de verde a dorado, reutilizando `--ion-color-primary` (cabecera y botón dorados con texto oscuro, fondo oscuro con tinte dorado).
 - Nuevo `features/assistant/components/booked-summary/`: el resumen de cita creada deja de ser un `ion-alert` y pasa a ser un modal tipo tarjeta (centrado y con la altura de su contenido). Lleva un check dorado, un título, un subtítulo (`assistant.booked.subtitle`), filas con icono para cliente, fecha y hora, el precio destacado y un botón ancho "Listo". En `global.scss`, `.booked-summary-alert` se sustituye por `ion-modal.booked-summary-modal`.
 - Corrección: el modal `booked-summary` no aparecía. Con `@ionic/angular/lazy`, `ModalController` entrega los `componentProps` con `Object.assign`, que pisaba los `input()` de señal. Ahora son propiedades normales.
+
+---
+
+## 2026-11-06 · Login: admin or guest
+
+**What was done**
+- Added `@supabase/supabase-js` and `supabaseUrl`/`supabaseKey` (publishable key) to both environments.
+- `core/auth/auth.service.ts`: the admin logs in with Supabase Auth (email + password); guest mode is a flag in `localStorage`. Exposes the `role` signal and the headers for the API.
+- `core/auth/auth.interceptor.ts`: adds `Authorization: Bearer` or `X-Guest: 1` to API requests. On a 401 it signs out and goes back to the login.
+- `core/auth/auth.guards.ts`: `sessionGuard` on the tabs and `noSessionGuard` on `/login`.
+- New feature `features/auth`: the login page with "Entrar como invitado".
+- Settings has a "Cerrar sesión" button. The version line shows the role (Administrador / Invitado).
+- A role change does a full reload, so no data of the previous session stays in memory.
+
+**Current state**
+- `ng build` passes. The admin and the guest see separate appointments and settings (enforced by the API).

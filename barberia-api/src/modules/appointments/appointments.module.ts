@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { supabaseProvider } from '../../shared/supabase/supabase.provider.js';
+import { isSupabaseConfigured } from '../../shared/supabase/supabase.provider.js';
 import { BusinessHoursModule } from '../business-hours/business-hours.module.js';
 import { ListAppointmentsUseCase } from './application/use-cases/list-appointments.use-case.js';
 import { ListAvailableSlotsUseCase } from './application/use-cases/list-available-slots.use-case.js';
@@ -16,7 +16,7 @@ import { InMemoryAppointmentRepository } from './infrastructure/persistence/in-m
 import { SupabaseAppointmentRepository } from './infrastructure/persistence/supabase-appointment.repository.js';
 
 // Uses Supabase when credentials are configured; falls back to memory for local development.
-const useSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+const useSupabase = isSupabaseConfigured;
 
 @Module({
   imports: [BusinessHoursModule],
@@ -30,7 +30,6 @@ const useSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SER
     SetAppointmentCompletedUseCase,
     UpdateAppointmentUseCase,
     UpdateDayBlocksUseCase,
-    ...(useSupabase ? [supabaseProvider] : []),
     {
       provide: APPOINTMENT_REPOSITORY,
       useClass: useSupabase ? SupabaseAppointmentRepository : InMemoryAppointmentRepository,

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { supabaseProvider } from '../../shared/supabase/supabase.provider.js';
+import { isSupabaseConfigured } from '../../shared/supabase/supabase.provider.js';
 import { GetBusinessHoursUseCase } from './application/use-cases/get-business-hours.use-case.js';
 import { GetDayBlocksUseCase } from './application/use-cases/get-day-blocks.use-case.js';
 import { SaveDayBlocksUseCase } from './application/use-cases/save-day-blocks.use-case.js';
@@ -13,7 +13,7 @@ import { InMemoryDayBlocksRepository } from './infrastructure/persistence/in-mem
 import { SupabaseDayBlocksRepository } from './infrastructure/persistence/supabase-day-blocks.repository.js';
 
 // Uses Supabase when credentials are configured; falls back to memory for local development.
-const useSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+const useSupabase = isSupabaseConfigured;
 
 @Module({
   controllers: [BusinessHoursController],
@@ -22,7 +22,6 @@ const useSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SER
     UpdateBusinessHoursUseCase,
     GetDayBlocksUseCase,
     SaveDayBlocksUseCase,
-    ...(useSupabase ? [supabaseProvider] : []),
     {
       provide: BUSINESS_HOURS_REPOSITORY,
       useClass: useSupabase ? SupabaseBusinessHoursRepository : InMemoryBusinessHoursRepository,

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../../../shared/supabase/supabase.provider.js';
+import { WorkspaceContext } from '../../../../shared/workspace/workspace-context.js';
 import { Appointment, UNSAVED_APPOINTMENT_ID } from '../../domain/entities/appointment.entity.js';
 import type { AppointmentExtra } from '../../domain/entities/appointment.entity.js';
 import { AppointmentConflictError } from '../../domain/errors/appointment-conflict.error.js';
@@ -30,6 +31,7 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
     const { data, error } = await this.supabase
       .from(TABLE)
       .select('*')
+      .eq('workspace_id', WorkspaceContext.currentId())
       .order('date', { ascending: true })
       .order('time', { ascending: true });
     if (error) throw new Error(error.message);
@@ -37,7 +39,12 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
   }
 
   async findById(id: number): Promise<Appointment | null> {
-    const { data, error } = await this.supabase.from(TABLE).select('*').eq('id', id).maybeSingle();
+    const { data, error } = await this.supabase
+      .from(TABLE)
+      .select('*')
+      .eq('workspace_id', WorkspaceContext.currentId())
+      .eq('id', id)
+      .maybeSingle();
     if (error) throw new Error(error.message);
     return data ? toEntity(data as AppointmentRow) : null;
   }
@@ -46,6 +53,7 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
     const { data, error } = await this.supabase
       .from(TABLE)
       .select('*')
+      .eq('workspace_id', WorkspaceContext.currentId())
       .eq('date', date)
       .eq('time', time)
       .eq('cancelled', false)
@@ -58,7 +66,9 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
   }
 
   async save(appointment: Appointment): Promise<Appointment> {
+    const workspaceId = WorkspaceContext.currentId();
     const row = {
+      workspace_id: workspaceId,
       client: appointment.client,
       date: appointment.date,
       time: appointment.time,
@@ -72,10 +82,10 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
     const query =
       appointment.id === UNSAVED_APPOINTMENT_ID
         ? this.supabase.from(TABLE).insert(row)
-        : this.supabase.from(TABLE).update(row).eq('id', appointment.id);
+        : this.supabase.from(TABLE).update(row).eq('id', appointment.id).eq('workspace_id', workspaceId);
     const { data, error } = await query.select().single();
     if (error) {
-      // 23505 = unique violation: the partial index on (date, time) caught a concurrent booking.
+      // 23505 = unique violation: the partial index on (workspace_id, date, time) caught a concurrent booking.
       if (error.code === UNIQUE_VIOLATION) {
         throw new AppointmentConflictError('That date and time is already booked');
       }

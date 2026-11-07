@@ -1,4 +1,5 @@
 import { BadRequestException, Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { ADMIN_WORKSPACE, WorkspaceContext } from '../../../../shared/workspace/workspace-context.js';
 import { ReplyToClientMessageUseCase } from '../../application/use-cases/reply-to-client-message.use-case.js';
 
 interface ReplyRequest {
@@ -18,9 +19,12 @@ export class WhatsappController {
     if (!text) {
       throw new BadRequestException('text is required');
     }
-    return this.replyToClient.execute({
-      text,
-      clientName: typeof body?.clientName === 'string' ? body.clientName : undefined,
-    });
+    // WhatsApp clients always book in the admin's workspace, never in the guest demo.
+    return WorkspaceContext.run(ADMIN_WORKSPACE, () =>
+      this.replyToClient.execute({
+        text,
+        clientName: typeof body?.clientName === 'string' ? body.clientName : undefined,
+      }),
+    );
   }
 }

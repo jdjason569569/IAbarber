@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { supabaseProvider } from '../../shared/supabase/supabase.provider.js';
+import { isSupabaseConfigured } from '../../shared/supabase/supabase.provider.js';
 import { GenerateHaircutPreviewUseCase } from './application/use-cases/generate-haircut-preview.use-case.js';
 import { RecommendHaircutsUseCase } from './application/use-cases/recommend-haircuts.use-case.js';
 import { FACE_PHOTO_ANALYZER } from './domain/ports/face-photo-analyzer.port.js';
@@ -13,9 +13,7 @@ import { InMemoryHaircutCatalogRepository } from './infrastructure/persistence/i
 import { SupabaseHaircutCatalogRepository } from './infrastructure/persistence/supabase-haircut-catalog.repository.js';
 
 // Uses Supabase when credentials are configured; falls back to memory for local development.
-const useSupabase = Boolean(
-  process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY,
-);
+const useSupabase = isSupabaseConfigured;
 
 @Module({
   controllers: [HaircutRecommendationsController, HaircutPreviewController],
@@ -24,7 +22,6 @@ const useSupabase = Boolean(
     GenerateHaircutPreviewUseCase,
     { provide: HAIRSTYLE_EDITOR, useClass: GeminiHairstyleEditor },
     { provide: FACE_PHOTO_ANALYZER, useClass: GeminiFacePhotoAnalyzer },
-    ...(useSupabase ? [supabaseProvider] : []),
     {
       provide: HAIRCUT_CATALOG_REPOSITORY,
       useClass: useSupabase

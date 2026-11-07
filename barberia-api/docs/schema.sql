@@ -134,3 +134,5 @@ create unique index appointments_active_slot_unique
 -- client books on WhatsApp. Null for bookings made from the app. Run once; it is safe to repeat.
 alter table appointments add column if not exists phone text;
 create index if not exists appointments_phone_idx on appointments (phone) where phone is not null;
+
+-- Migration: workspaces (admin / guest separated data). See docs/migrations/001_workspaces.sql.

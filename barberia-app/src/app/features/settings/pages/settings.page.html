@@ -1,6 +1,12 @@
 <ion-header>
   <ion-toolbar>
     <ion-title>{{ 'settings.title' | t }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="signOut()" [attr.aria-label]="'auth.signOut' | t">
+        <ion-icon slot="start" name="log-out-outline"></ion-icon>
+        {{ 'auth.signOut' | t }}
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 

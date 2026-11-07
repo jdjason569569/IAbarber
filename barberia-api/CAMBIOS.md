@@ -508,3 +508,37 @@ This file records, in chronological order, every change made to the backend.
 - `appointment.entity.ts`: `APPOINTMENT_MINUTES` 60 → 30. Two bookings clash only when they start less than 30 min apart, so with one at 16:00 another can be booked at 16:30 (before it was rejected as "already booked").
 - `list-available-slots.use-case.ts`: free slots are now listed every 30 minutes (16:00, 16:30, 17:00...) instead of on whole hours, so WhatsApp and the assistant offer the half hours too.
 - Walk-in shifting keeps working with the same constant (overlap = less than 30 min).
+
+---
+
+## 2026-11-06 · Night bookings rejected as "already past"
+
+**What was done**
+- `handle-booking-turn.use-case.ts`: the LLM read "9 30 de la noche" as 09:30, so at 21:26 the booking was rejected with "Esa fecha ya pasó" and cancelled.
+- Prompts now state that "de la tarde" / "de la noche" always means PM.
+- Safety net: if today's time is already past, the PM reading is used when it is still ahead (09:30 -> 21:30); otherwise only the time is asked again ("Esa hora ya pasó hoy. ¿A qué otra hora?") instead of cancelling the whole booking.
+
+---
+
+## 2026-11-06 · Roles: admin and guest workspaces
+
+**What was done**
+- New `workspaces` concept: appointments, weekly hours and day blocks belong to a workspace. Fixed ids: admin `…0001`, guest demo `…0002` (`src/shared/workspace/workspace-context.ts`).
+- The current workspace travels with the request through `AsyncLocalStorage` (`WorkspaceContext`), so use-cases keep their signatures. `WorkspaceContext.current()` throws outside a workspace.
+- New module `src/modules/auth/`: `AuthMiddleware` (global) resolves the workspace through `ResolveWorkspaceUseCase`:
+  - `Authorization: Bearer <Supabase token>` → the user's workspace (`workspace_members`)
+  - `X-Guest: 1` → guest demo
+  - nothing → 401
+  - Also adds `GET /auth/me`.
+- Repositories (Supabase and in-memory) of appointments, business hours and day blocks filter and write by `workspace_id`.
+- WhatsApp (`/whatsapp/webhook` and `/whatsapp/reply`) always works in the admin workspace. `/whatsapp/reply` is unchanged for the open-wa bot (no new headers).
+- One global `SupabaseModule` replaces the provider registered in 3 modules (`isSupabaseConfigured` flag).
+- SQL migration `docs/migrations/001_workspaces.sql`:
+  - tables `workspaces` and `workspace_members`
+  - `workspace_id` column on the three tables
+  - `business_hours` PK becomes `(workspace_id, weekday)`
+  - slot unique index per workspace
+
+**Pending / notes**
+- Apply the migration in Supabase **before** deploying this version. Old code breaks on the business-hours upsert after the migration; new code breaks without it.
+- Create the admin user in Supabase Auth and insert it in `workspace_members` (SQL at the end of the migration).

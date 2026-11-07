@@ -1,0 +1,51 @@
+<ion-content class="ion-padding">
+  <div class="login">
+    <h1>{{ 'auth.title' | t }}</h1>
+    <p class="subtitle">{{ 'auth.subtitle' | t }}</p>
+
+    <form [formGroup]="form" (ngSubmit)="signIn()">
+      <ion-list lines="full">
+        <ion-item>
+          <ion-input
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            inputmode="email"
+            labelPlacement="stacked"
+            [label]="'auth.email' | t"
+          ></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-input
+            type="password"
+            formControlName="password"
+            autocomplete="current-password"
+            labelPlacement="stacked"
+            [label]="'auth.password' | t"
+          ></ion-input>
+        </ion-item>
+      </ion-list>
+
+      @if (failed()) {
+      <ion-text color="danger"
+        ><p>{{ 'auth.errors.invalidCredentials' | t }}</p></ion-text
+      >
+      }
+
+      <ion-button
+        type="submit"
+        expand="block"
+        [disabled]="form.invalid || signingIn()"
+      >
+        {{ (signingIn() ? 'auth.signingIn' : 'auth.signIn') | t }}
+      </ion-button>
+    </form>
+
+    <div class="divider">{{ 'auth.or' | t }}</div>
+
+    <ion-button expand="block" fill="outline" (click)="enterAsGuest()">
+      {{ 'auth.enterAsGuest' | t }}
+    </ion-button>
+    <p class="hint">{{ 'auth.guestHint' | t }}</p>
+  </div>
+</ion-content>

@@ -8,13 +8,14 @@ import { IonicModule, IonicRouteStrategy } from '@ionic/angular/lazy';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { LoadingOverlayComponent } from './core/loading/loading-overlay.component';
+import { authInterceptor } from './core/auth/auth.interceptor';
 import { loadingInterceptor } from './core/loading/loading.interceptor';
 
 @NgModule({
   declarations: [AppComponent],
   imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, LoadingOverlayComponent],
   providers: [
-    provideHttpClient(withInterceptors([loadingInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, loadingInterceptor])),
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
   ],
   bootstrap: [AppComponent],

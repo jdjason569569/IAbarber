@@ -1,0 +1,32 @@
+.login {
+  max-width: 420px;
+  margin: 0 auto;
+  padding-top: 12vh;
+}
+
+h1 {
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+}
+
+.subtitle,
+.hint {
+  text-align: center;
+  color: var(--ion-color-medium);
+}
+
+.hint {
+  font-size: 13px;
+}
+
+ion-list {
+  margin-bottom: 16px;
+}
+
+.divider {
+  margin: 20px 0 12px;
+  text-align: center;
+  color: var(--ion-color-medium);
+  font-size: 13px;
+}

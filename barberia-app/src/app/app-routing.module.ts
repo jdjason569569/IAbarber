@@ -1,9 +1,16 @@
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
+import { noSessionGuard, sessionGuard } from './core/auth/auth.guards';
 
 const routes: Routes = [
   {
+    path: 'login',
+    canActivate: [noSessionGuard],
+    loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
+  },
+  {
     path: '',
+    canActivate: [sessionGuard],
     loadComponent: () => import('./core/layout/tabs.page').then((m) => m.TabsPage),
     children: [
       {

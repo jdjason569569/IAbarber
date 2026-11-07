@@ -34,6 +34,8 @@ const RETRY_LISTEN_SECONDS = 7;
 
 const PAST_REPLY = 'Esa fecha ya pasó, no se puede agendar una cita en el pasado.';
 
+const PAST_TIME_REPLY = 'Esa hora ya pasó hoy. ¿A qué otra hora?';
+
 const CLOSED_DAY_REPLY = 'Ese día no atendemos. ¿Para qué otra fecha?';
 
 const PRICE_HINT = "The price is a number in pesos: 'quince mil' -> 15000, '20 mil' -> 20000, 'doce mil quinientos' -> 12500.";
@@ -118,6 +120,17 @@ export class HandleBookingTurnUseCase {
 
     if (draft.date && draft.date < localIsoDate(new Date())) {
       return { reply: PAST_REPLY, draft: {}, status: 'cancelled' };
+    }
+
+    if (draft.date && draft.time && isPast(draft.date, draft.time)) {
+      // "9 30" heard as 09:30 when it is already night: the PM reading is the one still ahead.
+      const pm = toPm(draft.time);
+      if (pm && !isPast(draft.date, pm)) {
+        draft = { ...draft, time: pm };
+      } else {
+        const { time: _past, ...keep } = draft;
+        return { reply: PAST_TIME_REPLY, draft: keep, status: 'asking' };
+      }
     }
 
     if (draft.date) {
@@ -244,6 +257,7 @@ export class HandleBookingTurnUseCase {
       'Each line of the message is labeled with the field it answers (client, date, time or price).',
       `Today is ${localIsoDate()}. Resolve relative dates ("mañana", "el viernes") to ISO dates.`,
       'Barbershop hours are daytime: "a las 4" means 16:00 unless the user says morning.',
+      '"de la tarde" or "de la noche" always means PM: "9 30 de la noche" -> 21:30, "8 de la noche" -> 20:00.',
       PRICE_HINT,
       NOISE_HINT,
       `Already collected: ${JSON.stringify(draft)}.`,
@@ -266,6 +280,7 @@ export class HandleBookingTurnUseCase {
       'You help book a barbershop appointment by voice or typed text. The user answers in Spanish, one question at a time.',
       `Today is ${today}. Resolve relative dates ("mañana", "el viernes") to ISO dates.`,
       'Barbershop hours are daytime: "a las 4" means 16:00 unless the user says morning.',
+      '"de la tarde" or "de la noche" always means PM: "9 30 de la noche" -> 21:30, "8 de la noche" -> 20:00.',
       PRICE_HINT,
       NOISE_HINT,
       `Already collected: ${JSON.stringify(draft)}.`,
@@ -308,6 +323,16 @@ function blockedReply(block: TimeBlock): string {
 /** `7` -> "07:00"; `24` -> "medianoche". */
 function spokenHour(hour: number): string {
   return hour === 24 ? 'medianoche' : `${String(hour).padStart(2, '0')}:00`;
+}
+
+function isPast(date: string, time: string): boolean {
+  return new Date(`${date}T${time}:00`).getTime() <= Date.now();
+}
+
+/** `09:30` -> `21:30`; undefined when the time is already PM. */
+function toPm(time: string): string | undefined {
+  const [hour, minute] = time.split(':').map(Number);
+  return hour < 12 ? `${String(hour + 12).padStart(2, '0')}:${String(minute).padStart(2, '0')}` : undefined;
 }
 
 /** Keeps only valid, well-formed values so a bad LLM answer never reaches the domain. */

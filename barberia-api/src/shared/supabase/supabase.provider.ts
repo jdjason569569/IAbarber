@@ -3,6 +3,9 @@ import type { Provider } from '@nestjs/common';
 
 export const SUPABASE_CLIENT = Symbol('SUPABASE_CLIENT');
 
+/** Supabase is used when credentials are configured; otherwise the modules fall back to memory. */
+export const isSupabaseConfigured = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+
 export const supabaseProvider: Provider = {
   provide: SUPABASE_CLIENT,
   useFactory: () => {

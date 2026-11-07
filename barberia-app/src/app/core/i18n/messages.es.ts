@@ -9,6 +9,22 @@ export const MESSAGES_ES = {
   'tabs.haircutAdvisor': 'Cortes',
   'tabs.settings': 'Configuración',
   'app.version': 'Versión {version}',
+  'app.versionWithRole': 'Versión {version} · {role}',
+
+  // Login (admin with email and password, or the shared guest demo)
+  'auth.title': 'BarberIA',
+  'auth.subtitle': 'Ingresa como administrador o prueba la app como invitado.',
+  'auth.email': 'Correo',
+  'auth.password': 'Contraseña',
+  'auth.signIn': 'Ingresar',
+  'auth.signingIn': 'Ingresando…',
+  'auth.or': 'o',
+  'auth.enterAsGuest': 'Entrar como invitado',
+  'auth.guestHint': 'El invitado usa un espacio de prueba: no ve las citas ni la configuración de la barbería.',
+  'auth.errors.invalidCredentials': 'Correo o contraseña incorrectos.',
+  'auth.role.admin': 'Administrador',
+  'auth.role.guest': 'Invitado',
+  'auth.signOut': 'Cerrar sesión',
 
   // Global loading overlay (every API request except assistant booking turns)
   'loading.sending': 'Enviando…',

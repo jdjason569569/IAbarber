@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
+import { ADMIN_WORKSPACE, WorkspaceContext } from '../../../../shared/workspace/workspace-context.js';
 import type { IncomingWhatsappMessage } from '../../application/dtos/client-message.dto.js';
 import { HandleIncomingWhatsappMessageUseCase } from '../../application/use-cases/handle-incoming-whatsapp-message.use-case.js';
 import { isValidMetaSignature } from './meta-signature.js';
@@ -67,7 +68,8 @@ export class WhatsappWebhookController {
 
     for (const message of extractTextMessages(body)) {
       try {
-        const handled = await this.handleMessage.execute(message);
+        // WhatsApp clients always book in the admin's workspace, never in the guest demo.
+        const handled = await WorkspaceContext.run(ADMIN_WORKSPACE, () => this.handleMessage.execute(message));
         this.logger.log(`${handled ? 'Answered' : 'Skipped repeated'} message ${message.id} from ${message.from}`);
       } catch (error) {
         this.logger.error(
