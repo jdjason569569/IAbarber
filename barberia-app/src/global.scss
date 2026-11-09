@@ -65,3 +65,20 @@ ion-modal.booked-summary-modal .ion-page {
 .multiline-alert .alert-message {
   white-space: pre-line;
 }
+
+/* Booking notice (push): app yellow background with dark text so it stands out. */
+ion-alert.booking-alert {
+  --background: var(--ion-color-primary);
+
+  .alert-wrapper {
+    border: none;
+  }
+  .alert-title,
+  .alert-message {
+    color: var(--ion-color-primary-contrast);
+  }
+  .alert-button {
+    color: var(--ion-color-primary-contrast);
+    font-weight: 700;
+  }
+}

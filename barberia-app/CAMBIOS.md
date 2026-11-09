@@ -1065,3 +1065,62 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Pending / notes**
 - Needs testing on a real phone: log in as admin, allow notifications, book from WhatsApp.
+
+## 2026-11-07 · Booking notice stays open until seen
+
+**What was done**
+- `PushNotificationsService`: a push received with the app open now shows an `ion-alert` (no timeout, `backdropDismiss: false`) instead of a 5 s toast. Buttons: "Entendido" (closes) and "Ver citas" (opens `/appointments`).
+- Messages `notifications.dismiss` / `notifications.viewAppointments`.
+- Verified end to end on the phone: Render needed `FIREBASE_SERVICE_ACCOUNT` (base64 JSON key); the phone registers its token on app start as admin.
+
+**Notes**
+- With the app in background, Android keeps the system notification in the tray until it is tapped or swiped.
+- Unseen bookings: Android hides the heads-up banner by itself, but the push stays in the tray. On app start and every time the app becomes visible (`visibilitychange`), the service reads `getDeliveredNotifications()` and, if any, shows a "Citas nuevas sin ver" modal listing them (`backdropDismiss: false`, back button does not close it). Closing it clears the tray (`removeAllDeliveredNotifications`). Client names are HTML-escaped. Message `notifications.unseenTitle`.
+- Installed on the phone with `npm run install_app:prod` and verified: push with the app in background → reopen → modal stays after 15 s and after the back button.
+- Booking modal styled with the app yellow (`--ion-color-primary`) background and dark text: class `booking-alert` in `src/global.scss`.
+
+---
+
+## 2026-11-09 · Several bookings are listed in one modal
+
+**What was done**
+- `src/app/core/notifications/push-notifications.service.ts`: one single booking modal fed by a list of unseen bookings. A push that arrives while the modal is open is added to its list instead of stacking a new modal on top (which only showed the latest one). With two or more bookings the header is "Citas nuevas sin ver" and each one is a bullet; with one it keeps the push title.
+- Returning to the app with the modal open now adds the pushes that reached the tray meanwhile; before they were cleared on close without being shown. Tray pushes are identified by id + tag, because FCM pushes share the id.
+
+**Current state**
+- Unseen bookings accumulate until "Entendido" or "Ver citas", which clear the list and the tray.
+
+**Pending / notes**
+- A push the barber taps in the tray is removed by Android and opens the app, so it counts as seen and is not in the list.
+
+---
+
+## 2026-11-09 · Fix: booking list did not show every booking
+
+**What was done**
+- `src/app/core/notifications/push-notifications.service.ts`: the modal message is plain text (Ionic does not render HTML by default), so bookings are separated by line breaks with the existing `multiline-alert` class instead of `<br>`; `escapeHtml` removed. Bookings are keyed by their text.
+- A tapped push, which Android removes from the tray, now joins the list when other bookings are unseen, reading its text from `data.body`. A single tapped push still just opens the appointments.
+
+**Pending / notes**
+- Needs the API that sends `data.body` deployed on Render; until then a tapped push stays out of the list.
+
+---
+
+## 2026-11-09 · Tapped push listed without an API change
+
+**What was done**
+- `push-notifications.service.ts`: a tapped push (Android gives only its data) is looked up in `GET /appointments` by date and time and added to the list when other bookings are unseen. Replaces reading `data.body`: no API deploy is needed, and the API was left unchanged.
+- Message `notifications.bookingLine`.
+
+**Current state**
+- Confirmed from the phone's logs that the tapped push was the one missing from the modal. Not yet tested with real pushes after this change.
+
+---
+
+## 2026-11-09 · Client names in bold in the booking modal
+
+**What was done**
+- `push-notifications.service.ts`: each booking of the modal is built as DOM nodes (`bookingItem`) with the client name in `<strong>`. Ionic renders `message` as plain text and `innerHTMLTemplatesEnabled` stays off for the rest of the app. Names go in text nodes, so they are never parsed as HTML.
+
+**Pending / notes**
+- The name is split at " agendó para ", so that wording must stay the same in the API push and in `notifications.bookingLine`; otherwise the line shows without bold.

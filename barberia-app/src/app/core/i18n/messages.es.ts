@@ -233,6 +233,10 @@ export const MESSAGES_ES = {
     'No se guardó: hay citas en esos horarios ({appointments}). Cancélalas primero si quieres bloquear ese tramo.',
   'notifications.channelName': 'Citas nuevas',
   'notifications.channelDescription': 'Aviso cuando un cliente agenda una cita por WhatsApp',
+  'notifications.dismiss': 'Entendido',
+  'notifications.viewAppointments': 'Ver citas',
+  'notifications.unseenTitle': '💈 Citas nuevas sin ver',
+  'notifications.bookingLine': '{client} agendó para el {date} a las {time}',
   'time.am': 'a. m.',
   'time.pm': 'p. m.',
 } as const;
