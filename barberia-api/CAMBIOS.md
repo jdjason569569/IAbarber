@@ -587,3 +587,14 @@ This file records, in chronological order, every change made to the backend.
   Between steps 2 and 3 the bot cannot get replies.
 - The secret is part of the URL, so it can show up in request logs; rotate it by changing both places.
 - No rate limiting yet.
+
+---
+
+## 2026-11-10 · Las citas de WhatsApp también llegan al invitado
+
+**Qué se hizo**
+- Nuevo `CopyAppointmentUseCase` (appointments): guarda en el workspace actual una copia de una cita ya aceptada en otro, sin revisar horario ni bloqueos de ese workspace.
+- `ReplyToClientMessageUseCase`: después de agendar en el admin y notificarle, copia la cita al workspace del invitado (`GUEST_WORKSPACE`) y envía la push a los teléfonos del invitado.
+- La copia es independiente: si el invitado la cancela o la edita, la del admin no cambia.
+- Si la copia falla (p. ej. el invitado ya tiene una cita activa a esa misma hora) solo se registra en el log; el cliente recibe la confirmación igual y no se envía push al invitado.
+- Aplica a los dos canales (Meta webhook y open-wa), porque ambos pasan por `ReplyToClientMessageUseCase`. `/whatsapp/reply` no cambia.

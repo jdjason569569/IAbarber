@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { CopyAppointmentUseCase } from '../../../appointments/application/use-cases/copy-appointment.use-case.js';
 import { ListAppointmentsUseCase } from '../../../appointments/application/use-cases/list-appointments.use-case.js';
 import { ListAvailableSlotsUseCase } from '../../../appointments/application/use-cases/list-available-slots.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../../appointments/application/use-cases/schedule-appointment.use-case.js';
 import { NotifyNewBookingUseCase } from '../../../notifications/application/use-cases/notify-new-booking.use-case.js';
-import type { AppointmentDto, DaySlotsDto } from '../../../appointments/application/dtos/appointment.dto.js';
+import type { AppointmentDto, DaySlotsDto, ScheduleAppointmentInput } from '../../../appointments/application/dtos/appointment.dto.js';
 import { DomainError } from '../../../../shared/errors/domain.error.js';
 import { localIsoDate } from '../../../../shared/utils/local-date.js';
+import { GUEST_WORKSPACE, WorkspaceContext } from '../../../../shared/workspace/workspace-context.js';
 import { BookingMessage } from '../../domain/entities/booking-message.entity.js';
 import type { BookingDay } from '../../domain/entities/booking-message.entity.js';
 import type { ClientMessageInput, ClientMessageReply } from '../dtos/client-message.dto.js';
@@ -33,6 +35,7 @@ export class ReplyToClientMessageUseCase {
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
     private readonly listAppointments: ListAppointmentsUseCase,
     private readonly notifyNewBooking: NotifyNewBookingUseCase,
+    private readonly copyAppointment: CopyAppointmentUseCase,
   ) {}
 
   async execute(input: ClientMessageInput): Promise<ClientMessageReply> {
@@ -60,15 +63,16 @@ export class ReplyToClientMessageUseCase {
       return { reply: `Esa hora no está disponible 😕.\n\n${listSlots(days)}\n\n${HOW_TO_BOOK}` };
     }
 
+    const booking: ScheduleAppointmentInput = {
+      client: message.client,
+      date: slot.date,
+      time: slot.time,
+      serviceCost: WHATSAPP_SERVICE_COST,
+      extras: [],
+      phone: input.phone,
+    };
     try {
-      await this.scheduleAppointment.execute({
-        client: message.client,
-        date: slot.date,
-        time: slot.time,
-        serviceCost: WHATSAPP_SERVICE_COST,
-        extras: [],
-        phone: input.phone,
-      });
+      await this.scheduleAppointment.execute(booking);
     } catch (error) {
       // Someone else may have taken the slot between listing and booking.
       if (!(error instanceof DomainError)) throw error;
@@ -77,12 +81,31 @@ export class ReplyToClientMessageUseCase {
     }
     // Tell the barber's phone; it never throws, so the client always gets the confirmation.
     await this.notifyNewBooking.execute({ client: message.client, date: slot.date, time: slot.time });
+    await this.copyToGuest(booking);
 
     return {
       reply:
         `✅ Listo ${message.client}, tu cita quedó agendada para ` +
         `${DAY_LABELS[slot.day].toLowerCase()} ${formatDate(slot.date)} a las ${slot.time}. ¡Te esperamos! 💈`,
     };
+  }
+
+  /**
+   * The guest demo also receives every WhatsApp booking: an independent copy in its workspace (the
+   * guest can change it without touching the admin's) and a push to its phones. Never throws, so the
+   * client always gets the confirmation of the real booking.
+   */
+  private async copyToGuest(booking: ScheduleAppointmentInput): Promise<void> {
+    await WorkspaceContext.run(GUEST_WORKSPACE, async () => {
+      try {
+        await this.copyAppointment.execute(booking);
+      } catch (error) {
+        // e.g. the guest already has an active booking at that exact time.
+        console.error('Copying the WhatsApp booking to the guest failed:', error instanceof Error ? error.message : error);
+        return;
+      }
+      await this.notifyNewBooking.execute({ client: booking.client, date: booking.date, time: booking.time });
+    });
   }
 
   /** The client's booking that still holds a future slot, if any. */

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { isSupabaseConfigured } from '../../shared/supabase/supabase.provider.js';
 import { BusinessHoursModule } from '../business-hours/business-hours.module.js';
+import { CopyAppointmentUseCase } from './application/use-cases/copy-appointment.use-case.js';
 import { ListAppointmentsUseCase } from './application/use-cases/list-appointments.use-case.js';
 import { ListAvailableSlotsUseCase } from './application/use-cases/list-available-slots.use-case.js';
 import { RegisterWalkInUseCase } from './application/use-cases/register-walk-in.use-case.js';
@@ -22,6 +23,7 @@ const useSupabase = isSupabaseConfigured;
   imports: [BusinessHoursModule],
   controllers: [AppointmentsController, DayBlocksController],
   providers: [
+    CopyAppointmentUseCase,
     ListAppointmentsUseCase,
     ListAvailableSlotsUseCase,
     ScheduleAppointmentUseCase,
@@ -36,6 +38,7 @@ const useSupabase = isSupabaseConfigured;
     },
   ],
   exports: [
+    CopyAppointmentUseCase,
     ListAppointmentsUseCase,
     ListAvailableSlotsUseCase,
     ScheduleAppointmentUseCase,

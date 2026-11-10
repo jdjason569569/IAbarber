@@ -1143,3 +1143,10 @@ npx ionic capacitor add android   # añadir plataforma Android
 **Qué se hizo**
 - `BackToLoginButtonComponent` solo se muestra en la sesión de invitado. El admin ya no sale al login al tocar la flecha del encabezado.
 - El admin cierra sesión únicamente con **Cerrar sesión** en Ajustes.
+
+## 2026-11-10 · Notificaciones push también para el invitado
+
+**Qué se hizo**
+- `PushNotificationsService` registra el token del teléfono con sesión de admin **o** de invitado (antes solo admin). La API envía al invitado la copia de cada cita de WhatsApp.
+- Al cerrar la sesión de invitado se borra el token, igual que con el admin.
+- Un teléfono recibe las notificaciones de la sesión que tenga abierta: al cambiar de rol, el token pasa al nuevo workspace.
