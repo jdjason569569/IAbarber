@@ -40,12 +40,5 @@
         {{ (signingIn() ? 'auth.signingIn' : 'auth.signIn') | t }}
       </ion-button>
     </form>
-
-    <div class="divider">{{ 'auth.or' | t }}</div>
-
-    <ion-button expand="block" fill="outline" (click)="enterAsGuest()">
-      {{ 'auth.enterAsGuest' | t }}
-    </ion-button>
-    <p class="hint">{{ 'auth.guestHint' | t }}</p>
   </div>
 </ion-content>

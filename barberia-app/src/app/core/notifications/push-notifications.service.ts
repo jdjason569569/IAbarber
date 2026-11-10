@@ -26,10 +26,9 @@ interface BookedAppointment {
 }
 
 /**
- * Push notifications for the admin (barber) and the guest demo: when a client books on WhatsApp the
- * API sends a push to the phones of both sessions. Only on the native app; the browser never registers.
- * - Session starts (admin or guest) → asks permission, gets the FCM token and sends it to the API
- *   (a token already stored moves to the workspace of the new session).
+ * Push notifications for the admin (barber): when a client books on WhatsApp the API sends a push
+ * to this phone. Only on the native app; the browser never registers.
+ * - Admin session starts → asks permission, gets the FCM token and sends it to the API.
  * - Logout → the token is removed from the API before the session ends.
  */
 @Injectable({ providedIn: 'root' })
@@ -57,13 +56,12 @@ export class PushNotificationsService {
     if (!Capacitor.isNativePlatform()) return;
     this.auth.onBeforeSignOut(() => this.unregister());
     effect(() => {
-      // Admin and guest both receive WhatsApp bookings (the guest gets a copy in its demo workspace).
-      if (this.auth.role()) void this.register();
+      if (this.auth.role() === 'admin') void this.register();
     });
     // Android hides the heads-up banner by itself; the push stays in the tray until seen, so every
     // time the barber comes back to the app the unseen bookings are shown in a modal that stays open.
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && this.auth.role()) {
+      if (document.visibilityState === 'visible' && this.auth.role() === 'admin') {
         this.zone.run(() => void this.collectDeliveredBookings());
       }
     });

@@ -1150,3 +1150,27 @@ npx ionic capacitor add android   # añadir plataforma Android
 - `PushNotificationsService` registra el token del teléfono con sesión de admin **o** de invitado (antes solo admin). La API envía al invitado la copia de cada cita de WhatsApp.
 - Al cerrar la sesión de invitado se borra el token, igual que con el admin.
 - Un teléfono recibe las notificaciones de la sesión que tenga abierta: al cambiar de rol, el token pasa al nuevo workspace.
+
+## 2026-11-10 · Se elimina el modo invitado
+
+**Qué se hizo**
+- Login: se quitaron el botón "Entrar como invitado", el separador y el texto de ayuda; el subtítulo ahora dice "Ingresa con tu cuenta de administrador."
+- `AuthService`: solo existe el rol `admin`; se quitaron `enterAsGuest`, `isGuest` y el encabezado `X-Guest`. Al iniciar se borra la marca `barberia.guest` que dejaban las versiones anteriores.
+- Se borró `BackToLoginButtonComponent` (la flecha solo existía para el invitado) y sus usos en Citas, Estadísticas, Asesor de cortes y Ajustes.
+- Las notificaciones push vuelven a registrarse solo con sesión de admin.
+- El pie de la pestaña muestra siempre "Administrador".
+- Se quitaron los textos del invitado del catálogo i18n.
+
+## 2026-11-10 · Correo del admin precargado en el login
+
+- `environment.ts` / `environment.prod.ts`: nueva clave `loginEmail` con el correo del admin.
+- `LoginPage` inicia el campo de correo con ese valor; el barbero solo escribe la contraseña (puede cambiar el correo si quiere).
+
+## 2026-11-10 · Avisos de "quiere hablar contigo"
+
+- La API ahora también envía una push cuando un cliente de WhatsApp pide hablar con el barbero ("💬 Quieren hablar contigo"). La app la muestra en el mismo modal de avisos.
+- Textos: el modal con varios avisos se titula "💈 Avisos sin ver" y la descripción del canal de notificaciones menciona los dos tipos de aviso.
+
+## 2026-11-10 · Se revierten los textos de "quiere hablar contigo"
+
+- La API ya no envía push cuando un cliente pide hablar con el barbero, así que los textos del canal y del modal vuelven a hablar solo de citas nuevas.

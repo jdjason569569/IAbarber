@@ -10,23 +10,11 @@ h1 {
   font-weight: 700;
 }
 
-.subtitle,
-.hint {
+.subtitle {
   text-align: center;
   color: var(--ion-color-medium);
-}
-
-.hint {
-  font-size: 13px;
 }
 
 ion-list {
   margin-bottom: 16px;
-}
-
-.divider {
-  margin: 20px 0 12px;
-  text-align: center;
-  color: var(--ion-color-medium);
-  font-size: 13px;
 }

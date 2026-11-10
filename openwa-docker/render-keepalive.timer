@@ -1,0 +1,13 @@
+# Cada 10 minutos de 6:00 a 22:59, hora de Colombia.
+# No es 24 h porque las 750 h gratis de Render al mes se comparten entre todos los servicios
+# gratis de la cuenta; si se acaban, Render los suspende todos hasta el mes siguiente.
+# Despierto todo el día gastaría unas 744 h; con este horario, unas 530 h.
+[Unit]
+Description=Despierta el backend de BarberIA en Render cada 10 minutos (6:00-22:59 Colombia)
+
+[Timer]
+OnCalendar=*-*-* 06..22:00/10:00 America/Bogota
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

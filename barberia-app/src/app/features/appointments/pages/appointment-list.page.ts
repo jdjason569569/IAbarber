@@ -32,7 +32,6 @@ import { DayHours } from '../../settings/models/business-hours.model';
 import { BusinessHoursService } from '../../settings/services/business-hours.service';
 import { TimeRangePipe } from '../../../shared/pipes/time-range.pipe';
 import { APPOINTMENT_MINUTES, formatTime12, formatTimeRange, toMinutes } from '../../../shared/utils/time.util';
-import { BackToLoginButtonComponent } from '../../../core/auth/back-to-login-button.component';
 
 /** Used when the business hours cannot be loaded: 07:00 to midnight. */
 const FALLBACK_HOURS: Pick<DayHours, 'open' | 'openHour' | 'closeHour'> = { open: true, openHour: 7, closeHour: 24 };
@@ -76,7 +75,7 @@ class DialogCancelled extends Error {}
   templateUrl: 'appointment-list.page.html',
   styleUrls: ['appointment-list.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonicModule, TranslatePipe, TimeRangePipe, SendProgressComponent, BackToLoginButtonComponent],
+  imports: [IonicModule, TranslatePipe, TimeRangePipe, SendProgressComponent],
 })
 export class AppointmentListPage {
   private readonly appointmentService = inject(AppointmentService);

@@ -3,7 +3,7 @@ import type { CanActivateFn } from '@angular/router';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
-/** The app screens need a session (admin or guest); without one, go to the login page. */
+/** The app screens need a session (admin); without one, go to the login page. */
 export const sessionGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);

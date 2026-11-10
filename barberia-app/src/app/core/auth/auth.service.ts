@@ -1,17 +1,17 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../../environments/environment';
 
-/** Who is using the app: the barber (admin, logged in) or a visitor trying the demo. */
-export type AppRole = 'admin' | 'guest';
+/** Who is using the app: only the barber (admin, logged in). */
+export type AppRole = 'admin';
 
-const GUEST_FLAG = 'barberia.guest';
+/** Left by older versions that had a guest demo; removed on start. */
+const LEGACY_GUEST_FLAG = 'barberia.guest';
 
 /**
  * Session of the app. The admin logs in with Supabase Auth (email and password) and the API
- * receives the access token; the guest needs no account and the API receives `X-Guest: 1`.
- * Each role sees its own appointments and settings (separated by the API).
+ * receives the access token.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -25,7 +25,6 @@ export class AuthService {
   readonly ready: Promise<void>;
 
   readonly role = this.roleState.asReadonly();
-  readonly isGuest = computed(() => this.roleState() === 'guest');
 
   constructor() {
     this.ready = this.restore();
@@ -43,13 +42,7 @@ export class AuthService {
       password,
     });
     if (error) throw error;
-    setGuestFlag(false);
     this.roleState.set('admin');
-  }
-
-  enterAsGuest(): void {
-    setGuestFlag(true);
-    this.roleState.set('guest');
   }
 
   /** Runs before the session ends, while the API still accepts its token (e.g. removing the push token). */
@@ -59,7 +52,6 @@ export class AuthService {
 
   async signOut(): Promise<void> {
     await Promise.all(this.beforeSignOut.map((hook) => hook().catch(() => undefined)));
-    setGuestFlag(false);
     this.roleState.set(null);
     await this.supabase.auth.signOut();
   }
@@ -72,9 +64,7 @@ export class AuthService {
 
   /** Headers that identify the session to the API (the token is refreshed when needed). */
   async apiHeaders(): Promise<Record<string, string>> {
-    const role = this.roleState();
-    if (role === 'guest') return { 'X-Guest': '1' };
-    if (role === 'admin') {
+    if (this.roleState() === 'admin') {
       const { data } = await this.supabase.auth.getSession();
       const token = data.session?.access_token;
       if (token) return { Authorization: `Bearer ${token}` };
@@ -83,28 +73,16 @@ export class AuthService {
   }
 
   private async restore(): Promise<void> {
+    removeLegacyGuestFlag();
     const { data } = await this.supabase.auth.getSession();
-    if (data.session) {
-      this.roleState.set('admin');
-    } else if (readGuestFlag()) {
-      this.roleState.set('guest');
-    }
+    if (data.session) this.roleState.set('admin');
   }
 }
 
-function readGuestFlag(): boolean {
+function removeLegacyGuestFlag(): void {
   try {
-    return localStorage.getItem(GUEST_FLAG) === '1';
+    localStorage.removeItem(LEGACY_GUEST_FLAG);
   } catch {
-    return false;
-  }
-}
-
-function setGuestFlag(on: boolean): void {
-  try {
-    if (on) localStorage.setItem(GUEST_FLAG, '1');
-    else localStorage.removeItem(GUEST_FLAG);
-  } catch {
-    // Storage unavailable: the guest session only lasts until the app is closed.
+    // Storage unavailable: nothing to clean.
   }
 }

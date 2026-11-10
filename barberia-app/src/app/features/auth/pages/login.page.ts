@@ -10,10 +10,11 @@ import {
   Validators,
 } from '@angular/forms';
 import { IonicModule } from '@ionic/angular/lazy';
+import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/auth/auth.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
-/** Entry screen: the barber logs in as admin, or a visitor enters the guest demo. */
+/** Entry screen: the barber logs in as admin (email and password). */
 @Component({
   selector: 'app-login',
   templateUrl: 'login.page.html',
@@ -25,7 +26,7 @@ export class LoginPage {
   private readonly auth = inject(AuthService);
 
   protected readonly form = inject(NonNullableFormBuilder).group({
-    email: ['', [Validators.required, Validators.email]],
+    email: [environment.loginEmail, [Validators.required, Validators.email]],
     password: ['', Validators.required],
   });
   protected readonly signingIn = signal(false);
@@ -45,13 +46,9 @@ export class LoginPage {
     }
   }
 
-  protected enterAsGuest(): void {
-    this.auth.enterAsGuest();
-    openApp();
-  }
 }
 
-/** Full reload so no data cached by the previous session survives the role change. */
+/** Full reload so no data cached by a previous session survives. */
 function openApp(): void {
   window.location.replace('/');
 }

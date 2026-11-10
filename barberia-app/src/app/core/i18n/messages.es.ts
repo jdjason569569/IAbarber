@@ -11,21 +11,16 @@ export const MESSAGES_ES = {
   'app.version': 'Versión {version}',
   'app.versionWithRole': 'Versión {version} · {role}',
 
-  // Login (admin with email and password, or the shared guest demo)
+  // Login (admin with email and password)
   'auth.title': 'BarberIA',
-  'auth.subtitle': 'Ingresa como administrador o prueba la app como invitado.',
+  'auth.subtitle': 'Ingresa con tu cuenta de administrador.',
   'auth.email': 'Correo',
   'auth.password': 'Contraseña',
   'auth.signIn': 'Ingresar',
   'auth.signingIn': 'Ingresando…',
-  'auth.or': 'o',
-  'auth.enterAsGuest': 'Entrar como invitado',
-  'auth.guestHint': 'El invitado usa un espacio de prueba: no ve las citas ni la configuración de la barbería.',
   'auth.errors.invalidCredentials': 'Correo o contraseña incorrectos.',
   'auth.role.admin': 'Administrador',
-  'auth.role.guest': 'Invitado',
   'auth.signOut': 'Cerrar sesión',
-  'auth.back': 'Volver al inicio',
 
   // Global loading overlay (every API request except assistant booking turns)
   'loading.sending': 'Enviando…',

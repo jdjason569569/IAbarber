@@ -5,13 +5,12 @@ import { logOutOutline } from 'ionicons/icons';
 import { AuthService } from '../../../core/auth/auth.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { DayBlocksEditorComponent } from '../components/day-blocks-editor/day-blocks-editor.component';
-import { BackToLoginButtonComponent } from '../../../core/auth/back-to-login-button.component';
 
 @Component({
   selector: 'app-settings',
   templateUrl: 'settings.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonicModule, TranslatePipe, DayBlocksEditorComponent, BackToLoginButtonComponent],
+  imports: [IonicModule, TranslatePipe, DayBlocksEditorComponent],
 })
 export class SettingsPage {
   private readonly auth = inject(AuthService);

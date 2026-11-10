@@ -9,6 +9,8 @@ export const environment = {
   /** Supabase Auth (admin login). The publishable key is public; data access goes through the API. */
   supabaseUrl: 'https://bqxglksrrmnrnhuczaso.supabase.co',
   supabaseKey: 'sb_publishable_-CNR5cPC450_5L9cQJHd9Q_OStYtBr3',
+  /** Email already filled in on the login screen (the barber only types the password). */
+  loginEmail: 'jdjason569develop@gmail.com',
 };
 
 /*

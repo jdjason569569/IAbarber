@@ -5,14 +5,13 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { MessageKey } from '../../../core/i18n/messages.es';
 import { Statistics, StatisticsTotalKey } from '../models/statistics.model';
 import { StatisticsService } from '../services/statistics.service';
-import { BackToLoginButtonComponent } from '../../../core/auth/back-to-login-button.component';
 
 @Component({
   selector: 'app-statistics',
   templateUrl: 'statistics.page.html',
   styleUrls: ['statistics.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonicModule, TranslatePipe, BackToLoginButtonComponent],
+  imports: [IonicModule, TranslatePipe],
 })
 export class StatisticsPage {
   private readonly statisticsService = inject(StatisticsService);

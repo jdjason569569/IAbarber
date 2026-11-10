@@ -119,14 +119,24 @@ responde dos veces.
 
 ## 7. Arrancar (en el servidor)
 
+Cambia `TU_SECRETO` por el valor de `WHATSAPP_BOT_SECRET` en Render:
+
 ```bash
 cd ~/openwa-docker
-echo 'BOT_JS=./bot.js' > .env
+printf 'BOT_JS=./bot.js\nBACKEND_URL=https://iabarber.onrender.com/bot/TU_SECRETO\n' > .env
+chmod 600 .env
 docker compose up -d --build
 docker compose ps
 ```
 
 El build tarda varios minutos.
+
+El backend solo responde al bot en la ruta con el secreto. Sin `BACKEND_URL`, o con un secreto distinto
+al de Render, el bot recibe 403 y no contesta. El secreto debe tener solo letras y números (por
+ejemplo, el que genera `openssl rand -hex 24`).
+
+Para cambiar el secreto, cámbialo en Render y en este `.env`, y luego ejecuta
+`docker compose up -d --no-deps bot`.
 
 ## 8. Vincular WhatsApp
 
@@ -152,6 +162,41 @@ docker compose logs -f bot
 
 Debe aparecer `✅ Bot escuchando mensajes`. Escribe "hola" desde **otro número** y deben salir `📩` y
 `📤`. La primera respuesta puede tardar unos 50 s si Render está dormido. Sal con `Ctrl+C`.
+
+## 10. Mantener despierto el backend de Render
+
+El plan gratis de Render apaga el backend tras 15 minutos sin tráfico, y la primera petición
+después tarda cerca de un minuto. El servidor lo despierta cada 10 minutos de 6:00 a 22:59, hora de
+Colombia.
+
+No es 24 h porque las 750 h gratis de Render al mes se comparten entre todos los servicios gratis de
+la cuenta, y si se acaban Render los suspende todos hasta el mes siguiente.
+
+En tu PC:
+
+```bash
+cd ~/Escritorio/barberIA/openwa-docker
+scp render-keepalive.service render-keepalive.timer barberia:/tmp/
+```
+
+En el servidor:
+
+```bash
+sudo install -m 644 /tmp/render-keepalive.service /tmp/render-keepalive.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now render-keepalive.timer
+```
+
+Para comprobarlo:
+
+| Qué | Comando |
+|---|---|
+| Próxima ejecución | `systemctl list-timers render-keepalive.timer` |
+| Últimas respuestas de Render | `journalctl -u render-keepalive.service -n 5 -o cat` |
+| Desactivarlo | `sudo systemctl disable --now render-keepalive.timer` |
+
+Para cambiar el horario, edita `OnCalendar` en `render-keepalive.timer`, vuelve a copiarlo y ejecuta
+`sudo systemctl daemon-reload`.
 
 ## Uso diario (en el servidor, dentro de `~/openwa-docker`)
 
@@ -221,6 +266,8 @@ Si la sesión no sirve, vincula de nuevo con el paso 8.
 | `no configuration file provided` | No estás en la carpeta: `cd ~/openwa-docker` |
 | `permission denied` al usar Docker | Ejecuta `exit` y vuelve a entrar con `ssh barberia` |
 | `⚠️ Sin conexión con la API` al arrancar | Es normal mientras open-wa inicia; espera 1 o 2 minutos |
+| `❌ No se pudo responder: backend 403` | El secreto de `BACKEND_URL` no coincide con `WHATSAPP_BOT_SECRET` en Render |
+| WhatsApp pide el QR otra vez | Pasa al recrear el contenedor `openwa`; open-wa 5.10 no recupera la sesión. Vincula con el paso 8 |
 | El puerto 8081 está ocupado al abrir el túnel | Sigue activo el contenedor local: `docker compose down` en tu PC |
 | Cada mensaje se responde dos veces | Hay otro bot activo en tu PC |
 | Cambió la IP de la VM | Pasa al apagarla y encenderla; actualiza `HostName`. El bot no se ve afectado |

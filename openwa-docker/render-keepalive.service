@@ -1,0 +1,12 @@
+# Despierta el backend de BarberIA en Render (el plan gratis lo apaga tras 15 min sin tráfico).
+# Cualquier respuesta sirve, también un 401: lo que cuenta es que llegue una petición.
+# Lo lanza render-keepalive.timer. Instalación: ver DESPLIEGUE-GOOGLE-CLOUD.md.
+[Unit]
+Description=Mantiene despierto el backend de BarberIA en Render
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+DynamicUser=yes
+ExecStart=/usr/bin/curl -sS -o /dev/null --max-time 120 -w "Render respondio %%{http_code} en %%{time_total} s" https://iabarber.onrender.com/
