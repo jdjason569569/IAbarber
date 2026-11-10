@@ -1187,3 +1187,42 @@ npx ionic capacitor add android   # añadir plataforma Android
 - Colores: rampa dorada de un solo tono (más = más claro), validada sobre el fondo de las tarjetas; días sin citas en gris oscuro. Al tocar una celda o barra se ve el detalle.
 - Textos nuevos en `messages.es.ts` (`statistics.charts.*`); nombres de días y meses con `Intl` en español.
 - Si aún no hay historial se muestra "Aún no hay citas para mostrar."
+
+## 2026-11-10 · Datos de prueba en Estadísticas
+
+- `features/statistics/data/statistics.mock.ts`: genera un mes (30 días hasta hoy) de citas inventadas pero creíbles: viernes y sábado con más trabajo, domingos casi siempre cerrado, más citas en la tarde, ~8% canceladas, precios de $15.000 a $35.000 y clientes nuevos que van llegando. Usa una semilla fija, así que siempre se ve igual.
+- Con esas citas arma el mismo resumen que devuelve `GET /statistics` (totales + gráficas).
+- `StatisticsService.getStatistics('real' | 'mock')`.
+- Interruptor **"Datos de prueba"** arriba en Estadísticas, con un aviso cuando está activo. Se recuerda en el teléfono (`localStorage`).
+- No toca la API ni la base de datos.
+
+## 2026-11-10 · Estadísticas más simples para el barbero
+
+**Qué se hizo**
+- Se quitaron los mapas de calor (calendario y día × hora): obligaban a interpretar tonos de color.
+- Arriba, **"Lo importante"**: frases con la respuesta directa
+  - 🔥 Tu día más fuerte es el sábado (40 cortes)
+  - ⏰ Tu hora más llena es a las 5:00 p. m.
+  - 💰 Ganaste $X en los últimos 30 días (promedio por día trabajado)
+  - 🏆 Tu mejor día fue el … (cortes y dinero)
+- Tres gráficas de barras con títulos en forma de pregunta y el número escrito en cada barra:
+  1. **¿Qué día trabajas más?**: cortes por día de la semana.
+  2. **¿A qué hora llega más gente?**: las 6 horas con más cortes, de más a menos, en formato "4:00 p. m.".
+  3. **¿Cuánto ganaste cada día?**: últimos 30 días con una línea punteada en el promedio; el promedio se escribe arriba de la gráfica.
+- Un solo color con significado: **dorado = lo mejor / sobre el promedio**, **gris = el resto**. Sin leyendas de "Menos/Más".
+- `app-chart` ahora solo incluye barras, cuadrícula, tooltip y línea de promedio (menos peso).
+
+## 2026-11-10 · Selector Hoy / Semana / Mes en Estadísticas
+
+- Selector arriba de Estadísticas: **Hoy** (solo hoy), **Semana** (últimos 7 días), **Mes** (últimos 30 días). Por defecto, Mes.
+- Todo se recalcula en la app para el periodo: las 4 cajas (Cortes, Ganancia, Clientes nuevos, Cancelaciones), las frases de "Lo importante" y las gráficas.
+- En **Hoy** solo se muestran las frases de hora y ganancia y la gráfica de horas (comparar días no tiene sentido con un solo día).
+- Mensaje propio si el periodo no tiene cortes ("Hoy aún no hay cortes.", etc.).
+- Datos de prueba generados con la nueva forma (`daily` con cancelaciones y clientes nuevos, `hourly`).
+- Si la API desplegada aún es la anterior (sin `hourly`), las cajas y la ganancia funcionan; la gráfica de horas y la de días de la semana quedan vacías hasta desplegarla.
+
+## 2026-11-10 · Se quitan los datos de prueba de Estadísticas
+
+- Se borró `features/statistics/data/statistics.mock.ts` y el interruptor "Datos de prueba" (con su aviso, textos y estilos).
+- `StatisticsService.getStatistics()` vuelve a pedir solo los datos reales a la API.
+- La preferencia guardada `barberia.statistics.mock` queda sin uso en los teléfonos que la tenían (no afecta nada).

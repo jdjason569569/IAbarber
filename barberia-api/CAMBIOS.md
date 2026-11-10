@@ -643,3 +643,9 @@ This file records, in chronological order, every change made to the backend.
   - `daily`: por cada día de los últimos 120 días con citas, `appointments` (citas no canceladas, walk-ins incluidos) y `revenue` (total de las completadas).
   - `weekdayHour`: citas por día de la semana (0 = lunes) y hora de inicio, en la misma ventana.
 - Solo cuenta hasta hoy (las reservas futuras no entran). Los totales del mes no cambian.
+
+## 2026-11-10 · Estadísticas por periodo (hoy / semana / mes)
+
+- `GET /statistics` → `daily` ahora trae también `cancelled` (citas canceladas del día) y `newClients` (clientes cuya primera cita fue ese día); incluye días que solo tuvieron cancelaciones.
+- Nuevo `hourly`: citas no canceladas por fecha y hora, para que la app calcule cualquier periodo.
+- `totals` y `weekdayHour` se mantienen para las versiones anteriores de la app.

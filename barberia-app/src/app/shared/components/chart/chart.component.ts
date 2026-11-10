@@ -8,27 +8,14 @@ import {
   inject,
   input,
 } from '@angular/core';
-import { BarChart, HeatmapChart } from 'echarts/charts';
-import {
-  CalendarComponent,
-  GridComponent,
-  TooltipComponent,
-  VisualMapComponent,
-} from 'echarts/components';
+import { BarChart } from 'echarts/charts';
+import { GridComponent, MarkLineComponent, TooltipComponent } from 'echarts/components';
 import * as echarts from 'echarts/core';
 import type { EChartsCoreOption, EChartsType } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 
-// Only the pieces the app uses are bundled (tree-shaking): bars, heatmaps (grid and calendar).
-echarts.use([
-  BarChart,
-  HeatmapChart,
-  CalendarComponent,
-  GridComponent,
-  TooltipComponent,
-  VisualMapComponent,
-  CanvasRenderer,
-]);
+// Only the pieces the app uses are bundled (tree-shaking): bars with an optional average line.
+echarts.use([BarChart, GridComponent, MarkLineComponent, TooltipComponent, CanvasRenderer]);
 
 /**
  * Draws an Apache ECharts chart from an option object and keeps it in sync: redraws when the option

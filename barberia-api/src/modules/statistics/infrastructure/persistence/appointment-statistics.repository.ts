@@ -3,6 +3,7 @@ import { ListAppointmentsUseCase } from '../../../appointments/application/use-c
 import type { AppointmentDto } from '../../../appointments/application/dtos/appointment.dto.js';
 import type {
   DailyStatistic,
+  HourlyStatistic,
   StatisticsSummary,
   WeekdayHourStatistic,
 } from '../../domain/entities/statistics-summary.js';
@@ -43,26 +44,50 @@ export class AppointmentStatisticsRepository implements StatisticsRepository {
           value: `${thisMonth.length ? Math.round((cancelled / thisMonth.length) * 100) : 0}%`,
         },
       ],
-      ...history(all),
+      ...history(all, firstSeen),
     };
   }
 }
 
-/** Per-day and weekday × hour counts of the last HISTORY_DAYS, up to today (future bookings excluded). */
-function history(all: AppointmentDto[]): Pick<StatisticsSummary, 'daily' | 'weekdayHour'> {
+/**
+ * Per-day, per-day-and-hour and weekday × hour counts of the last HISTORY_DAYS, up to today (future
+ * bookings excluded). `firstSeen` holds the first appointment date of every (non walk-in) client.
+ */
+function history(
+  all: AppointmentDto[],
+  firstSeen: Map<string, string>,
+): Pick<StatisticsSummary, 'daily' | 'hourly' | 'weekdayHour'> {
   const today = localIsoDate();
   const start = new Date();
   start.setDate(start.getDate() - (HISTORY_DAYS - 1));
   const from = localIsoDate(start);
-  const done = all.filter((a) => !a.cancelled && a.date >= from && a.date <= today);
+  const inWindow = all.filter((a) => a.date >= from && a.date <= today);
 
   const days = new Map<string, DailyStatistic>();
+  const dayOf = (date: string): DailyStatistic => {
+    const day = days.get(date) ?? { date, appointments: 0, revenue: 0, cancelled: 0, newClients: 0 };
+    days.set(date, day);
+    return day;
+  };
+  for (const date of firstSeen.values()) {
+    if (date >= from && date <= today) dayOf(date).newClients += 1;
+  }
+
+  const hours = new Map<string, HourlyStatistic>();
   const cells = new Map<string, WeekdayHourStatistic>();
-  for (const a of done) {
-    const day = days.get(a.date) ?? { date: a.date, appointments: 0, revenue: 0 };
+  for (const a of inWindow) {
+    const day = dayOf(a.date);
+    if (a.cancelled) {
+      day.cancelled += 1;
+      continue;
+    }
     day.appointments += 1;
     if (a.completed) day.revenue += total(a);
-    days.set(a.date, day);
+
+    const hourKey = `${a.date}|${a.time.slice(0, 2)}`;
+    const slot = hours.get(hourKey) ?? { date: a.date, hour: Number(a.time.slice(0, 2)), appointments: 0 };
+    slot.appointments += 1;
+    hours.set(hourKey, slot);
 
     const weekday = (new Date(`${a.date}T12:00:00`).getDay() + 6) % 7;
     const hour = Number(a.time.slice(0, 2));
@@ -73,6 +98,7 @@ function history(all: AppointmentDto[]): Pick<StatisticsSummary, 'daily' | 'week
   }
   return {
     daily: [...days.values()].sort((x, y) => x.date.localeCompare(y.date)),
+    hourly: [...hours.values()],
     weekdayHour: [...cells.values()],
   };
 }

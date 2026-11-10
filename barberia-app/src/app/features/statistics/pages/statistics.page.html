@@ -2,18 +2,31 @@
   <ion-toolbar>
     <ion-title>{{ 'statistics.title' | t }}</ion-title>
   </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [value]="period()" (ionChange)="choosePeriod($event.detail.value)">
+      <ion-segment-button value="day">
+        <ion-label>{{ 'statistics.period.day' | t }}</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="week">
+        <ion-label>{{ 'statistics.period.week' | t }}</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="month">
+        <ion-label>{{ 'statistics.period.month' | t }}</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
 </ion-header>
 
 <ion-content>
-  @if (stats(); as stats) {
+  @if (stats()) {
     <ion-grid>
       <ion-row>
-        @for (total of stats.totals; track total.key) {
+        @for (total of totals(); track total.label) {
           <ion-col size="6">
             <ion-card class="total-card">
               <ion-card-header>
                 <ion-card-title>{{ total.value }}</ion-card-title>
-                <ion-card-subtitle>{{ totalLabel(total.key) }}</ion-card-subtitle>
+                <ion-card-subtitle>{{ total.label | t }}</ion-card-subtitle>
               </ion-card-header>
             </ion-card>
           </ion-col>
@@ -21,42 +34,58 @@
       </ion-row>
     </ion-grid>
 
-    @if (hasHistory()) {
-      <ion-card class="chart-card">
-        <ion-card-header>
-          <ion-card-title>{{ 'statistics.charts.byDay.title' | t }}</ion-card-title>
-          <ion-card-subtitle>{{ 'statistics.charts.byDay.subtitle' | t }}</ion-card-subtitle>
-        </ion-card-header>
-        <ion-card-content>
-          <app-chart [option]="cutsByDay()" [height]="165" [label]="'statistics.charts.byDay.title' | t" />
-        </ion-card-content>
-      </ion-card>
+    @if (hasCuts()) {
+      <h2 class="section-title">{{ 'statistics.insights.title' | t }}</h2>
+      <ion-list class="insights" lines="none">
+        @for (insight of insights(); track insight.icon) {
+          <ion-item>
+            <span slot="start" class="insight-icon" aria-hidden="true">{{ insight.icon }}</span>
+            <ion-label class="ion-text-wrap">
+              <h3>{{ insight.title }}</h3>
+              <p>{{ insight.detail }}</p>
+            </ion-label>
+          </ion-item>
+        }
+      </ion-list>
+
+      @if (severalDays()) {
+        <ion-card class="chart-card">
+          <ion-card-header>
+            <ion-card-title>{{ 'statistics.charts.weekday.title' | t }}</ion-card-title>
+            <ion-card-subtitle>{{ 'statistics.charts.weekday.subtitle' | t }}</ion-card-subtitle>
+          </ion-card-header>
+          <ion-card-content>
+            <app-chart [option]="weekdayChart()" [height]="200" [label]="'statistics.charts.weekday.title' | t" />
+          </ion-card-content>
+        </ion-card>
+      }
 
       <ion-card class="chart-card">
         <ion-card-header>
-          <ion-card-title>{{ 'statistics.charts.byHour.title' | t }}</ion-card-title>
-          <ion-card-subtitle>{{ 'statistics.charts.byHour.subtitle' | t }}</ion-card-subtitle>
+          <ion-card-title>{{ 'statistics.charts.hours.title' | t }}</ion-card-title>
+          <ion-card-subtitle>{{ 'statistics.charts.hours.subtitle' | t }}</ion-card-subtitle>
         </ion-card-header>
         <ion-card-content>
-          <app-chart [option]="cutsByHour()" [height]="270" [label]="'statistics.charts.byHour.title' | t" />
+          <app-chart [option]="hoursChart()" [height]="200" [label]="'statistics.charts.hours.title' | t" />
         </ion-card-content>
       </ion-card>
 
-      <ion-card class="chart-card">
-        <ion-card-header>
-          <ion-card-title>{{ 'statistics.charts.revenue.title' | t }}</ion-card-title>
-          <ion-card-subtitle>{{ 'statistics.charts.revenue.subtitle' | t }}</ion-card-subtitle>
-        </ion-card-header>
-        <ion-card-content>
-          <app-chart
-            [option]="revenue()"
-            [height]="220"
-            [label]="('statistics.charts.revenue.title' | t) + ': ' + revenueTotal()"
-          />
-        </ion-card-content>
-      </ion-card>
+      @if (severalDays()) {
+        <ion-card class="chart-card">
+          <ion-card-header>
+            <ion-card-title>{{ 'statistics.charts.revenue.title' | t }}</ion-card-title>
+            <ion-card-subtitle>{{ 'statistics.charts.revenue.subtitle' | t }}</ion-card-subtitle>
+          </ion-card-header>
+          <ion-card-content>
+            @if (averageText()) {
+              <p class="average"><span class="dash" aria-hidden="true"></span>{{ averageText() }}</p>
+            }
+            <app-chart [option]="revenueChart()" [height]="220" [label]="'statistics.charts.revenue.title' | t" />
+          </ion-card-content>
+        </ion-card>
+      }
     } @else {
-      <p class="ion-padding ion-text-center empty">{{ 'statistics.charts.empty' | t }}</p>
+      <p class="ion-padding ion-text-center empty">{{ emptyKey() | t }}</p>
     }
   } @else {
     <p class="ion-padding ion-text-center">

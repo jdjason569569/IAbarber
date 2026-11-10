@@ -17,6 +17,19 @@ export interface DailyStatistic {
   appointments: number;
   /** Total of the completed appointments of the day (service + extras). */
   revenue: number;
+  /** Appointments of the day that were cancelled. */
+  cancelled: number;
+  /** Clients whose first appointment ever was this day (walk-ins never count). */
+  newClients: number;
+}
+
+/** Appointments (not cancelled) that started at an hour of a given day. */
+export interface HourlyStatistic {
+  /** `YYYY-MM-DD`. */
+  date: string;
+  /** 0–23. */
+  hour: number;
+  appointments: number;
 }
 
 /** Appointments that started at an hour of a weekday, over the whole history window. */
@@ -32,6 +45,8 @@ export interface StatisticsSummary {
   totals: StatisticsTotal[];
   /** Days from `HISTORY_DAYS` ago to today that had appointments (days without any are omitted). */
   daily: DailyStatistic[];
-  /** Only the weekday/hour cells that had appointments. */
+  /** Same window, per day and hour, so the app can compute any period (today, week, month). */
+  hourly: HourlyStatistic[];
+  /** Only the weekday/hour cells that had appointments (kept for app versions before `hourly`). */
   weekdayHour: WeekdayHourStatistic[];
 }

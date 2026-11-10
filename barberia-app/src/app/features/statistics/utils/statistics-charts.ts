@@ -1,183 +1,162 @@
 import type { EChartsCoreOption } from 'echarts/core';
 import { parseIsoDate, toLocalIsoDate } from '../../../shared/utils/date.util';
-import type { DailyStatistic, WeekdayHourStatistic } from '../models/statistics.model';
+import type { DailyStatistic, HourlyStatistic, PeriodTotals } from '../models/statistics.model';
 
-/** Days in the calendar heatmap (the API sends the same window). */
-export const HISTORY_DAYS = 120;
-/** Days in the revenue bar chart. */
-export const REVENUE_DAYS = 30;
+/** Hours listed in "¿A qué hora llega más gente?". */
+const TOP_HOURS = 6;
 
 /**
- * Colors of the app's always-dark, black-and-gold theme (theme/variables.scss). The gold ramp is one
- * hue from dark to light (more = lighter) and was validated as an ordinal ramp on the card surface.
+ * Made for barbers, not analysts: one color carries meaning (gold = the best / above average,
+ * gray = the rest) and every bar has its number written on it. Colors follow theme/variables.scss.
  */
 const COLORS = {
-  surface: '#1e1b18',
-  empty: '#2a2621',
+  best: '#d4a24c',
+  rest: '#6f675c',
   text: '#f3ede4',
   muted: '#a39b8f',
   grid: '#2e2a25',
   tooltip: '#17140f',
   border: 'rgba(212, 162, 76, 0.35)',
-  bar: '#d4a24c',
-  ramp: ['#6b5226', '#8f6a31', '#b8873c', '#d4a24c', '#f0c674'],
 };
 
 /** Texts and formatters the charts need; the page gives them from the i18n catalog. */
 export interface ChartLabels {
   locale: string;
-  less: string;
-  more: string;
-  cuts: (count: number) => string;
-  cell: (weekday: string, hour: string) => string;
+  /** `16` -> "4:00 p. m.". */
+  hour: (hour: number) => string;
   money: (value: number) => string;
+  cuts: (count: number) => string;
 }
 
-const tooltip = {
-  backgroundColor: COLORS.tooltip,
-  borderColor: COLORS.border,
-  textStyle: { color: COLORS.text, fontSize: 12 },
-  confine: true,
-};
-
-/** Continuous gold scale, shown as a small "Menos ▭ Más" key under the chart. */
-function scale(max: number, labels: ChartLabels): object {
-  return {
-    min: 1,
-    max: Math.max(max, 2),
-    calculable: false,
-    orient: 'horizontal',
-    left: 'center',
-    bottom: 0,
-    itemWidth: 10,
-    itemHeight: 90,
-    text: [labels.more, labels.less],
-    textStyle: { color: COLORS.muted, fontSize: 11 },
-    inRange: { color: COLORS.ramp },
-  };
+/** A plain-language fact shown above the charts ("Tu día más fuerte es el sábado"). */
+export interface Insight {
+  icon: string;
+  title: string;
+  detail: string;
 }
 
-/** Calendar heatmap: one square per day of the last HISTORY_DAYS; empty days stay dark. */
-export function cutsByDayOption(daily: DailyStatistic[], labels: ChartLabels): EChartsCoreOption {
-  const today = new Date();
-  const from = new Date(today);
-  from.setDate(from.getDate() - (HISTORY_DAYS - 1));
-  // ECharts wants Sunday first in nameMap, whatever `firstDay` is.
-  const weekdays = Array.from({ length: 7 }, (_, i) =>
-    new Intl.DateTimeFormat(labels.locale, { weekday: 'narrow' }).format(new Date(2026, 0, 4 + i)),
+/** Monday-first weekday names in the app's language. 2026-01-05 was a Monday. */
+export function weekdayNames(locale: string, style: 'short' | 'long'): string[] {
+  return Array.from({ length: 7 }, (_, i) =>
+    new Intl.DateTimeFormat(locale, { weekday: style }).format(new Date(2026, 0, 5 + i)),
   );
-  const months = Array.from({ length: 12 }, (_, i) =>
-    new Intl.DateTimeFormat(labels.locale, { month: 'short' }).format(new Date(2026, i, 1)),
-  );
-  const dayFormat = new Intl.DateTimeFormat(labels.locale, { weekday: 'long', day: 'numeric', month: 'long' });
-  return {
-    tooltip: {
-      ...tooltip,
-      formatter: (p: { value: [string, number] }) =>
-        `${dayFormat.format(parseIsoDate(p.value[0]))}<br/><b>${labels.cuts(p.value[1])}</b>`,
-    },
-    visualMap: scale(Math.max(0, ...daily.map((d) => d.appointments)), labels),
-    calendar: {
-      range: [toLocalIsoDate(from), toLocalIsoDate(today)],
-      top: 22,
-      left: 22,
-      right: 6,
-      cellSize: ['auto', 15],
-      splitLine: { show: false },
-      // 2px surface gap between squares.
-      itemStyle: { color: COLORS.empty, borderColor: COLORS.surface, borderWidth: 2 },
-      dayLabel: { firstDay: 1, nameMap: weekdays, color: COLORS.muted, fontSize: 10, margin: 6 },
-      monthLabel: { nameMap: months, color: COLORS.muted, fontSize: 10, margin: 6 },
-      yearLabel: { show: false },
-    },
-    series: [
-      {
-        type: 'heatmap',
-        coordinateSystem: 'calendar',
-        data: daily.map((d) => [d.date, d.appointments]),
-        itemStyle: { borderColor: COLORS.surface, borderWidth: 2, borderRadius: 2 },
-      },
-    ],
-  };
 }
 
-/** Heatmap weekday × hour: which days and hours are busiest. */
-export function cutsByHourOption(cells: WeekdayHourStatistic[], labels: ChartLabels): EChartsCoreOption {
-  const hours = cells.map((c) => c.hour);
-  const first = hours.length ? Math.min(...hours) : 8;
-  const last = hours.length ? Math.max(...hours) : 20;
-  const hourLabels = Array.from({ length: last - first + 1 }, (_, i) => `${first + i}h`);
-  // 2026-01-05 was a Monday.
-  const weekdayFormat = (style: 'short' | 'long') =>
-    Array.from({ length: 7 }, (_, i) =>
-      new Intl.DateTimeFormat(labels.locale, { weekday: style }).format(new Date(2026, 0, 5 + i)),
-    );
-  const shortDays = weekdayFormat('short');
-  const longDays = weekdayFormat('long');
-  return {
-    tooltip: {
-      ...tooltip,
-      formatter: (p: { value: [number, number, number] }) =>
-        `${labels.cell(longDays[p.value[1]], `${first + p.value[0]}:00`)}<br/><b>${labels.cuts(p.value[2])}</b>`,
-    },
-    visualMap: scale(Math.max(0, ...cells.map((c) => c.appointments)), labels),
-    grid: { top: 6, left: 40, right: 6, bottom: 58 },
-    xAxis: {
-      type: 'category',
-      data: hourLabels,
-      axisLine: { show: false },
-      axisTick: { show: false },
-      axisLabel: { color: COLORS.muted, fontSize: 10 },
-      splitArea: { show: true, areaStyle: { color: [COLORS.empty] } },
-    },
-    yAxis: {
-      type: 'category',
-      data: shortDays,
-      inverse: true,
-      axisLine: { show: false },
-      axisTick: { show: false },
-      axisLabel: { color: COLORS.muted, fontSize: 10 },
-    },
-    series: [
-      {
-        type: 'heatmap',
-        data: cells.map((c) => [c.hour - first, c.weekday, c.appointments]),
-        itemStyle: { borderColor: COLORS.surface, borderWidth: 2, borderRadius: 2 },
-        emphasis: { itemStyle: { borderColor: COLORS.text, borderWidth: 1 } },
-      },
-    ],
-  };
+/** First date (`YYYY-MM-DD`) of a period of `days` days ending today. */
+function periodStart(days: number): string {
+  const start = new Date();
+  start.setDate(start.getDate() - (days - 1));
+  return toLocalIsoDate(start);
 }
 
-/** Bars of the money earned on each of the last REVENUE_DAYS days (days without income show no bar). */
-export function revenueOption(daily: DailyStatistic[], labels: ChartLabels): EChartsCoreOption {
-  const byDate = new Map(daily.map((d) => [d.date, d.revenue]));
-  const dates = Array.from({ length: REVENUE_DAYS }, (_, i) => {
+/** Every day of the period, oldest first, with zeros for days without activity. */
+export function periodDays(daily: DailyStatistic[], days: number): DailyStatistic[] {
+  const byDate = new Map(daily.map((d) => [d.date, d]));
+  return Array.from({ length: days }, (_, i) => {
     const day = new Date();
-    day.setDate(day.getDate() - (REVENUE_DAYS - 1 - i));
-    return toLocalIsoDate(day);
+    day.setDate(day.getDate() - (days - 1 - i));
+    const date = toLocalIsoDate(day);
+    return byDate.get(date) ?? { date, appointments: 0, revenue: 0, cancelled: 0, newClients: 0 };
   });
+}
+
+/** Hour slots inside the period. */
+export function periodHourly(hourly: HourlyStatistic[], days: number): HourlyStatistic[] {
+  const from = periodStart(days);
+  const today = toLocalIsoDate(new Date());
+  return hourly.filter((h) => h.date >= from && h.date <= today);
+}
+
+/** The four numbers at the top of the page for the period. */
+export function periodTotals(days: DailyStatistic[]): PeriodTotals {
+  const cuts = days.reduce((acc, d) => acc + d.appointments, 0);
+  const cancelled = days.reduce((acc, d) => acc + (d.cancelled ?? 0), 0);
+  return {
+    cuts,
+    revenue: days.reduce((acc, d) => acc + d.revenue, 0),
+    newClients: days.reduce((acc, d) => acc + (d.newClients ?? 0), 0),
+    cancellationRate: cuts + cancelled ? Math.round((cancelled / (cuts + cancelled)) * 100) : 0,
+  };
+}
+
+/** Cuts per weekday (0 = Monday). */
+export function cutsPerWeekday(hourly: HourlyStatistic[]): number[] {
+  const totals = Array<number>(7).fill(0);
+  for (const h of hourly) totals[(parseIsoDate(h.date).getDay() + 6) % 7] += h.appointments;
+  return totals;
+}
+
+/** Hours with the most cuts, busiest first. */
+export function busiestHours(hourly: HourlyStatistic[]): { hour: number; cuts: number }[] {
+  const totals = new Map<number, number>();
+  for (const h of hourly) totals.set(h.hour, (totals.get(h.hour) ?? 0) + h.appointments);
+  return [...totals.entries()]
+    .map(([hour, cuts]) => ({ hour, cuts }))
+    .sort((a, b) => b.cuts - a.cuts || a.hour - b.hour)
+    .slice(0, TOP_HOURS);
+}
+
+/** Average money of the days that had appointments (an empty day would pull it down unfairly). */
+export function averageRevenue(days: DailyStatistic[]): number {
+  const worked = days.filter((d) => d.appointments > 0);
+  return worked.length ? worked.reduce((acc, d) => acc + d.revenue, 0) / worked.length : 0;
+}
+
+/** Bars of cuts per weekday; the busiest day in gold with its number on top. */
+export function weekdayOption(hourly: HourlyStatistic[], labels: ChartLabels): EChartsCoreOption {
+  const totals = cutsPerWeekday(hourly);
+  const best = Math.max(...totals);
+  const shortDays = weekdayNames(labels.locale, 'short');
+  const longDays = weekdayNames(labels.locale, 'long');
+  return {
+    tooltip: tooltip((i, value) => `${capitalize(longDays[i])}<br/><b>${labels.cuts(value)}</b>`),
+    grid: { top: 24, left: 4, right: 4, bottom: 4, containLabel: true },
+    xAxis: categoryAxis(shortDays.map(capitalize)),
+    yAxis: { type: 'value', show: false },
+    series: [
+      {
+        type: 'bar',
+        data: totals.map((value) => ({ value, itemStyle: { color: value === best && best > 0 ? COLORS.best : COLORS.rest } })),
+        barMaxWidth: 28,
+        itemStyle: { borderRadius: [4, 4, 0, 0] },
+        label: { show: true, position: 'top', color: COLORS.text, fontSize: 13, fontWeight: 'bold' },
+      },
+    ],
+  };
+}
+
+/** Lying bars of the busiest hours, busiest on top and in gold, with the count at the end. */
+export function hoursOption(hourly: HourlyStatistic[], labels: ChartLabels): EChartsCoreOption {
+  const hours = busiestHours(hourly);
+  return {
+    tooltip: tooltip((i, value) => `${labels.hour(hours[i].hour)}<br/><b>${labels.cuts(value)}</b>`),
+    grid: { top: 4, left: 4, right: 36, bottom: 4, containLabel: true },
+    xAxis: { type: 'value', show: false },
+    yAxis: { ...categoryAxis(hours.map((h) => labels.hour(h.hour))), inverse: true },
+    series: [
+      {
+        type: 'bar',
+        data: hours.map((h, i) => ({ value: h.cuts, itemStyle: { color: i === 0 ? COLORS.best : COLORS.rest } })),
+        barMaxWidth: 22,
+        itemStyle: { borderRadius: [0, 4, 4, 0] },
+        label: { show: true, position: 'right', color: COLORS.text, fontSize: 13, fontWeight: 'bold' },
+      },
+    ],
+  };
+}
+
+/** Money per day of the period: gold above the average, gray below, and the average as a line. */
+export function revenueOption(days: DailyStatistic[], labels: ChartLabels): EChartsCoreOption {
+  const average = averageRevenue(days);
   const shortDate = new Intl.DateTimeFormat(labels.locale, { day: 'numeric', month: 'short' });
   const longDate = new Intl.DateTimeFormat(labels.locale, { weekday: 'long', day: 'numeric', month: 'long' });
   const compact = new Intl.NumberFormat(labels.locale, { notation: 'compact', maximumFractionDigits: 1 });
   return {
-    tooltip: {
-      ...tooltip,
-      trigger: 'axis',
-      axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(212, 162, 76, 0.08)' } },
-      formatter: (params: { dataIndex: number; value: number }[]) => {
-        const p = params[0];
-        return `${longDate.format(parseIsoDate(dates[p.dataIndex]))}<br/><b>${labels.money(p.value)}</b>`;
-      },
-    },
-    grid: { top: 12, left: 44, right: 8, bottom: 24 },
-    xAxis: {
-      type: 'category',
-      data: dates.map((d) => shortDate.format(parseIsoDate(d))),
-      axisLine: { lineStyle: { color: COLORS.grid } },
-      axisTick: { show: false },
-      axisLabel: { color: COLORS.muted, fontSize: 10, hideOverlap: true },
-    },
+    tooltip: tooltip(
+      (i, value) => `${capitalize(longDate.format(parseIsoDate(days[i].date)))}<br/><b>${labels.money(value)}</b>`,
+    ),
+    grid: { top: 8, left: 4, right: 8, bottom: 4, containLabel: true },
+    xAxis: { ...categoryAxis(days.map((d) => shortDate.format(parseIsoDate(d.date)))), axisLabel: { color: COLORS.muted, fontSize: 10, hideOverlap: true } },
     yAxis: {
       type: 'value',
       splitLine: { lineStyle: { color: COLORS.grid } },
@@ -186,11 +165,48 @@ export function revenueOption(daily: DailyStatistic[], labels: ChartLabels): ECh
     series: [
       {
         type: 'bar',
-        data: dates.map((d) => byDate.get(d) ?? 0),
+        data: days.map((d) => ({
+          value: d.revenue,
+          itemStyle: { color: average > 0 && d.revenue >= average ? COLORS.best : COLORS.rest },
+        })),
         barMaxWidth: 12,
-        barCategoryGap: '30%',
-        itemStyle: { color: COLORS.bar, borderRadius: [4, 4, 0, 0] },
+        itemStyle: { borderRadius: [4, 4, 0, 0] },
+        markLine: average > 0
+          ? {
+              symbol: 'none',
+              silent: true,
+              lineStyle: { color: COLORS.text, type: 'dashed', width: 1 },
+              // The amount is written above the chart (the page), so it never covers the bars.
+              label: { show: false },
+              data: [{ yAxis: average }],
+            }
+          : undefined,
       },
     ],
   };
+}
+
+function categoryAxis(data: string[]): object {
+  return {
+    type: 'category',
+    data,
+    axisLine: { lineStyle: { color: COLORS.grid } },
+    axisTick: { show: false },
+    axisLabel: { color: COLORS.muted, fontSize: 12 },
+  };
+}
+
+function tooltip(format: (index: number, value: number) => string): object {
+  return {
+    trigger: 'item',
+    backgroundColor: COLORS.tooltip,
+    borderColor: COLORS.border,
+    textStyle: { color: COLORS.text, fontSize: 12 },
+    confine: true,
+    formatter: (p: { dataIndex: number; value: number }) => format(p.dataIndex, p.value),
+  };
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toLocaleUpperCase() + text.slice(1);
 }

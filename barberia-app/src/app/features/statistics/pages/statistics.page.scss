@@ -24,3 +24,53 @@
 .empty {
   color: var(--ion-color-medium);
 }
+
+
+.section-title {
+  margin: 16px 16px 4px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.insights {
+  background: transparent;
+  margin: 0 10px;
+
+  ion-item {
+    --background: var(--ion-card-background);
+    --border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--app-card-border);
+    border-radius: 8px;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  p {
+    font-size: 14px;
+    color: var(--ion-color-primary);
+  }
+}
+
+.insight-icon {
+  font-size: 26px;
+  margin-inline-end: 12px;
+}
+
+.average {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ion-text-color);
+
+  .dash {
+    width: 22px;
+    border-top: 2px dashed var(--ion-text-color);
+  }
+}
