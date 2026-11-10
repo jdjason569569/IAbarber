@@ -636,3 +636,10 @@ This file records, in chronological order, every change made to the backend.
 ## 2026-11-10 · Sin push cuando el cliente pide hablar con el barbero
 
 - Se quitó `NotifyTalkRequestUseCase`: al elegir "2" el bot ya no envía ninguna notificación a la app. Solo responde al cliente ("Listo 👍, el barbero te escribe en un momento por aquí.") y se calla 30 minutos con él.
+
+## 2026-11-10 · Datos para las gráficas de Estadísticas
+
+- `GET /statistics` ahora también devuelve:
+  - `daily`: por cada día de los últimos 120 días con citas, `appointments` (citas no canceladas, walk-ins incluidos) y `revenue` (total de las completadas).
+  - `weekdayHour`: citas por día de la semana (0 = lunes) y hora de inicio, en la misma ventana.
+- Solo cuenta hasta hoy (las reservas futuras no entran). Los totales del mes no cambian.

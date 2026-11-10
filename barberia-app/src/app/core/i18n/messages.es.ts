@@ -205,6 +205,18 @@ export const MESSAGES_ES = {
   'statistics.totals.revenueThisMonth': 'Ingresos este mes',
   'statistics.totals.newClients': 'Clientes nuevos',
   'statistics.totals.cancellationRate': 'Tasa de cancelación',
+  'statistics.charts.empty': 'Aún no hay citas para mostrar.',
+  'statistics.charts.less': 'Menos',
+  'statistics.charts.more': 'Más',
+  'statistics.charts.cuts': '{count} cortes',
+  'statistics.charts.oneCut': '1 corte',
+  'statistics.charts.byDay.title': 'Cortes por día',
+  'statistics.charts.byDay.subtitle': 'Últimos 4 meses. Más claro = más cortes.',
+  'statistics.charts.byHour.title': 'Días y horas con más clientes',
+  'statistics.charts.byHour.subtitle': 'Últimos 4 meses, por hora de inicio de la cita.',
+  'statistics.charts.byHour.cell': '{weekday} a las {hour}',
+  'statistics.charts.revenue.title': 'Ganancia por día',
+  'statistics.charts.revenue.subtitle': 'Últimos 30 días, solo citas completadas.',
 
   // Settings
   'settings.title': 'Configuración',

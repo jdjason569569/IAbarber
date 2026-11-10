@@ -2,3 +2,25 @@
   margin: 0;
   text-align: center;
 }
+
+.chart-card {
+  margin: 12px 10px;
+
+  ion-card-title {
+    font-size: 16px;
+  }
+
+  ion-card-subtitle {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 12px;
+  }
+
+  ion-card-content {
+    padding: 0 8px 12px;
+  }
+}
+
+.empty {
+  color: var(--ion-color-medium);
+}

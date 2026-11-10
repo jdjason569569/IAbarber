@@ -1174,3 +1174,16 @@ npx ionic capacitor add android   # añadir plataforma Android
 ## 2026-11-10 · Se revierten los textos de "quiere hablar contigo"
 
 - La API ya no envía push cuando un cliente pide hablar con el barbero, así que los textos del canal y del modal vuelven a hablar solo de citas nuevas.
+
+## 2026-11-10 · Gráficas en Estadísticas (Apache ECharts)
+
+**Qué se hizo**
+- Dependencia nueva: `echarts@6.1.0` (Apache 2.0). Se importan solo barras, heatmap, calendario, grid, tooltip y visualMap.
+- `shared/components/chart/chart.component.ts`: componente `app-chart` que dibuja una opción de ECharts, se redimensiona con su contenedor y se libera al salir.
+- `features/statistics/utils/statistics-charts.ts`: construye las tres gráficas:
+  1. **Cortes por día**: calendario de calor de los últimos 4 meses.
+  2. **Días y horas con más clientes**: mapa de calor día de la semana × hora.
+  3. **Ganancia por día**: barras de los últimos 30 días (solo citas completadas).
+- Colores: rampa dorada de un solo tono (más = más claro), validada sobre el fondo de las tarjetas; días sin citas en gris oscuro. Al tocar una celda o barra se ve el detalle.
+- Textos nuevos en `messages.es.ts` (`statistics.charts.*`); nombres de días y meses con `Intl` en español.
+- Si aún no hay historial se muestra "Aún no hay citas para mostrar."

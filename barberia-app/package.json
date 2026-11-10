@@ -1,6 +1,6 @@
 {
   "name": "barberia-app",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "author": "Ionic Framework",
   "homepage": "https://ionicframework.com/",
   "scripts": {
@@ -58,6 +58,7 @@
     "@ionic/angular": "^9.0.0",
     "@mediapipe/tasks-vision": "^1.2.0",
     "@supabase/supabase-js": "^2.119.0",
+    "echarts": "6.1.0",
     "ionicons": "^8.1.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

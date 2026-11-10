@@ -20,6 +20,44 @@
         }
       </ion-row>
     </ion-grid>
+
+    @if (hasHistory()) {
+      <ion-card class="chart-card">
+        <ion-card-header>
+          <ion-card-title>{{ 'statistics.charts.byDay.title' | t }}</ion-card-title>
+          <ion-card-subtitle>{{ 'statistics.charts.byDay.subtitle' | t }}</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <app-chart [option]="cutsByDay()" [height]="165" [label]="'statistics.charts.byDay.title' | t" />
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="chart-card">
+        <ion-card-header>
+          <ion-card-title>{{ 'statistics.charts.byHour.title' | t }}</ion-card-title>
+          <ion-card-subtitle>{{ 'statistics.charts.byHour.subtitle' | t }}</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <app-chart [option]="cutsByHour()" [height]="270" [label]="'statistics.charts.byHour.title' | t" />
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="chart-card">
+        <ion-card-header>
+          <ion-card-title>{{ 'statistics.charts.revenue.title' | t }}</ion-card-title>
+          <ion-card-subtitle>{{ 'statistics.charts.revenue.subtitle' | t }}</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <app-chart
+            [option]="revenue()"
+            [height]="220"
+            [label]="('statistics.charts.revenue.title' | t) + ': ' + revenueTotal()"
+          />
+        </ion-card-content>
+      </ion-card>
+    } @else {
+      <p class="ion-padding ion-text-center empty">{{ 'statistics.charts.empty' | t }}</p>
+    }
   } @else {
     <p class="ion-padding ion-text-center">
       @if (loading()) { {{ 'statistics.loading' | t }} } @else { {{ error() }} }
