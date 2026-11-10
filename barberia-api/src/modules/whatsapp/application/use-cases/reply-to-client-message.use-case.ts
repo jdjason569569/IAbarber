@@ -19,7 +19,14 @@ const DAY_LABELS: Record<BookingDay, string> = { today: 'Hoy', tomorrow: 'Mañan
 
 
 const HOW_TO_BOOK =
-  'Para agendar escribe tu nombre, el día y la hora, por ejemplo: *Juan Pérez mañana 15:00*';
+  'Para agendar escribe tu nombre, el día y la hora, por ejemplo: *Juan Pérez mañana 3:00 pm*';
+
+/** Parts of the day the free slots are grouped in, by the hour each one starts (24 h). */
+const DAY_PARTS: { label: string; from: number; to: number }[] = [
+  { label: '🌅 Mañana', from: 0, to: 12 },
+  { label: '☀️ Tarde', from: 12, to: 18 },
+  { label: '🌙 Noche', from: 18, to: 24 },
+];
 
 /** After asking for the barber, the bot stays silent with the client this long (renewed by each message). */
 const HANDOFF_MINUTES = 30;
@@ -72,7 +79,7 @@ export class ReplyToClientMessageUseCase {
       return {
         reply:
           `Hola ${pending.client} 👋, ya tienes una cita agendada para el ` +
-          `${formatDate(pending.date)} a las ${pending.time}. Si necesitas cambiarla o cancelarla, ` +
+          `${formatDate(pending.date)} a las ${formatTime(pending.time)}. Si necesitas cambiarla o cancelarla, ` +
           `responde *2* y el barbero te ayuda.`,
       };
     }
@@ -116,7 +123,7 @@ export class ReplyToClientMessageUseCase {
     return {
       reply:
         `✅ Listo ${message.client}, tu cita quedó agendada para ` +
-        `${DAY_LABELS[slot.day].toLowerCase()} ${formatDate(slot.date)} a las ${slot.time}.` +
+        `${DAY_LABELS[slot.day].toLowerCase()} ${formatDate(slot.date)} a las ${formatTime(slot.time)}.` +
         (price > 0 ? ` Valor del corte: ${formatMoney(price)}.` : '') +
         ' ¡Te esperamos! 💈',
     };
@@ -200,12 +207,38 @@ function handoffEnd(): number {
 }
 
 function listSlots(days: (DaySlotsDto & { day: BookingDay })[]): string {
-  return ['Estas son las horas disponibles:', '', ...days.map(describeDay)].join('\n');
+  return ['Estas son las horas disponibles:', '', days.map(describeDay).join('\n\n')].join('\n');
 }
 
+/**
+ * One day of free slots on the 12-hour clock, grouped by part of the day so it reads at a glance:
+ *   📅 *Hoy, martes 10 de noviembre*
+ *   🌅 Mañana: 9:00 · 9:30
+ *   ☀️ Tarde: 12:30 · 1:00 · 2:30
+ *   🌙 Noche: sin horas
+ */
 function describeDay(day: DaySlotsDto & { day: BookingDay }): string {
-  const times = day.times.length > 0 ? day.times.join(', ') : 'sin horas disponibles';
-  return `📅 ${DAY_LABELS[day.day]} (${formatDate(day.date)}): ${times}`;
+  const title = `📅 *${DAY_LABELS[day.day]}, ${formatDate(day.date).replace(',', '')}*`;
+  if (day.times.length === 0) return `${title}\nSin horas disponibles`;
+  const parts = DAY_PARTS.map(({ label, from, to }) => {
+    const times = day.times.filter((t) => {
+      const hour = Number(t.slice(0, 2));
+      return hour >= from && hour < to;
+    });
+    return `${label}: ${times.length ? times.map(clock12).join(' · ') : 'sin horas'}`;
+  });
+  return [title, ...parts].join('\n');
+}
+
+/** `15:30` -> "3:30" (the part of the day already says morning, afternoon or night). */
+function clock12(time: string): string {
+  const [hour, minute] = time.split(':').map(Number);
+  return `${hour % 12 === 0 ? 12 : hour % 12}:${String(minute).padStart(2, '0')}`;
+}
+
+/** `15:30` -> "3:30 pm", for sentences like "a las 3:30 pm". */
+function formatTime(time: string): string {
+  return `${clock12(time)} ${Number(time.slice(0, 2)) < 12 ? 'am' : 'pm'}`;
 }
 
 function formatMoney(value: number): string {

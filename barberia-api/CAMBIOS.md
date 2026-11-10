@@ -661,3 +661,16 @@ This file records, in chronological order, every change made to the backend.
 **Pendiente**
 - Ejecutar `docs/migrations/004_shop_settings.sql` en Supabase antes de desplegar. Sin la tabla, Configuración no puede leer/guardar el valor y WhatsApp sigue agendando en $0.
 - **Actualización:** la migración `004_shop_settings` ya se aplicó en Supabase (tabla `shop_settings` creada, con RLS activado). Falta solo desplegar la API.
+
+## 2026-11-10 · WhatsApp: horas en formato de 12 horas, agrupadas por jornada
+
+- Las horas libres ya no salen en hora militar. Cada día se muestra así:
+  ```
+  📅 *Mañana, miércoles 11 de noviembre*
+  🌅 Mañana: 9:00 · 9:30 · 10:00
+  ☀️ Tarde: 12:30 · 1:00 · 2:30
+  🌙 Noche: 6:00 · 6:30
+  ```
+  (mañana < 12:00, tarde 12:00–17:59, noche desde 18:00; "sin horas" si la jornada no tiene espacio).
+- El ejemplo para agendar, la confirmación y el aviso de cita pendiente usan "3:00 pm".
+- Probado localmente: "3:00 pm", "9:30 p. m." y "4" (se toma 4:00 pm si 4:00 am no existe) agendan bien.
