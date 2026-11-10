@@ -1,0 +1,41 @@
+# Bot de WhatsApp de la barbería en Docker.
+#   Arrancar:  docker compose up -d --build
+#   Ver logs:  docker compose logs -f
+#   Parar:     docker compose down
+#   Panel/QR:  http://127.0.0.1:8081/dashboard/
+#
+# Antes de vincular, apaga el open-wa y el bot.js del PC: con los dos activos,
+# cada mensaje se respondería dos veces.
+
+services:
+  openwa:
+    build:
+      context: .
+      # En Oracle ARM: DOCKERFILE=Dockerfile.arm64 en el archivo .env
+      dockerfile: ${DOCKERFILE:-Dockerfile}
+    init: true
+    restart: unless-stopped
+    shm_size: 1gb
+    ports:
+      # Solo accesible desde este PC: quien entre al panel controla el WhatsApp.
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - openwa-session:/data
+
+  bot:
+    image: node:24-bookworm-slim
+    init: true
+    restart: unless-stopped
+    user: node
+    depends_on:
+      - openwa
+    environment:
+      API_URL: http://openwa:8080
+      BACKEND_URL: ${BACKEND_URL:-https://iabarber.onrender.com}
+    volumes:
+      # En el servidor: BOT_JS=./bot.js en el archivo .env
+      - ${BOT_JS:-../../claude-whastapp/bot.js}:/app/bot.js:ro
+    command: ["node", "/app/bot.js"]
+
+volumes:
+  openwa-session:

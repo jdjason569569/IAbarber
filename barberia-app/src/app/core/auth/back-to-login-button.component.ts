@@ -6,17 +6,19 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { AuthService } from './auth.service';
 
 /**
- * Back arrow at the start of every tab header: leaves the current session (admin or guest)
- * and returns to the login screen, where the other role can be chosen.
+ * Back arrow at the start of every tab header, only for the guest: leaves the demo and returns to
+ * the login screen. The admin never sees it; the admin session only ends with "Cerrar sesión" (settings).
  */
 @Component({
   selector: 'app-back-to-login-button',
   template: `
-    <ion-buttons>
-      <ion-button (click)="back()" [attr.aria-label]="'auth.back' | t">
-        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
+    @if (auth.isGuest()) {
+      <ion-buttons>
+        <ion-button (click)="back()" [attr.aria-label]="'auth.back' | t">
+          <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    }
   `,
   // ion-toolbar only places its direct children, so the host takes the start slot.
   host: { slot: 'start' },
@@ -24,7 +26,7 @@ import { AuthService } from './auth.service';
   imports: [IonicModule, TranslatePipe],
 })
 export class BackToLoginButtonComponent {
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
 
   constructor() {
     addIcons({ arrowBackOutline });

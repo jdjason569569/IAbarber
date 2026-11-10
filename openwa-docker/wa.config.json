@@ -1,0 +1,4 @@
+{
+  "sessionDataPath": "/data",
+  "chromiumArgs": ["--no-sandbox", "--disable-dev-shm-usage"]
+}

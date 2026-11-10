@@ -1124,3 +1124,22 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Pending / notes**
 - The name is split at " agendó para ", so that wording must stay the same in the API push and in `notifications.bookingLine`; otherwise the line shows without bold.
+
+---
+
+## 2026-11-10 · Botón atrás de Android bloqueado en la sesión del admin
+
+**Qué se hizo**
+- Nuevo `core/navigation/hardware-back-button.service.ts`: registra un listener de `backButton` (`@capacitor/app`) solo en la app nativa.
+- En sesión de admin el botón atrás físico ya no saca de la app ni vuelve al login; Ionic sigue usándolo para cerrar modales/alertas.
+- Invitado o sin sesión: se mantiene el comportamiento anterior (atrás en el historial del WebView).
+- Se inyecta desde `AppComponent`.
+
+**Notas**
+- La sesión del admin solo se cierra con la flecha del encabezado (`BackToLoginButtonComponent`).
+
+## 2026-11-10 · Flecha "Volver al inicio" oculta para el admin
+
+**Qué se hizo**
+- `BackToLoginButtonComponent` solo se muestra en la sesión de invitado. El admin ya no sale al login al tocar la flecha del encabezado.
+- El admin cierra sesión únicamente con **Cerrar sesión** en Ajustes.

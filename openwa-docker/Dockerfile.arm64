@@ -1,0 +1,22 @@
+# Variante para servidores ARM (Oracle Ampere A1): Google Chrome no publica paquete .deb para ARM.
+FROM node:24-bookworm-slim
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates chromium fonts-liberation fonts-noto-color-emoji \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g @open-wa/wa-automate@5.10.0
+
+WORKDIR /app
+COPY wa.config.json ./
+RUN mkdir -p /data && chown -R node:node /app /data
+
+USER node
+
+EXPOSE 8080
+
+# --host 0.0.0.0 es necesario para que el bot alcance la API desde su contenedor.
+CMD ["wa-automate", "--host", "0.0.0.0", "--qr-timeout", "0", "--port", "8080"]
