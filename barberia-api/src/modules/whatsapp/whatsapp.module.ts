@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppointmentsModule } from '../appointments/appointments.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
+import { ShopSettingsModule } from '../shop-settings/shop-settings.module.js';
 import { HandleIncomingWhatsappMessageUseCase } from './application/use-cases/handle-incoming-whatsapp-message.use-case.js';
 import { ReplyToClientMessageUseCase } from './application/use-cases/reply-to-client-message.use-case.js';
 import { HANDOFF_REPOSITORY } from './domain/ports/handoff.repository.js';
@@ -11,7 +12,7 @@ import { WhatsappWebhookController } from './infrastructure/http/whatsapp-webhoo
 import { WhatsappController } from './infrastructure/http/whatsapp.controller.js';
 
 @Module({
-  imports: [AppointmentsModule, NotificationsModule],
+  imports: [AppointmentsModule, NotificationsModule, ShopSettingsModule],
   controllers: [WhatsappController, WhatsappWebhookController],
   providers: [
     ReplyToClientMessageUseCase,

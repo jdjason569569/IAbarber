@@ -649,3 +649,15 @@ This file records, in chronological order, every change made to the backend.
 - `GET /statistics` → `daily` ahora trae también `cancelled` (citas canceladas del día) y `newClients` (clientes cuya primera cita fue ese día); incluye días que solo tuvieron cancelaciones.
 - Nuevo `hourly`: citas no canceladas por fecha y hora, para que la app calcule cualquier periodo.
 - `totals` y `weekdayHour` se mantienen para las versiones anteriores de la app.
+
+## 2026-11-10 · Valor del servicio configurable (usado en las citas de WhatsApp)
+
+**Qué se hizo**
+- Módulo nuevo `shop-settings` (hexagonal): `GET /settings/service-price` → `{ price }` y `PUT /settings/service-price` con `{ price }` (entero de 0 a 10.000.000; si no, 400). Requiere sesión de admin.
+- Tabla nueva `shop_settings` (una fila por workspace): `docs/migrations/004_shop_settings.sql`.
+- `ReplyToClientMessageUseCase`: las citas de WhatsApp se crean con ese valor (antes siempre $0). Si no se puede leer, se agenda en $0 igual y se registra en el log.
+- La confirmación al cliente agrega "Valor del corte: $20.000." cuando hay un valor configurado.
+
+**Pendiente**
+- Ejecutar `docs/migrations/004_shop_settings.sql` en Supabase antes de desplegar. Sin la tabla, Configuración no puede leer/guardar el valor y WhatsApp sigue agendando en $0.
+- **Actualización:** la migración `004_shop_settings` ya se aplicó en Supabase (tabla `shop_settings` creada, con RLS activado). Falta solo desplegar la API.

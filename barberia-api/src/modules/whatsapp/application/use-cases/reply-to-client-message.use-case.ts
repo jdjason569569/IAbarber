@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ListAppointmentsUseCase } from '../../../appointments/application/use-cases/list-appointments.use-case.js';
 import { ListAvailableSlotsUseCase } from '../../../appointments/application/use-cases/list-available-slots.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../../appointments/application/use-cases/schedule-appointment.use-case.js';
+import { GetServicePriceUseCase } from '../../../shop-settings/application/use-cases/get-service-price.use-case.js';
 import { NotifyNewBookingUseCase } from '../../../notifications/application/use-cases/notify-new-booking.use-case.js';
 import type { AppointmentDto, DaySlotsDto, ScheduleAppointmentInput } from '../../../appointments/application/dtos/appointment.dto.js';
 import { DomainError } from '../../../../shared/errors/domain.error.js';
@@ -16,8 +17,6 @@ import type { ClientMessageInput, ClientMessageReply } from '../dtos/client-mess
 const DAYS: BookingDay[] = ['today', 'tomorrow'];
 const DAY_LABELS: Record<BookingDay, string> = { today: 'Hoy', tomorrow: 'Mañana' };
 
-/** Bookings made by clients on WhatsApp start at $0; the barber sets the price in the app. */
-const WHATSAPP_SERVICE_COST = 0;
 
 const HOW_TO_BOOK =
   'Para agendar escribe tu nombre, el día y la hora, por ejemplo: *Juan Pérez mañana 15:00*';
@@ -47,6 +46,7 @@ export class ReplyToClientMessageUseCase {
     private readonly listAppointments: ListAppointmentsUseCase,
     private readonly notifyNewBooking: NotifyNewBookingUseCase,
     @Inject(HANDOFF_REPOSITORY) private readonly handoffs: HandoffRepository,
+    private readonly servicePrice: GetServicePriceUseCase,
   ) {}
 
   async execute(input: ClientMessageInput): Promise<ClientMessageReply> {
@@ -93,11 +93,12 @@ export class ReplyToClientMessageUseCase {
       return { reply: `Esa hora no está disponible 😕.\n\n${listSlots(days)}\n\n${HOW_TO_BOOK}` };
     }
 
+    const price = await this.priceForBooking();
     const booking: ScheduleAppointmentInput = {
       client: message.client,
       date: slot.date,
       time: slot.time,
-      serviceCost: WHATSAPP_SERVICE_COST,
+      serviceCost: price,
       extras: [],
       phone: input.phone,
     };
@@ -115,8 +116,23 @@ export class ReplyToClientMessageUseCase {
     return {
       reply:
         `✅ Listo ${message.client}, tu cita quedó agendada para ` +
-        `${DAY_LABELS[slot.day].toLowerCase()} ${formatDate(slot.date)} a las ${slot.time}. ¡Te esperamos! 💈`,
+        `${DAY_LABELS[slot.day].toLowerCase()} ${formatDate(slot.date)} a las ${slot.time}.` +
+        (price > 0 ? ` Valor del corte: ${formatMoney(price)}.` : '') +
+        ' ¡Te esperamos! 💈',
     };
+  }
+
+  /**
+   * Price set in the app's settings ("Valor del servicio"). If it cannot be read, the booking still
+   * goes through at $0 (the barber can fix the price in the app), so the client is never left waiting.
+   */
+  private async priceForBooking(): Promise<number> {
+    try {
+      return await this.servicePrice.execute();
+    } catch (error) {
+      console.error('Reading the service price failed:', error instanceof Error ? error.message : error);
+      return 0;
+    }
   }
 
   /** The client's booking that still holds a future slot, if any. */
@@ -190,6 +206,10 @@ function listSlots(days: (DaySlotsDto & { day: BookingDay })[]): string {
 function describeDay(day: DaySlotsDto & { day: BookingDay }): string {
   const times = day.times.length > 0 ? day.times.join(', ') : 'sin horas disponibles';
   return `📅 ${DAY_LABELS[day.day]} (${formatDate(day.date)}): ${times}`;
+}
+
+function formatMoney(value: number): string {
+  return `$${value.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`;
 }
 
 function formatDate(date: string): string {

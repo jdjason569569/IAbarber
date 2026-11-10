@@ -1,0 +1,39 @@
+<ion-list-header>{{ 'settings.price.title' | t }}</ion-list-header>
+<p class="hint">{{ 'settings.price.hint' | t }}</p>
+
+@if (loading()) {
+  <ion-item lines="none">
+    <ion-label class="ion-text-center">{{ 'settings.loading' | t }}</ion-label>
+  </ion-item>
+} @else {
+  <ion-item>
+    <ion-input
+      type="text"
+      inputmode="numeric"
+      labelPlacement="stacked"
+      [label]="'settings.price.label' | t"
+      [placeholder]="'settings.price.placeholder' | t"
+      [value]="typed()"
+      (ionInput)="onInput($event.detail.value)"
+    >
+      <span slot="start" class="currency" aria-hidden="true">$</span>
+    </ion-input>
+  </ion-item>
+  @if (typed()) {
+    <p class="preview">{{ preview() }}</p>
+  }
+  @if (!valid() && typed()) {
+    <ion-text color="danger">
+      <p class="ion-padding-horizontal">{{ 'settings.price.errors.invalid' | t }}</p>
+    </ion-text>
+  } @else if (message(); as msg) {
+    <ion-text [color]="msg.error ? 'danger' : 'success'">
+      <p class="ion-padding-horizontal">{{ msg.text }}</p>
+    </ion-text>
+  }
+  <div class="ion-padding">
+    <ion-button expand="block" [disabled]="!dirty() || !valid() || saving()" (click)="save()">
+      {{ 'settings.price.save' | t }}
+    </ion-button>
+  </div>
+}

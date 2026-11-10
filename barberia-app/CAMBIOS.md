@@ -1280,3 +1280,9 @@ npx ionic capacitor add android   # añadir plataforma Android
 - Gráficas: blanco = lo mejor / sobre el promedio, gris azulado = el resto.
 - Progreso de envío al asistente: degradado azul real → rojo. Antes empezaba en `primary`, que ahora es blanco, y su icono blanco no se veía.
 - Verificado: `ng build` sin errores; captura del inicio de sesión en tamaño de teléfono. Las pantallas con sesión no se pudieron ver aquí.
+
+## 2026-11-10 · "Valor del servicio" en Configuración
+
+- Nuevo `ServicePriceEditorComponent` (arriba de Disponibilidad) y `ShopSettingsService` (`GET/PUT /settings/service-price`).
+- Campo numérico; solo cuentan los dígitos (si escriben "20.000" o "$20000" queda 20000). Debajo se muestra el valor formateado ("$20.000") para detectar ceros de más o de menos. Botón "Guardar valor" activo solo si cambió.
+- Las citas que entran por WhatsApp se guardan con este valor.
