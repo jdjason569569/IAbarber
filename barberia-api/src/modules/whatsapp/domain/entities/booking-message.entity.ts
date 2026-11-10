@@ -87,6 +87,20 @@ export class BookingMessage {
   }
 
   /**
+   * An hour from 1 to 11 with no am/pm and no "de la mañana/tarde/noche" ("mañana 7:00") could be
+   * morning or evening, so the client must say which before booking. 12 and 13-23 are clear.
+   */
+  get needsDayPart(): boolean {
+    return this.hour !== undefined && this.meridiem === undefined && this.hour >= 1 && this.hour <= 11;
+  }
+
+  /** The time as the client wrote it, without am/pm: "7" or "7:30". */
+  get clock(): string | undefined {
+    if (this.hour === undefined) return undefined;
+    return this.minute ? `${this.hour}:${pad(this.minute)}` : String(this.hour);
+  }
+
+  /**
    * `HH:mm` times the client may mean, most likely first. Without am/pm a morning hour is
    * ambiguous ("a las 3"), so both readings are returned.
    */

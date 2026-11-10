@@ -6,7 +6,11 @@ import { ReplyToClientMessageUseCase } from '../../application/use-cases/reply-t
 interface ReplyRequest {
   text?: unknown;
   clientName?: unknown;
+  chatId?: unknown;
 }
+
+/** open-wa chat ids: "<digits>@lid", "<digits>@c.us" or "<digits>@s.whatsapp.net". */
+const CHAT_ID = /^[\w.-]{1,90}@(lid|c\.us|s\.whatsapp\.net)$/;
 
 /**
  * Called by the WhatsApp bot (open-wa) for every message a client sends.
@@ -49,6 +53,8 @@ export class WhatsappController {
       this.replyToClient.execute({
         text,
         clientName: typeof body?.clientName === 'string' ? body.clientName : undefined,
+        // Optional: an older bot sends no chat id and the client is then known by name.
+        chatId: typeof body?.chatId === 'string' && CHAT_ID.test(body.chatId) ? body.chatId : undefined,
       }),
     );
   }

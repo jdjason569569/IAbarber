@@ -674,3 +674,54 @@ This file records, in chronological order, every change made to the backend.
   (mañana < 12:00, tarde 12:00–17:59, noche desde 18:00; "sin horas" si la jornada no tiene espacio).
 - El ejemplo para agendar, la confirmación y el aviso de cita pendiente usan "3:00 pm".
 - Probado localmente: "3:00 pm", "9:30 p. m." y "4" (se toma 4:00 pm si 4:00 am no existe) agendan bien.
+
+---
+
+## 2026-11-10 · WhatsApp: asks morning or evening for an ambiguous hour
+
+**What was done**
+- `BookingMessage` (domain):
+  - `needsDayPart`: true for an hour from 1 to 11 with no am/pm and no "de la mañana/tarde/noche";
+  - `clock`: the time as written ("7", "7:30").
+- `ReplyToClientMessageUseCase`: such a message is no longer booked. Before, "mañana 7:00" booked 07:00 if free, otherwise 19:00, without telling the client.
+- Now the bot asks, and since it keeps no conversation state, it gives both full answers to copy back:
+  ```
+  ¿A las 7 de la mañana o de la noche? 🤔
+  Responde con una de estas:
+  *Juan Pérez mañana 7 de la mañana*
+  *Juan Pérez mañana 7 de la noche*
+  ```
+  Up to 6 it offers "de la tarde"; from 7, "de la noche".
+- Unchanged: 12, 13–23, "3 pm" and "de la tarde" are booked directly. A lone "1"/"2" is still the menu answer.
+- Applies to both channels (open-wa `/bot/<secret>/whatsapp/reply` and the Meta webhook). The route and `bot.js` are unchanged.
+
+**Current state**
+- Verified locally with in-memory repositories:
+  - "mañana 7:00" and "hoy 4:30" → question;
+  - the copied answers → booked at 7:00 am and 4:30 pm;
+  - "3 pm" and "12" → booked;
+  - a taken hour → slot list.
+
+---
+
+## 2026-11-10 · Handoff silence keyed by the open-wa chat id, and 10 minutes long
+
+**What was done**
+- The open-wa bot (`~/Escritorio/claude-whastapp/bot.js`, change authorized by the user) now also sends `chatId` (`…@lid` / `…@c.us`), which is fixed per client.
+- `ClientMessageInput.chatId` added. `whatsapp.controller.ts` accepts it on both reply routes only when it matches `^[\w.-]{1,90}@(lid|c\.us|s\.whatsapp\.net)$`; otherwise it is ignored.
+- `clientKey` (the silence key), in order:
+  1. `phone:<phone>` (Meta);
+  2. `chat:<chatId>` (open-wa);
+  3. `name:<name>`, only as a fallback for a bot that sends no chat id.
+- Before, open-wa used only the name, so two clients called "Pedro" shared the silence.
+- `HANDOFF_MINUTES`: 30 → 10. Each client message still renews it.
+
+**Current state**
+- Verified locally with in-memory repositories:
+  - "2" from `111@lid` silences that chat;
+  - another "Pedro" (`222@lid`) still gets the menu;
+  - without a chat id or with an invalid one, the name is used as before.
+- The route stays backward compatible: an old bot without `chatId` works.
+
+**Pending / notes**
+- Silences are in memory: a Render restart clears them.

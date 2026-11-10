@@ -4,6 +4,11 @@ export interface ClientMessageInput {
   clientName?: string;
   /** Sender phone in international format without "+" (e.g. 573001234567), when known. */
   phone?: string;
+  /**
+   * open-wa chat id ("138392604016645@lid", "573001234567@c.us"): fixed per client, unlike the
+   * display name, so it tells apart two clients with the same name.
+   */
+  chatId?: string;
 }
 
 export interface ClientMessageReply {

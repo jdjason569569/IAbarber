@@ -29,7 +29,7 @@ const DAY_PARTS: { label: string; from: number; to: number }[] = [
 ];
 
 /** After asking for the barber, the bot stays silent with the client this long (renewed by each message). */
-const HANDOFF_MINUTES = 30;
+const HANDOFF_MINUTES = 10;
 
 const TALK_HINT = 'Si prefieres hablar con el barbero, responde *2*.';
 
@@ -42,7 +42,8 @@ const dateFormat = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'num
  * - "2" (or "barbero", "hablar"...) makes the bot stay silent with that client for HANDOFF_MINUTES,
  *   so the barber answers from the same WhatsApp (no push is sent to the app). An empty reply means
  *   "send nothing" (the open-wa bot and the Meta webhook both skip it).
- * - A message with a name and a time books that slot directly.
+ * - A message with a name and a time books that slot directly. An hour from 1 to 11 without am/pm
+ *   ("mañana 7:00") is not booked: the bot asks whether it is morning or evening.
  * When the phone is known, a client can hold only one pending booking.
  */
 @Injectable()
@@ -92,6 +93,9 @@ export class ReplyToClientMessageUseCase {
     const days = await this.listSlots();
     if (!message.client) {
       return { reply: `¿A nombre de quién agendamos la cita?\n\n${HOW_TO_BOOK}` };
+    }
+    if (message.needsDayPart) {
+      return { reply: askDayPart(message) };
     }
 
     const wanted = message.day ? days.filter((d) => d.day === message.day) : days;
@@ -172,6 +176,24 @@ function findSlot(
   return undefined;
 }
 
+/**
+ * "7" alone could be 7 am or 7 pm. The bot keeps no conversation state, so the question carries both
+ * full answers (name, day and time) for the client to copy back as they are.
+ */
+function askDayPart(message: BookingMessage): string {
+  const clock = message.clock ?? '';
+  const evening = Number(clock.split(':')[0]) <= 6 ? 'de la tarde' : 'de la noche';
+  const day = message.day ? ` ${DAY_LABELS[message.day].toLowerCase()}` : '';
+  const answer = `${message.client}${day} ${clock}`;
+  return [
+    `¿A las ${clock} de la mañana o ${evening}? 🤔`,
+    '',
+    'Responde con una de estas:',
+    `*${answer} de la mañana*`,
+    `*${answer} ${evening}*`,
+  ].join('\n');
+}
+
 function menu(clientName: string | undefined): string {
   const name = clientName?.trim();
   return [
@@ -195,9 +217,14 @@ function slotsReply(days: (DaySlotsDto & { day: BookingDay })[]): string {
   ].join('\n');
 }
 
-/** Identifies the client for the silence: the phone (Meta) or, when unknown (open-wa), the WhatsApp name. */
+/**
+ * Identifies the client for the silence: the phone (Meta), else the open-wa chat id. The WhatsApp
+ * name is only a fallback for a bot that sends no chat id: two clients with the same name would
+ * share it.
+ */
 function clientKey(input: ClientMessageInput): string | undefined {
   if (input.phone) return `phone:${input.phone}`;
+  if (input.chatId) return `chat:${input.chatId}`;
   const name = input.clientName?.trim().toLowerCase();
   return name ? `name:${name}` : undefined;
 }
