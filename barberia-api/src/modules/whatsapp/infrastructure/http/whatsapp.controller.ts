@@ -44,7 +44,7 @@ export class WhatsappController {
     if (!text) {
       throw new BadRequestException('text is required');
     }
-    // WhatsApp clients always book in the admin's workspace, never in the guest demo.
+    // WhatsApp clients always book in the admin's workspace.
     return WorkspaceContext.run(ADMIN_WORKSPACE, () =>
       this.replyToClient.execute({
         text,

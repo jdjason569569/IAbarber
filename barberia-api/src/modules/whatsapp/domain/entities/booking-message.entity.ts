@@ -14,7 +14,7 @@ const TIME = new RegExp(
 
 /** Words around the name in messages like "hola, soy Juan, quiero una cita a las 3". */
 const FILLER_WORDS = new Set([
-  'a', 'al', 'agendar', 'agenda', 'buenas', 'buenos', 'cita', 'con', 'de', 'del', 'dias', 'el', 'en', 'es',
+  'a', 'al', 'agendar', 'agenda', 'barbero', 'buenas', 'buenos', 'cita', 'con', 'de', 'del', 'dias', 'el', 'en', 'es',
   'favor', 'gracias', 'hola', 'hora', 'horas', 'la', 'las', 'llamo', 'me', 'mi', 'nombre', 'noches', 'ok',
   'para', 'por', 'porfa', 'quiero', 'reservar', 'si', 'soy', 'tardes', 'turno', 'un', 'una', 'y',
 ]);

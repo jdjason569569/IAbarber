@@ -598,3 +598,37 @@ This file records, in chronological order, every change made to the backend.
 - La copia es independiente: si el invitado la cancela o la edita, la del admin no cambia.
 - Si la copia falla (p. ej. el invitado ya tiene una cita activa a esa misma hora) solo se registra en el log; el cliente recibe la confirmación igual y no se envía push al invitado.
 - Aplica a los dos canales (Meta webhook y open-wa), porque ambos pasan por `ReplyToClientMessageUseCase`. `/whatsapp/reply` no cambia.
+
+---
+
+## 2026-11-10 · Se elimina el modo invitado
+
+**Qué se hizo**
+- La API solo acepta la sesión del admin (`Authorization: Bearer <token>`). El encabezado `X-Guest` ya no abre ningún workspace: sin token, 401 (`Login required`).
+- Se quitó `GUEST_WORKSPACE`; `WorkspaceRole` es solo `'admin'`.
+- Se revirtió la copia de las citas de WhatsApp al invitado: se borró `CopyAppointmentUseCase` y `ReplyToClientMessageUseCase` vuelve a agendar y notificar solo en el admin.
+
+**Notas**
+- En Supabase siguen el workspace `…0002` (Demo invitado) y sus datos; la API ya no los usa. Se pueden borrar a mano si se quiere.
+- **Actualización:** se borró de Supabase el workspace del invitado y sus datos (5 citas, 1 bloqueo y 1 token de push). Quedó documentado en `docs/migrations/003_remove_guest_workspace.sql`. Si se recrea la base con `001_workspaces.sql`, hay que ejecutar también la 003.
+
+## 2026-11-10 · Script para cambiar el correo y la contraseña del admin
+
+- Nuevo `scripts/change-admin-credentials.mjs`: busca al admin en `workspace_members`, pide en la terminal el correo y la contraseña nuevos (la contraseña no se muestra) y los aplica con `auth.admin.updateUserById` (correo ya confirmado, sin enviar correos).
+- Uso, desde `barberia-api/`: `node scripts/change-admin-credentials.mjs`. Un campo vacío mantiene el valor actual.
+
+## 2026-11-10 · Menú de WhatsApp: agendar o hablar con el barbero
+
+**Qué se hizo**
+- Un saludo (o cualquier mensaje sin hora) recibe un menú: *1️⃣ Agendar una cita* / *2️⃣ Hablar con el barbero*.
+- "1" (o "cita", "agendar", "turno"…) muestra las horas libres de hoy y mañana con cómo agendar.
+- "2" (o "barbero", "hablar", "persona"…, sin hora) responde "ya le avisé al barbero", envía una push al admin (`NotifyTalkRequestUseCase`) y el bot **se calla 30 minutos** con ese cliente (`HANDOFF_MINUTES`). Cada mensaje nuevo del cliente durante el silencio renueva los 30 minutos.
+- Un mensaje con nombre y hora sigue agendando directo, sin menú.
+- Con cita pendiente, el mensaje ahora dice "responde *2* y el barbero te ayuda".
+- Respuesta vacía = no enviar nada: el bot open-wa ya lo ignora y el webhook de Meta ahora tampoco envía mensajes vacíos.
+- Nuevos: `ClientChoice` (dominio), puerto `HandoffRepository` + `InMemoryHandoffRepository`. "barbero" se ignora al leer el nombre del cliente.
+
+**Notas**
+- open-wa no envía el teléfono, así que el silencio se guarda por el nombre de WhatsApp del cliente; en Meta, por el número.
+- El silencio vive en memoria: si Render reinicia la API, el bot vuelve a responder antes de los 30 minutos.
+- Probado localmente con repositorios en memoria (menú, opción 1, opción 2, silencio, reserva directa).

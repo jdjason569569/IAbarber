@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { isSupabaseConfigured } from '../../shared/supabase/supabase.provider.js';
 import { NotifyNewBookingUseCase } from './application/use-cases/notify-new-booking.use-case.js';
+import { NotifyTalkRequestUseCase } from './application/use-cases/notify-talk-request.use-case.js';
 import { RegisterDeviceUseCase } from './application/use-cases/register-device.use-case.js';
 import { UnregisterDeviceUseCase } from './application/use-cases/unregister-device.use-case.js';
 import { DEVICE_TOKEN_REPOSITORY } from './domain/ports/device-token.repository.js';
@@ -18,12 +19,13 @@ import { SupabaseDeviceTokenRepository } from './infrastructure/persistence/supa
     RegisterDeviceUseCase,
     UnregisterDeviceUseCase,
     NotifyNewBookingUseCase,
+    NotifyTalkRequestUseCase,
     {
       provide: DEVICE_TOKEN_REPOSITORY,
       useClass: isSupabaseConfigured ? SupabaseDeviceTokenRepository : InMemoryDeviceTokenRepository,
     },
     { provide: PUSH_SENDER, useClass: isFirebaseConfigured ? FirebasePushSender : DisabledPushSender },
   ],
-  exports: [NotifyNewBookingUseCase],
+  exports: [NotifyNewBookingUseCase, NotifyTalkRequestUseCase],
 })
 export class NotificationsModule {}

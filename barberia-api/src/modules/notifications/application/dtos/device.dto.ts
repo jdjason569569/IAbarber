@@ -10,3 +10,10 @@ export interface NewBookingInput {
   /** `HH:mm`. */
   time: string;
 }
+
+export interface TalkRequestInput {
+  /** WhatsApp display name, when known. */
+  client?: string;
+  /** Phone without "+", when known. */
+  phone?: string;
+}

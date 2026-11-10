@@ -68,7 +68,7 @@ export class WhatsappWebhookController {
 
     for (const message of extractTextMessages(body)) {
       try {
-        // WhatsApp clients always book in the admin's workspace, never in the guest demo.
+        // WhatsApp clients always book in the admin's workspace.
         const handled = await WorkspaceContext.run(ADMIN_WORKSPACE, () => this.handleMessage.execute(message));
         this.logger.log(`${handled ? 'Answered' : 'Skipped repeated'} message ${message.id} from ${message.from}`);
       } catch (error) {

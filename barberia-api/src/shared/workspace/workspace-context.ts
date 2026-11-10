@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-export type WorkspaceRole = 'admin' | 'guest';
+export type WorkspaceRole = 'admin';
 
 /** Data space a request works on: appointments, hours and day blocks are separated by workspace. */
 export interface Workspace {
@@ -8,14 +8,10 @@ export interface Workspace {
   role: WorkspaceRole;
 }
 
-/** Fixed ids created by docs/migrations/001_workspaces.sql. */
+/** Fixed id created by docs/migrations/001_workspaces.sql. */
 export const ADMIN_WORKSPACE: Workspace = {
   id: '00000000-0000-0000-0000-000000000001',
   role: 'admin',
-};
-export const GUEST_WORKSPACE: Workspace = {
-  id: '00000000-0000-0000-0000-000000000002',
-  role: 'guest',
 };
 
 const storage = new AsyncLocalStorage<Workspace>();

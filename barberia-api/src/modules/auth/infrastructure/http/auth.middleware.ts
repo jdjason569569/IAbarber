@@ -19,7 +19,6 @@ const WHATSAPP_PREFIXES = ['/whatsapp/', '/bot/'];
 /**
  * Runs every app request inside its workspace:
  * - `Authorization: Bearer <token>` (admin logged in) → the admin's workspace.
- * - `X-Guest: 1` → the shared demo workspace.
  * - Nothing → 401.
  */
 @Injectable()
@@ -37,7 +36,6 @@ export class AuthMiddleware implements NestMiddleware {
     try {
       const workspace = await this.resolveWorkspace.execute({
         token: bearerToken(req.headers.authorization),
-        guest: req.headers['x-guest'] === '1',
       });
       WorkspaceContext.run(workspace, () => next());
     } catch (error) {

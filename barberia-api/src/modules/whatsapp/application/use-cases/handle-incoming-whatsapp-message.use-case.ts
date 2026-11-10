@@ -31,7 +31,8 @@ export class HandleIncomingWhatsappMessageUseCase {
       clientName: message.clientName,
       phone: message.from,
     });
-    await this.messenger.sendText(message.from, reply);
+    // Empty reply = the bot stays silent (the client is talking with the barber).
+    if (reply) await this.messenger.sendText(message.from, reply);
     return true;
   }
 }
