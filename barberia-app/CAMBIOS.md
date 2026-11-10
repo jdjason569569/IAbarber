@@ -1226,3 +1226,57 @@ npx ionic capacitor add android   # añadir plataforma Android
 - Se borró `features/statistics/data/statistics.mock.ts` y el interruptor "Datos de prueba" (con su aviso, textos y estilos).
 - `StatisticsService.getStatistics()` vuelve a pedir solo los datos reales a la API.
 - La preferencia guardada `barberia.statistics.mock` queda sin uso en los teléfonos que la tenían (no afecta nada).
+
+## 2026-11-10 · Logo de Space Barber Shop en el inicio de sesión
+
+- Nuevo `src/assets/images/logo-space.webp` (480 × 524, 67 KB), sacado de `barberia.jpeg` (1080 × 1187, 567 KB):
+  - fondo blanco quitado (transparente), para que se vea bien con fondo claro u oscuro;
+  - recortada la franja negra de 6 px que traía abajo la captura.
+- Pantalla de inicio de sesión: el logo va arriba del título. Su ancho se ajusta también a la altura de la pantalla (`min(62vw, 34vh, 240px)`), para que el formulario quepa en teléfonos bajos. Menos espacio arriba (12vh → 4vh).
+- Texto alternativo en el catálogo: `auth.logoAlt` ("Logo de Space Barber Shop").
+- `barberia.jpeg` (original) sigue en la raíz de `barberia-app/` y no se usa en la app.
+
+## 2026-11-10 · Paleta Space Barber Shop (propuesta A): app clara
+
+- Colores sacados del logo, en `src/theme/variables.scss`:
+
+  | Token | Color | Uso |
+  |---|---|---|
+  | primary | azul real `#2B3A9C` | botones, día elegido, micrófono |
+  | secondary | rojo poste `#E3263A` | acentos, botón de teclado, línea bajo la barra superior |
+  | tertiary | plata oscura `#6B7394` | etiqueta "sin cita" |
+  | success | verde `#1A8A50` | completar |
+  | danger | rojo `#D61F33` | cancelar, escuchando |
+  | fondo / tarjetas / texto | `#F4F5FA` / `#FFFFFF` / `#141A4A` | |
+  | barras superior e inferior | `#141A4A` | texto blanco |
+
+- `global.scss`:
+  - la app deja de ser siempre oscura (se quitó `dark.always.css`);
+  - la barra superior de cada pantalla es azul noche con una línea roja de 3 px;
+  - las barras secundarias (selector de día, Hoy/Semana/Mes) van sobre blanco;
+  - el título de las barras pasa de dorado a blanco.
+- Colores fijos pensados para fondo oscuro, adaptados:
+  - tarjeta de cita agendada: degradado hacia blanco y separadores con `--app-card-border`;
+  - sombra de las tarjetas de cita: nuevo token `--app-card-shadow`;
+  - versión de la app bajo las pestañas: usa `--ion-tab-bar-color`;
+  - gráficas de Estadísticas: azul = lo mejor / sobre el promedio, gris claro = el resto; tooltip azul noche con texto blanco.
+- Verificado: `ng build` sin errores; captura del inicio de sesión en tamaño de teléfono. Las pantallas con sesión no se pudieron ver aquí.
+
+## 2026-11-10 · Paleta Space oscura 3 ("Noche con blanco"); se deja la clara
+
+- La app clara (propuesta A) no gustó. Vuelve a ser siempre oscura (`dark.always.css` en `global.scss`), con los colores del logo:
+
+  | Token | Color | Uso |
+  |---|---|---|
+  | primary | blanco `#FFFFFF`, texto `#141A4A` | botones, día elegido, micrófono, mejor barra en gráficas |
+  | secondary | rojo poste `#E3263A` | acentos, botón de teclado, línea bajo la barra superior |
+  | tertiary | azul real `#4A63FF` | etiqueta "sin cita" |
+  | success / danger | `#34C27A` / `#EF3B4F` | completar / cancelar |
+  | fondo / tarjetas / texto | `#0B0E24` / `#161B3F` / `#FFFFFF` | |
+  | barras superior e inferior | `#0F1330` | línea roja de 3 px bajo la superior |
+
+- **Bug corregido.** La paleta oscura de Ionic fija fondo, tarjetas, barras y pestañas en `:root.md` / `:root.ios`, que pesan más que el `:root` de `variables.scss`. Por eso esos colores nunca se aplicaban: también con la paleta dorada se veían grises de Ionic (`#121212`, `#1e1e1e`). Ahora `variables.scss` usa `:root, :root.ios, :root.md`, y como carga después de `global.scss`, gana.
+- Barras secundarias (selector de día, Hoy/Semana/Mes) con el fondo de la página.
+- Gráficas: blanco = lo mejor / sobre el promedio, gris azulado = el resto.
+- Progreso de envío al asistente: degradado azul real → rojo. Antes empezaba en `primary`, que ahora es blanco, y su icono blanco no se veía.
+- Verificado: `ng build` sin errores; captura del inicio de sesión en tamaño de teléfono. Las pantallas con sesión no se pudieron ver aquí.

@@ -32,19 +32,33 @@
  * https://ionicframework.com/docs/theming/dark-mode
  */
 
-/* Always dark: the black-and-gold palette in theme/variables.scss is designed for it. */
+/* Always dark: the Space Barber Shop palette in theme/variables.scss is designed for it. */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.always.css";
 
-/* Header titles: bold, slightly spaced, in the brand gold. */
+/* Header titles: bold and slightly spaced, in the toolbar's white. */
 ion-title {
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: var(--ion-color-primary);
+}
+
+/* Main header bar: navy with the barber-pole red line under it, like the logo's ring. */
+ion-header ion-toolbar:first-of-type {
+  --border-color: var(--ion-color-secondary);
+  --border-width: 0 0 3px;
+  --border-style: solid;
+}
+
+/* Second bars of a header (day selector, period selector) take the page background, so the main bar
+   stands alone. */
+ion-header ion-toolbar:not(:first-of-type) {
+  --background: var(--ion-background-color);
+  --color: var(--ion-text-color);
+  --border-color: var(--ion-border-color);
 }
 
 /* Card shown after the assistant saves an appointment (BookedSummaryComponent): centered,
-   as tall as its content, with a gold edge. */
+   as tall as its content, with a white edge. */
 ion-modal.booked-summary-modal {
   --width: min(92vw, 400px);
   --height: auto;
@@ -66,7 +80,7 @@ ion-modal.booked-summary-modal .ion-page {
   white-space: pre-line;
 }
 
-/* Booking notice (push): app yellow background with dark text so it stands out. */
+/* Booking notice (push): solid white with navy text so it stands out on the dark app. */
 ion-alert.booking-alert {
   --background: var(--ion-color-primary);
 

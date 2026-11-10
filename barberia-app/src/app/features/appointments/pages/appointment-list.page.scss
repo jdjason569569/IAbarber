@@ -116,7 +116,7 @@
   }
 }
 
-/* Solid burgundy so it reads as an active option next to the gold microphone, not as a disabled button. */
+/* Solid red so it reads as an active option next to the white microphone, not as a disabled button. */
 .keyboard-button {
   width: 56px;
   height: 56px;
@@ -193,7 +193,7 @@
   text-transform: uppercase;
 }
 
-/* Appointment cards: separate rounded blocks on the charcoal background. */
+/* Appointment cards: separate deep-blue rounded blocks on the night-blue background. */
 .appt-list {
   padding: 6px 0 12px;
   background: transparent;
@@ -208,7 +208,7 @@
   border: 1px solid var(--app-card-border);
   border-left: 4px solid var(--state-color, var(--ion-color-primary));
   border-radius: var(--app-radius);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--app-card-shadow);
 }
 
 .appt-body {

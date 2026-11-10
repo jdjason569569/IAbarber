@@ -7,6 +7,6 @@ ion-tab-bar {
   padding: 2px 0 calc(4px + var(--ion-safe-area-bottom, 0px));
   text-align: center;
   font-size: 11px;
-  color: var(--ion-color-medium);
+  color: var(--ion-tab-bar-color, var(--ion-color-medium));
   background: var(--ion-tab-bar-background, var(--ion-background-color, #fff));
 }

@@ -6,17 +6,18 @@ import type { DailyStatistic, HourlyStatistic, PeriodTotals } from '../models/st
 const TOP_HOURS = 6;
 
 /**
- * Made for barbers, not analysts: one color carries meaning (gold = the best / above average,
- * gray = the rest) and every bar has its number written on it. Colors follow theme/variables.scss.
+ * Made for barbers, not analysts: one color carries meaning (white = the best / above average,
+ * gray-blue = the rest) and every bar has its number written on it. Colors follow theme/variables.scss.
  */
 const COLORS = {
-  best: '#d4a24c',
-  rest: '#6f675c',
-  text: '#f3ede4',
-  muted: '#a39b8f',
-  grid: '#2e2a25',
-  tooltip: '#17140f',
-  border: 'rgba(212, 162, 76, 0.35)',
+  best: '#ffffff',
+  rest: '#4a5170',
+  text: '#ffffff',
+  muted: '#a3aac8',
+  grid: '#232a55',
+  tooltip: '#0f1330',
+  tooltipText: '#ffffff',
+  border: 'rgba(227, 38, 58, 0.6)',
 };
 
 /** Texts and formatters the charts need; the page gives them from the i18n catalog. */
@@ -201,7 +202,7 @@ function tooltip(format: (index: number, value: number) => string): object {
     trigger: 'item',
     backgroundColor: COLORS.tooltip,
     borderColor: COLORS.border,
-    textStyle: { color: COLORS.text, fontSize: 12 },
+    textStyle: { color: COLORS.tooltipText, fontSize: 12 },
     confine: true,
     formatter: (p: { dataIndex: number; value: number }) => format(p.dataIndex, p.value),
   };

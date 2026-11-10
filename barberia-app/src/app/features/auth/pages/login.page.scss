@@ -1,7 +1,16 @@
 .login {
   max-width: 420px;
   margin: 0 auto;
-  padding-top: 12vh;
+  padding-top: 4vh;
+}
+
+/* Transparent background, so it works on light and dark themes. Sized by the screen height too,
+   so the form still fits on short phones. */
+.logo {
+  display: block;
+  width: min(62vw, 34vh, 240px);
+  height: auto;
+  margin: 0 auto 12px;
 }
 
 h1 {

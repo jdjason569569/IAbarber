@@ -13,6 +13,7 @@ export const MESSAGES_ES = {
 
   // Login (admin with email and password)
   'auth.title': 'BarberIA',
+  'auth.logoAlt': 'Logo de Space Barber Shop',
   'auth.subtitle': 'Ingresa con tu cuenta de administrador.',
   'auth.email': 'Correo',
   'auth.password': 'Contraseña',

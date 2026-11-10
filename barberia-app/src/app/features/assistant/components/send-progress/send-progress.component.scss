@@ -5,8 +5,9 @@
 }
 
 .send-progress {
-  --progress-color: var(--ion-color-primary);
-  --progress-color-end: var(--ion-color-tertiary);
+  /* Blue to red like a barber pole; primary is white, and the icon on this gradient is white too. */
+  --progress-color: var(--ion-color-tertiary);
+  --progress-color-end: var(--ion-color-secondary);
 
   width: 100%;
   max-width: 420px;
