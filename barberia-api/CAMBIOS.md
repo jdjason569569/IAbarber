@@ -632,3 +632,7 @@ This file records, in chronological order, every change made to the backend.
 - open-wa no envía el teléfono, así que el silencio se guarda por el nombre de WhatsApp del cliente; en Meta, por el número.
 - El silencio vive en memoria: si Render reinicia la API, el bot vuelve a responder antes de los 30 minutos.
 - Probado localmente con repositorios en memoria (menú, opción 1, opción 2, silencio, reserva directa).
+
+## 2026-11-10 · Sin push cuando el cliente pide hablar con el barbero
+
+- Se quitó `NotifyTalkRequestUseCase`: al elegir "2" el bot ya no envía ninguna notificación a la app. Solo responde al cliente ("Listo 👍, el barbero te escribe en un momento por aquí.") y se calla 30 minutos con él.

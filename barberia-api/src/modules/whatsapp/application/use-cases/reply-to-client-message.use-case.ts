@@ -3,7 +3,6 @@ import { ListAppointmentsUseCase } from '../../../appointments/application/use-c
 import { ListAvailableSlotsUseCase } from '../../../appointments/application/use-cases/list-available-slots.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../../appointments/application/use-cases/schedule-appointment.use-case.js';
 import { NotifyNewBookingUseCase } from '../../../notifications/application/use-cases/notify-new-booking.use-case.js';
-import { NotifyTalkRequestUseCase } from '../../../notifications/application/use-cases/notify-talk-request.use-case.js';
 import type { AppointmentDto, DaySlotsDto, ScheduleAppointmentInput } from '../../../appointments/application/dtos/appointment.dto.js';
 import { DomainError } from '../../../../shared/errors/domain.error.js';
 import { localIsoDate } from '../../../../shared/utils/local-date.js';
@@ -34,8 +33,8 @@ const dateFormat = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'num
  * Answers a client who writes on WhatsApp:
  * - A greeting (or anything without a time) gets a menu: 1 book, 2 talk with the barber.
  * - "1" (or "cita", "agendar"...) lists the free slots of today and tomorrow.
- * - "2" (or "barbero", "hablar"...) tells the barber with a push, and the bot stays silent with that
- *   client for HANDOFF_MINUTES so the barber answers from the same WhatsApp. An empty reply means
+ * - "2" (or "barbero", "hablar"...) makes the bot stay silent with that client for HANDOFF_MINUTES,
+ *   so the barber answers from the same WhatsApp (no push is sent to the app). An empty reply means
  *   "send nothing" (the open-wa bot and the Meta webhook both skip it).
  * - A message with a name and a time books that slot directly.
  * When the phone is known, a client can hold only one pending booking.
@@ -47,7 +46,6 @@ export class ReplyToClientMessageUseCase {
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
     private readonly listAppointments: ListAppointmentsUseCase,
     private readonly notifyNewBooking: NotifyNewBookingUseCase,
-    private readonly notifyTalkRequest: NotifyTalkRequestUseCase,
     @Inject(HANDOFF_REPOSITORY) private readonly handoffs: HandoffRepository,
   ) {}
 
@@ -66,8 +64,7 @@ export class ReplyToClientMessageUseCase {
 
     if (chosen === 'talk') {
       if (key) await this.handoffs.silence(key, handoffEnd());
-      await this.notifyTalkRequest.execute({ client: input.clientName, phone: input.phone });
-      return { reply: 'Listo 👍, ya le avisé al barbero. Te escribe en un momento por aquí.' };
+      return { reply: 'Listo 👍, el barbero te escribe en un momento por aquí.' };
     }
 
     const pending = input.phone ? await this.findPendingBooking(input.phone) : undefined;
