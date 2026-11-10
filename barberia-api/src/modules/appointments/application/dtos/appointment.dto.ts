@@ -12,6 +12,8 @@ export interface AppointmentDto {
   walkIn: boolean;
   completed: boolean;
   phone: string | null;
+  /** WhatsApp chat id when booked through the open-wa bot; null otherwise. */
+  chatId: string | null;
 }
 
 export interface ScheduleAppointmentInput {
@@ -20,8 +22,10 @@ export interface ScheduleAppointmentInput {
   time: string;
   serviceCost: number;
   extras: AppointmentExtra[];
-  /** Set when the client booked on WhatsApp. */
+  /** Set when the client booked on WhatsApp through Meta. */
   phone?: string;
+  /** Set when the client booked on WhatsApp through the open-wa bot. */
+  chatId?: string;
 }
 
 export interface UpdateAppointmentInput {
@@ -61,5 +65,6 @@ export function toAppointmentDto(a: Appointment): AppointmentDto {
     walkIn: a.walkIn,
     completed: a.completed,
     phone: a.phone,
+    chatId: a.chatId,
   };
 }

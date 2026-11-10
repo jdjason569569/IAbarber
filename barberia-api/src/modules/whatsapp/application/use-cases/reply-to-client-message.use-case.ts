@@ -10,6 +10,8 @@ import { localIsoDate } from '../../../../shared/utils/local-date.js';
 import { BookingMessage } from '../../domain/entities/booking-message.entity.js';
 import type { BookingDay } from '../../domain/entities/booking-message.entity.js';
 import { ClientChoice } from '../../domain/entities/client-choice.entity.js';
+import { CLIENT_ACTIVITY_REPOSITORY } from '../../domain/ports/client-activity.repository.js';
+import type { ClientActivityRepository } from '../../domain/ports/client-activity.repository.js';
 import { HANDOFF_REPOSITORY } from '../../domain/ports/handoff.repository.js';
 import type { HandoffRepository } from '../../domain/ports/handoff.repository.js';
 import type { ClientMessageInput, ClientMessageReply } from '../dtos/client-message.dto.js';
@@ -30,6 +32,20 @@ const DAY_PARTS: { label: string; from: number; to: number }[] = [
 
 /** After asking for the barber, the bot stays silent with the client this long (renewed by each message). */
 const HANDOFF_MINUTES = 10;
+
+// Abuse protection (per client: phone, chat id, or name as a fallback).
+/** More than FLOOD_MAX_MESSAGES within FLOOD_WINDOW_MINUTES: one notice, then FLOOD_SILENCE_MINUTES of silence. */
+const FLOOD_MAX_MESSAGES = 8;
+const FLOOD_WINDOW_MINUTES = 5;
+const FLOOD_SILENCE_MINUTES = 30;
+/** The same text again within this time gets no answer (also stops loops with other bots). */
+const REPEAT_MINUTES = 10;
+/** WhatsApp bookings in the last hour, across all clients, before the bot stops booking. */
+const MAX_BOOKINGS_PER_HOUR = 6;
+
+const FLOOD_REPLY = 'Estás enviando muchos mensajes seguidos 🙏. El barbero te escribe en un rato por aquí.';
+const BOOKINGS_FULL_REPLY =
+  'En este momento no podemos agendar más citas por WhatsApp 😕. Responde *2* y el barbero te ayuda.';
 
 const TALK_HINT = 'Si prefieres hablar con el barbero, responde *2*.';
 
@@ -55,14 +71,20 @@ export class ReplyToClientMessageUseCase {
     private readonly notifyNewBooking: NotifyNewBookingUseCase,
     @Inject(HANDOFF_REPOSITORY) private readonly handoffs: HandoffRepository,
     private readonly servicePrice: GetServicePriceUseCase,
+    @Inject(CLIENT_ACTIVITY_REPOSITORY) private readonly activity: ClientActivityRepository,
   ) {}
 
   async execute(input: ClientMessageInput): Promise<ClientMessageReply> {
     const key = clientKey(input);
-    if (key && (await this.handoffs.silencedUntil(key))) {
-      // The client is talking with the barber: stay silent, and keep the silence while they talk.
-      await this.handoffs.silence(key, handoffEnd());
-      return { reply: '' };
+    if (key) {
+      const until = await this.handoffs.silencedUntil(key);
+      if (until) {
+        // Talking with the barber, or flooding: stay silent, and keep the silence while they write.
+        await this.handoffs.silence(key, Math.max(until, handoffEnd()));
+        return { reply: '' };
+      }
+      const stop = await this.guardAgainstAbuse(key, input.text);
+      if (stop !== undefined) return { reply: stop };
     }
 
     const message = BookingMessage.parse(input.text);
@@ -75,7 +97,7 @@ export class ReplyToClientMessageUseCase {
       return { reply: 'Listo 👍, el barbero te escribe en un momento por aquí.' };
     }
 
-    const pending = input.phone ? await this.findPendingBooking(input.phone) : undefined;
+    const pending = await this.findPendingBooking(input);
     if (pending) {
       return {
         reply:
@@ -104,6 +126,11 @@ export class ReplyToClientMessageUseCase {
       return { reply: `Esa hora no está disponible 😕.\n\n${listSlots(days)}\n\n${HOW_TO_BOOK}` };
     }
 
+    // Safety net for someone booking under many names: a few WhatsApp bookings per hour at most.
+    if ((await this.activity.bookingsSince(Date.now() - 60 * 60_000)) >= MAX_BOOKINGS_PER_HOUR) {
+      return { reply: BOOKINGS_FULL_REPLY };
+    }
+
     const price = await this.priceForBooking();
     const booking: ScheduleAppointmentInput = {
       client: message.client,
@@ -112,6 +139,7 @@ export class ReplyToClientMessageUseCase {
       serviceCost: price,
       extras: [],
       phone: input.phone,
+      chatId: input.chatId,
     };
     try {
       await this.scheduleAppointment.execute(booking);
@@ -121,6 +149,7 @@ export class ReplyToClientMessageUseCase {
       const fresh = await this.listSlots();
       return { reply: `Esa hora se acaba de ocupar 😕.\n\n${listSlots(fresh)}\n\n${HOW_TO_BOOK}` };
     }
+    await this.activity.recordBooking(Date.now());
     // Tell the barber's phone; it never throws, so the client always gets the confirmation.
     await this.notifyNewBooking.execute({ client: message.client, date: slot.date, time: slot.time });
 
@@ -146,12 +175,35 @@ export class ReplyToClientMessageUseCase {
     }
   }
 
-  /** The client's booking that still holds a future slot, if any. */
-  private async findPendingBooking(phone: string): Promise<AppointmentDto | undefined> {
+  /**
+   * Floods and repeats. Returns the reply that ends the turn ('' = send nothing), or undefined
+   * when the message may be answered normally.
+   */
+  private async guardAgainstAbuse(key: string, text: string): Promise<string | undefined> {
+    const now = Date.now();
+    const normalized = text.trim().toLowerCase().replace(/\s+/g, ' ');
+    const activity = await this.activity.recordMessage(key, normalized, now, FLOOD_WINDOW_MINUTES * 60_000);
+    if (activity.messagesInWindow > FLOOD_MAX_MESSAGES) {
+      // One notice; the silence then swallows the rest (checked first on each message).
+      await this.handoffs.silence(key, now + FLOOD_SILENCE_MINUTES * 60_000);
+      return FLOOD_REPLY;
+    }
+    const { previous } = activity;
+    if (previous && previous.text === normalized && now - previous.at < REPEAT_MINUTES * 60_000) {
+      return '';
+    }
+    return undefined;
+  }
+
+  /** The client's booking that still holds a future slot, found by phone (Meta) or chat id (open-wa). */
+  private async findPendingBooking(input: ClientMessageInput): Promise<AppointmentDto | undefined> {
+    const { phone, chatId } = input;
+    if (!phone && !chatId) return undefined;
     const now = Date.now();
     return (await this.listAppointments.execute()).find(
       (a) =>
-        a.phone === phone && !a.cancelled && !a.walkIn && !a.completed &&
+        ((phone && a.phone === phone) || (chatId && a.chatId === chatId)) &&
+        !a.cancelled && !a.walkIn && !a.completed &&
         new Date(`${a.date}T${a.time}:00`).getTime() > now,
     );
   }

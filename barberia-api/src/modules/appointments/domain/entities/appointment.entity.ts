@@ -20,6 +20,8 @@ export interface AppointmentProps {
   completed: boolean;
   /** Client phone in international format without "+" (e.g. 573001234567); null when unknown. */
   phone: string | null;
+  /** WhatsApp chat id of the client who booked through the open-wa bot ("…@lid"); null otherwise. */
+  chatId: string | null;
 }
 
 /** Id assigned to an appointment that has not been persisted yet. */
@@ -50,7 +52,11 @@ export class Appointment {
   private constructor(private readonly props: AppointmentProps) {}
 
   static create(
-    props: Omit<AppointmentProps, 'id' | 'cancelled' | 'walkIn' | 'completed' | 'phone'> & { walkIn?: boolean; phone?: string | null },
+    props: Omit<AppointmentProps, 'id' | 'cancelled' | 'walkIn' | 'completed' | 'phone' | 'chatId'> & {
+      walkIn?: boolean;
+      phone?: string | null;
+      chatId?: string | null;
+    },
   ): Appointment {
     if (!props.client.trim()) {
       throw new InvalidAppointmentError('Client name is required');
@@ -65,7 +71,16 @@ export class Appointment {
       throw new InvalidAppointmentError(`Invalid time: ${props.time}`);
     }
     const phone = props.phone?.replace(/\D/g, '') || null;
-    return new Appointment({ ...props, id: UNSAVED_APPOINTMENT_ID, cancelled: false, walkIn: props.walkIn ?? false, completed: false, phone });
+    const chatId = props.chatId?.trim() || null;
+    return new Appointment({
+      ...props,
+      id: UNSAVED_APPOINTMENT_ID,
+      cancelled: false,
+      walkIn: props.walkIn ?? false,
+      completed: false,
+      phone,
+      chatId,
+    });
   }
 
   static restore(props: AppointmentProps): Appointment {
@@ -111,6 +126,7 @@ export class Appointment {
   get walkIn(): boolean { return this.props.walkIn; }
   get completed(): boolean { return this.props.completed; }
   get phone(): string | null { return this.props.phone; }
+  get chatId(): string | null { return this.props.chatId; }
 
   get isActive(): boolean { return !this.props.cancelled; }
 

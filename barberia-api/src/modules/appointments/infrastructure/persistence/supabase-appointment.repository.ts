@@ -18,6 +18,8 @@ interface AppointmentRow {
   walk_in: boolean;
   completed: boolean;
   phone: string | null;
+  /** Migration 005; missing (undefined) on a database without it. */
+  whatsapp_chat_id?: string | null;
 }
 
 const TABLE = 'appointments';
@@ -78,6 +80,8 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
       walk_in: appointment.walkIn,
       completed: appointment.completed,
       phone: appointment.phone,
+      // Only written when set, so app edits keep working on a database without migration 005.
+      ...(appointment.chatId ? { whatsapp_chat_id: appointment.chatId } : {}),
     };
     const query =
       appointment.id === UNSAVED_APPOINTMENT_ID
@@ -107,5 +111,6 @@ function toEntity(row: AppointmentRow): Appointment {
     walkIn: row.walk_in ?? false,
     completed: row.completed ?? false,
     phone: row.phone ?? null,
+    chatId: row.whatsapp_chat_id ?? null,
   });
 }

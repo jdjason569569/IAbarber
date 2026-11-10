@@ -725,3 +725,30 @@ This file records, in chronological order, every change made to the backend.
 
 **Pending / notes**
 - Silences are in memory: a Render restart clears them.
+
+---
+
+## 2026-11-10 · WhatsApp bot: abuse protection
+
+**What was done**
+- New port `ClientActivityRepository` with the in-memory adapter `InMemoryClientActivityRepository`. It keeps the last messages per client (at most 1000 clients) and the WhatsApp booking times.
+- `ReplyToClientMessageUseCase`, per client key (phone, chat id, or name as a fallback):
+  1. **Flood**: more than 8 messages in 5 minutes → one notice ("Estás enviando muchos mensajes seguidos…"), then 30 minutes of silence. The silence uses `HandoffRepository`, and each new message keeps it, now with `max(current, +10 min)` so a longer silence is not shortened.
+  2. **Repeat**: the same text (trimmed, lowercase) as the client's previous message within 10 minutes gets no answer. This also stops loops with other bots.
+  3. **One pending booking per client**: now also for open-wa, by chat id (before, only Meta, by phone).
+  4. **Booking cap**: at most 6 WhatsApp bookings per hour across all clients; the next client is asked to answer *2*.
+- Appointments store the chat id:
+  - entity `chatId`, `AppointmentDto.chatId` and `ScheduleAppointmentInput.chatId`;
+  - Supabase column `whatsapp_chat_id` (`docs/migrations/005_whatsapp_chat_id.sql`, also in `schema.sql`);
+  - the Supabase adapter only writes the column when it has a value.
+
+**Current state**
+- Verified locally with in-memory repositories:
+  - the 9th message in a row gets the notice, the 10th nothing;
+  - a repeated "hola" gets nothing;
+  - a second booking from the same chat gets the pending reminder;
+  - the 7th booking within the hour gets the "full" reply.
+
+**Pending / notes**
+- **Apply migration 005 in Supabase before deploying.** The updated bot always sends `chatId`, so without the column every open-wa booking would fail.
+- Limits live in memory: a Render restart resets them.

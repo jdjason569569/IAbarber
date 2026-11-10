@@ -48,6 +48,7 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
       walkIn: appointment.walkIn,
       completed: appointment.completed,
       phone: appointment.phone,
+      chatId: appointment.chatId,
     });
     items.push(stored);
     return stored;

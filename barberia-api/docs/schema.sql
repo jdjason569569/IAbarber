@@ -136,3 +136,7 @@ alter table appointments add column if not exists phone text;
 create index if not exists appointments_phone_idx on appointments (phone) where phone is not null;
 
 -- Migration: workspaces (admin / guest separated data). See docs/migrations/001_workspaces.sql.
+
+-- WhatsApp chat id of the client who booked through the open-wa bot (docs/migrations/005_whatsapp_chat_id.sql).
+alter table appointments add column if not exists whatsapp_chat_id text;
+create index if not exists appointments_whatsapp_chat_id_idx on appointments (whatsapp_chat_id) where whatsapp_chat_id is not null;
