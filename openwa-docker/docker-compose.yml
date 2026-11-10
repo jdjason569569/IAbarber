@@ -7,6 +7,14 @@
 # Antes de vincular, apaga el open-wa y el bot.js del PC: con los dos activos,
 # cada mensaje se respondería dos veces.
 
+# Los logs guardan nombres y mensajes de los clientes: se rotan para no llenar el disco
+# ni guardarlos para siempre (como mucho 3 archivos de 10 MB por contenedor).
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   openwa:
     build:
@@ -15,6 +23,7 @@ services:
       dockerfile: ${DOCKERFILE:-Dockerfile}
     init: true
     restart: unless-stopped
+    logging: *logging
     shm_size: 1gb
     ports:
       # Solo accesible desde este PC: quien entre al panel controla el WhatsApp.
@@ -26,6 +35,7 @@ services:
     image: node:24-bookworm-slim
     init: true
     restart: unless-stopped
+    logging: *logging
     user: node
     depends_on:
       - openwa

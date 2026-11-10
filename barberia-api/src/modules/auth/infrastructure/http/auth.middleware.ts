@@ -10,8 +10,11 @@ import { ResolveWorkspaceUseCase } from '../../application/use-cases/resolve-wor
 import { NoWorkspaceError } from '../../domain/errors/no-workspace.error.js';
 import { UnauthorizedError } from '../../domain/errors/unauthorized.error.js';
 
-/** WhatsApp routes are called by Meta and the open-wa bot; they always use the admin workspace. */
-const WHATSAPP_PREFIX = '/whatsapp/';
+/**
+ * WhatsApp routes are called by Meta and the open-wa bot; they always use the admin workspace and
+ * check their own credentials (Meta's signature, the bot secret).
+ */
+const WHATSAPP_PREFIXES = ['/whatsapp/', '/bot/'];
 
 /**
  * Runs every app request inside its workspace:
@@ -26,7 +29,7 @@ export class AuthMiddleware implements NestMiddleware {
   async use(req: Request, _res: Response, next: NextFunction): Promise<void> {
     if (
       req.method === 'OPTIONS' ||
-      req.originalUrl.startsWith(WHATSAPP_PREFIX)
+      WHATSAPP_PREFIXES.some((prefix) => req.originalUrl.startsWith(prefix))
     ) {
       next();
       return;

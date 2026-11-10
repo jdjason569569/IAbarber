@@ -559,3 +559,31 @@ This file records, in chronological order, every change made to the backend.
 
 **Pending / notes**
 - `FIREBASE_SERVICE_ACCOUNT` = base64 (one line, `base64 -w 0`) of the service-account JSON, in `.env` and on Render. Without it, pushes are only logged.
+
+---
+
+## 2026-11-10 · Bot secret for the open-wa reply route
+
+**What was done**
+- `POST /whatsapp/reply` was public: anyone could book every free slot and flood the barber with push notifications.
+- New env var `WHATSAPP_BOT_SECRET`. When set:
+  - only `POST /bot/<secret>/whatsapp/reply` answers;
+  - the open `POST /whatsapp/reply` returns 403.
+- Without the variable, `/whatsapp/reply` works as before (local development) and the `/bot/...` route always returns 403.
+- The secret goes in the path because `bot.js` cannot send headers. The bot only changes its config: `BACKEND_URL=https://iabarber.onrender.com/bot/<secret>`.
+- Constant-time comparison of SHA-256 digests (`whatsapp.controller.ts`).
+- `AuthMiddleware` skips `/bot/` as well as `/whatsapp/`; both check their own credentials.
+
+**Current state**
+- Verified locally with in-memory repositories:
+  - with the secret: open route 403, wrong secret 403, right secret 200, empty text 400, app routes still 401 without token;
+  - without the secret: open route 200, `/bot/...` 403.
+
+**Pending / notes**
+- Rollout order:
+  1. deploy this code (nothing changes yet);
+  2. set `WHATSAPP_BOT_SECRET` on Render;
+  3. right after, set `BACKEND_URL` in the server's `openwa-docker/.env` and recreate the bot.
+  Between steps 2 and 3 the bot cannot get replies.
+- The secret is part of the URL, so it can show up in request logs; rotate it by changing both places.
+- No rate limiting yet.
