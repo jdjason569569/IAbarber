@@ -782,3 +782,10 @@ This file records, in chronological order, every change made to the backend.
 
 **Pending / notes**
 - **Apply migration 006 in Supabase before deploying.**
+
+---
+
+## 2026-11-11 · WhatsApp bot: looser flood limit
+
+**What was done**
+- Flood limit changed from 8 messages in 5 minutes to **15 messages in 3 minutes** (`FLOOD_MAX_MESSAGES`, `FLOOD_WINDOW_MINUTES`). The 16th message gets the notice, then 30 minutes of silence as before.

@@ -39,8 +39,8 @@ const HANDOFF_MINUTES = 10;
 
 // Abuse protection (per client: phone, chat id, or name as a fallback).
 /** More than FLOOD_MAX_MESSAGES within FLOOD_WINDOW_MINUTES: one notice, then FLOOD_SILENCE_MINUTES of silence. */
-const FLOOD_MAX_MESSAGES = 8;
-const FLOOD_WINDOW_MINUTES = 5;
+const FLOOD_MAX_MESSAGES = 15;
+const FLOOD_WINDOW_MINUTES = 3;
 const FLOOD_SILENCE_MINUTES = 30;
 /** The same text again within this time gets no answer (also stops loops with other bots). */
 const REPEAT_MINUTES = 10;
