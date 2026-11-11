@@ -14,6 +14,8 @@ export interface AppointmentDto {
   phone: string | null;
   /** WhatsApp chat id when booked through the open-wa bot; null otherwise. */
   chatId: string | null;
+  /** Times the client moved it to another slot from WhatsApp. */
+  rescheduleCount: number;
 }
 
 export interface ScheduleAppointmentInput {
@@ -66,5 +68,6 @@ export function toAppointmentDto(a: Appointment): AppointmentDto {
     completed: a.completed,
     phone: a.phone,
     chatId: a.chatId,
+    rescheduleCount: a.rescheduleCount,
   };
 }

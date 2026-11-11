@@ -1,0 +1,103 @@
+.onboarding {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) 0 calc(16px + env(safe-area-inset-bottom));
+}
+
+.top {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 48px;
+  padding: 0 8px;
+}
+
+/* Native horizontal scroll with snapping: one card per screen, swiped with the finger. */
+.track {
+  flex: 1;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.slide {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  scroll-snap-align: center;
+}
+
+.card {
+  width: 100%;
+  padding: 36px 24px;
+  text-align: center;
+  background: var(--ion-card-background, var(--ion-item-background));
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-card-shadow);
+
+  h2 {
+    margin: 24px 0 12px;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.5;
+    color: var(--ion-color-medium);
+  }
+}
+
+.icon-circle {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--ion-color-secondary);
+
+  ion-icon {
+    font-size: 48px;
+    color: var(--ion-color-secondary-contrast);
+  }
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 20px 0;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: var(--ion-color-medium);
+  opacity: 0.5;
+  transition: width 0.2s ease, opacity 0.2s ease;
+
+  &.active {
+    width: 24px;
+    opacity: 1;
+    background: var(--ion-color-primary);
+  }
+}
+
+.next {
+  margin: 0 16px;
+}

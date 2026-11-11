@@ -1,0 +1,39 @@
+<ion-content [scrollY]="false">
+  <div class="onboarding">
+    <div class="top">
+      @if (!isLast()) {
+        <ion-button fill="clear" color="medium" (click)="finish()">{{ 'onboarding.skip' | t }}</ion-button>
+      }
+    </div>
+
+    <div #track class="track" (scroll)="onScroll()">
+      @for (slide of slides; track slide.title) {
+        <section class="slide">
+          <div class="card">
+            <div class="icon-circle">
+              <ion-icon [name]="slide.icon" aria-hidden="true"></ion-icon>
+            </div>
+            <h2>{{ slide.title | t }}</h2>
+            <p>{{ slide.text | t }}</p>
+          </div>
+        </section>
+      }
+    </div>
+
+    <div class="dots">
+      @for (slide of slides; track slide.title; let i = $index) {
+        <button
+          type="button"
+          class="dot"
+          [class.active]="i === current()"
+          [attr.aria-label]="'onboarding.goToCard' | t: { number: i + 1 }"
+          (click)="goTo(i)"
+        ></button>
+      }
+    </div>
+
+    <ion-button expand="block" class="next" (click)="next()">
+      {{ (isLast() ? 'onboarding.start' : 'onboarding.next') | t }}
+    </ion-button>
+  </div>
+</ion-content>

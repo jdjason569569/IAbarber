@@ -49,6 +49,7 @@ export class InMemoryAppointmentRepository implements AppointmentRepository {
       completed: appointment.completed,
       phone: appointment.phone,
       chatId: appointment.chatId,
+      rescheduleCount: appointment.rescheduleCount,
     });
     items.push(stored);
     return stored;

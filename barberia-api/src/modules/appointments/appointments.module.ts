@@ -4,6 +4,7 @@ import { BusinessHoursModule } from '../business-hours/business-hours.module.js'
 import { ListAppointmentsUseCase } from './application/use-cases/list-appointments.use-case.js';
 import { ListAvailableSlotsUseCase } from './application/use-cases/list-available-slots.use-case.js';
 import { RegisterWalkInUseCase } from './application/use-cases/register-walk-in.use-case.js';
+import { RescheduleAppointmentUseCase } from './application/use-cases/reschedule-appointment.use-case.js';
 import { ScheduleAppointmentUseCase } from './application/use-cases/schedule-appointment.use-case.js';
 import { SetAppointmentCancelledUseCase } from './application/use-cases/set-appointment-cancelled.use-case.js';
 import { SetAppointmentCompletedUseCase } from './application/use-cases/set-appointment-completed.use-case.js';
@@ -27,6 +28,7 @@ const useSupabase = isSupabaseConfigured;
     ScheduleAppointmentUseCase,
     RegisterWalkInUseCase,
     SetAppointmentCancelledUseCase,
+    RescheduleAppointmentUseCase,
     SetAppointmentCompletedUseCase,
     UpdateAppointmentUseCase,
     UpdateDayBlocksUseCase,
@@ -41,6 +43,7 @@ const useSupabase = isSupabaseConfigured;
     ScheduleAppointmentUseCase,
     RegisterWalkInUseCase,
     SetAppointmentCancelledUseCase,
+    RescheduleAppointmentUseCase,
   ],
 })
 export class AppointmentsModule {}

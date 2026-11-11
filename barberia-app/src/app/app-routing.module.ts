@@ -1,16 +1,23 @@
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 import { noSessionGuard, sessionGuard } from './core/auth/auth.guards';
+import { onboardingDoneGuard, onboardingPendingGuard } from './core/onboarding/onboarding.guards';
 
 const routes: Routes = [
   {
+    path: 'onboarding',
+    canActivate: [onboardingPendingGuard],
+    loadChildren: () =>
+      import('./features/onboarding/onboarding.routes').then((m) => m.ONBOARDING_ROUTES),
+  },
+  {
     path: 'login',
-    canActivate: [noSessionGuard],
+    canActivate: [onboardingDoneGuard, noSessionGuard],
     loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
   {
     path: '',
-    canActivate: [sessionGuard],
+    canActivate: [onboardingDoneGuard, sessionGuard],
     loadComponent: () => import('./core/layout/tabs.page').then((m) => m.TabsPage),
     children: [
       {

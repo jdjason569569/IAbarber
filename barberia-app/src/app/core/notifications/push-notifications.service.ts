@@ -156,6 +156,9 @@ export class PushNotificationsService {
    */
   private async addTappedBooking(notification: PushNotificationSchema): Promise<void> {
     await this.collectDeliveredBookings();
+    // Cancelled or moved bookings: opening the refreshed appointments is notice enough.
+    const type = notification.data?.type as string | undefined;
+    if (type && type !== 'new-booking') return;
     const date = notification.data?.date as string | undefined;
     const time = notification.data?.time as string | undefined;
     if (!date || !time || this.unseen.size === 0) return;

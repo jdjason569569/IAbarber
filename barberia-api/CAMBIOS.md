@@ -752,3 +752,33 @@ This file records, in chronological order, every change made to the backend.
 **Pending / notes**
 - **Apply migration 005 in Supabase before deploying.** The updated bot always sends `chatId`, so without the column every open-wa booking would fail.
 - Limits live in memory: a Render restart resets them.
+
+---
+
+## 2026-11-11 · WhatsApp bot: clients cancel or move their booking
+
+**What was done**
+- A client with a pending booking (found by phone on Meta or chat id on open-wa) gets the menu of that booking: **3** cancel, **4** change the time, **2** talk with the barber.
+  - **Cancel** asks for confirmation: the client answers *SI CANCELAR* (also "sí, cancelar"). The booking is cancelled with `SetAppointmentCancelledUseCase`.
+  - **Change the time**: "4" (or "cambiar", "reagendar", "mover"…) lists the free slots of today and tomorrow. Then a message with a day and time moves the booking; no name is needed. An ambiguous hour gets the morning/evening question, with answers to copy that carry no name.
+  - **Limits**: no changes by the bot less than 30 minutes before the booking (`CHANGE_CUTOFF_MINUTES`), and only one move per booking (`MAX_RESCHEDULES`). In both cases the client is asked to answer *2*.
+  - Without a pending booking, "3" and "4" get the normal menu.
+- `ClientChoice`: new kinds `cancel`, `confirmCancel` and `reschedule`, with menu numbers 3 and 4 and their words. Cancel and move win over book ("quiero cancelar mi cita").
+- Appointments:
+  - new use case `RescheduleAppointmentUseCase`. It moves the booking in the same record and checks barber blocks and clashes, like reactivating a booking does;
+  - entity method `rescheduledTo(date, time)` (pending bookings only) and counter `rescheduleCount`, also in `AppointmentDto`;
+  - Supabase column `reschedule_count` (`docs/migrations/006_appointment_reschedule_count.sql`, also in `schema.sql`). The adapter only writes it when it is above 0.
+- Notifications: new use case `NotifyBookingChangeUseCase`, which sends the push "❌ Cita cancelada" or "🔁 Cita reagendada" (`data.type` = `booking-cancelled` or `booking-rescheduled`).
+- Moving a booking does not count toward the 6 bookings per hour cap.
+
+**Current state**
+- Verified locally with in-memory repositories:
+  - menu of the pending booking;
+  - cancel with confirmation;
+  - move, plus the "same time" and "ambiguous hour" answers;
+  - the second move is refused;
+  - the 30-minute cutoff;
+  - another chat cannot touch the booking.
+
+**Pending / notes**
+- **Apply migration 006 in Supabase before deploying.**

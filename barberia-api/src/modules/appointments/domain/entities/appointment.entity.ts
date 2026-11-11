@@ -22,6 +22,8 @@ export interface AppointmentProps {
   phone: string | null;
   /** WhatsApp chat id of the client who booked through the open-wa bot ("…@lid"); null otherwise. */
   chatId: string | null;
+  /** Times the client moved the appointment to another date or time (WhatsApp allows one). */
+  rescheduleCount: number;
 }
 
 /** Id assigned to an appointment that has not been persisted yet. */
@@ -48,11 +50,23 @@ function isValidDate(value: string): boolean {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value);
 }
 
+function assertValidSlot(date: string, time: string): void {
+  if (!isValidDate(date)) {
+    throw new InvalidAppointmentError(`Invalid date: ${date}`);
+  }
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+    throw new InvalidAppointmentError(`Invalid time: ${time}`);
+  }
+}
+
 export class Appointment {
   private constructor(private readonly props: AppointmentProps) {}
 
   static create(
-    props: Omit<AppointmentProps, 'id' | 'cancelled' | 'walkIn' | 'completed' | 'phone' | 'chatId'> & {
+    props: Omit<
+      AppointmentProps,
+      'id' | 'cancelled' | 'walkIn' | 'completed' | 'phone' | 'chatId' | 'rescheduleCount'
+    > & {
       walkIn?: boolean;
       phone?: string | null;
       chatId?: string | null;
@@ -64,12 +78,7 @@ export class Appointment {
     if (props.serviceCost < 0) {
       throw new InvalidAppointmentError('Service cost cannot be negative');
     }
-    if (!isValidDate(props.date)) {
-      throw new InvalidAppointmentError(`Invalid date: ${props.date}`);
-    }
-    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(props.time)) {
-      throw new InvalidAppointmentError(`Invalid time: ${props.time}`);
-    }
+    assertValidSlot(props.date, props.time);
     const phone = props.phone?.replace(/\D/g, '') || null;
     const chatId = props.chatId?.trim() || null;
     return new Appointment({
@@ -80,6 +89,7 @@ export class Appointment {
       completed: false,
       phone,
       chatId,
+      rescheduleCount: 0,
     });
   }
 
@@ -116,6 +126,15 @@ export class Appointment {
     return new Appointment({ ...this.props, time });
   }
 
+  /** The client moves a pending booking to another slot; each move is counted. */
+  rescheduledTo(date: string, time: string): Appointment {
+    if (!this.holdsSlot) {
+      throw new InvalidAppointmentError('Only a pending booking can be rescheduled');
+    }
+    assertValidSlot(date, time);
+    return new Appointment({ ...this.props, date, time, rescheduleCount: this.props.rescheduleCount + 1 });
+  }
+
   get id(): number { return this.props.id; }
   get client(): string { return this.props.client; }
   get date(): string { return this.props.date; }
@@ -127,6 +146,7 @@ export class Appointment {
   get completed(): boolean { return this.props.completed; }
   get phone(): string | null { return this.props.phone; }
   get chatId(): string | null { return this.props.chatId; }
+  get rescheduleCount(): number { return this.props.rescheduleCount; }
 
   get isActive(): boolean { return !this.props.cancelled; }
 

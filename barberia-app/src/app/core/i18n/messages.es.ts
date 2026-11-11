@@ -11,6 +11,28 @@ export const MESSAGES_ES = {
   'app.version': 'Versión {version}',
   'app.versionWithRole': 'Versión {version} · {role}',
 
+  // Welcome tutorial (shown once, the first time the app opens)
+  'onboarding.skip': 'Saltar',
+  'onboarding.next': 'Siguiente',
+  'onboarding.start': 'Empezar',
+  'onboarding.goToCard': 'Ir a la tarjeta {number}',
+  'onboarding.welcome.title': 'Bienvenido a BarberIA',
+  'onboarding.welcome.text': 'Te mostramos en pocos pasos todo lo que puedes hacer con la app.',
+  'onboarding.book.title': 'Agenda citas',
+  'onboarding.book.text':
+    'En Citas toca el micrófono y dilo con tu voz, por ejemplo: «Juan mañana a las 3». También puedes escribirla con el teclado. Las citas que tus clientes agendan por WhatsApp aparecen solas.',
+  'onboarding.manage.title': 'Organiza tu día',
+  'onboarding.manage.text':
+    'Elige el día en el calendario, mira las horas disponibles y registra clientes casuales. Cada cita la puedes completar, editar o cancelar.',
+  'onboarding.statistics.title': 'Mira tus estadísticas',
+  'onboarding.statistics.text':
+    'En Estadísticas ves tus cortes, ganancias, clientes nuevos y cancelaciones de hoy, la semana o el mes, con gráficas de tus mejores días y horas.',
+  'onboarding.settings.title': 'Configura tu barbería',
+  'onboarding.settings.text':
+    'En Configuración defines el valor del corte y marcas las horas en las que no estarás disponible, para que no te agenden en ese momento.',
+  'onboarding.ready.title': '¡Todo listo!',
+  'onboarding.ready.text': 'Ya puedes empezar a usar BarberIA. Este tutorial no volverá a aparecer.',
+
   // Login (admin with email and password)
   'auth.title': 'BarberIA',
   'auth.logoAlt': 'Logo de Space Barber Shop',
@@ -259,11 +281,11 @@ export const MESSAGES_ES = {
   'settings.blocks.errors.overlap': 'Hay tramos que se cruzan. Ajústalos o quita uno.',
   'settings.blocks.errors.clash':
     'No se guardó: hay citas en esos horarios ({appointments}). Cancélalas primero si quieres bloquear ese tramo.',
-  'notifications.channelName': 'Citas nuevas',
-  'notifications.channelDescription': 'Aviso cuando un cliente agenda una cita por WhatsApp',
+  'notifications.channelName': 'Citas',
+  'notifications.channelDescription': 'Avisos cuando un cliente agenda, cambia o cancela una cita por WhatsApp',
   'notifications.dismiss': 'Entendido',
   'notifications.viewAppointments': 'Ver citas',
-  'notifications.unseenTitle': '💈 Citas nuevas sin ver',
+  'notifications.unseenTitle': '💈 Novedades en tu agenda',
   'notifications.bookingLine': '{client} agendó para el {date} a las {time}',
   'time.am': 'a. m.',
   'time.pm': 'p. m.',

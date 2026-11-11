@@ -1286,3 +1286,32 @@ npx ionic capacitor add android   # añadir plataforma Android
 - Nuevo `ServicePriceEditorComponent` (arriba de Disponibilidad) y `ShopSettingsService` (`GET/PUT /settings/service-price`).
 - Campo numérico; solo cuentan los dígitos (si escriben "20.000" o "$20000" queda 20000). Debajo se muestra el valor formateado ("$20.000") para detectar ceros de más o de menos. Botón "Guardar valor" activo solo si cambió.
 - Las citas que entran por WhatsApp se guardan con este valor.
+
+## 2026-11-11 · Tutorial de bienvenida (solo la primera vez)
+
+- Nueva feature `features/onboarding`: pantalla `/onboarding` con 6 tarjetas que se deslizan con el dedo (scroll horizontal con *snap*), puntos indicadores, botón "Siguiente"/"Empezar" y "Saltar".
+  - Tarjetas: bienvenida, agendar citas (voz, teclado, WhatsApp), organizar el día (calendario, disponibilidad, casuales, completar/editar/cancelar), estadísticas, configuración (valor del corte y disponibilidad) y "¡Todo listo!".
+- `core/onboarding/OnboardingService` guarda en `localStorage` (`barberia.onboardingSeen`) que el tutorial ya se vio. Se borra al desinstalar la app, así que vuelve a salir tras reinstalar.
+- Guards: `onboardingDoneGuard` en `login` y en las pestañas manda a `/onboarding` si aún no se vio; `onboardingPendingGuard` evita volver al tutorial una vez visto. Al terminar o saltar se marca como visto y se va a `/` (el guard de sesión decide si va al login).
+- Textos en el catálogo `onboarding.*`.
+
+## 2026-11-11 · Icono de la app con el logo de Space Barber Shop
+
+- Los iconos de Android (`android/app/src/main/res/mipmap-*`: `ic_launcher`, `ic_launcher_round` e `ic_launcher_foreground`) se generaron desde `src/assets/images/logo-space.webp`, el mismo logo del inicio de sesión.
+- Fondo azul noche `#0B0E24` (color de fondo de la app) en `values/ic_launcher_background.xml`; antes era blanco.
+- El logo ocupa ~60 % del icono adaptativo, dentro de la zona segura, para que no se recorte en lanzadores con máscara redonda o de gota.
+- Se generaron con Pillow (no se agregó ninguna dependencia).
+
+---
+
+## 2026-11-11 · Avisos de citas canceladas o cambiadas por WhatsApp
+
+**Qué se hizo**
+- El backend ahora avisa cuando un cliente cancela ("❌ Cita cancelada") o cambia la hora ("🔁 Cita reagendada") de su cita por WhatsApp.
+- `messages.es.ts`:
+  - el título del modal pasa a "💈 Novedades en tu agenda";
+  - el canal de Android pasa a "Citas", con la descripción "agenda, cambia o cancela".
+- `push-notifications.service.ts`: al tocar un aviso, la cita solo se busca para mostrarla en el modal cuando es nueva (`data.type` = `new-booking`, o sin tipo en los avisos antiguos). Para una cita cancelada o reagendada, la app abre la lista de citas ya actualizada.
+
+**Estado actual**
+- Compila en modo desarrollo. Falta probarlo en el teléfono con un aviso real.

@@ -1,8 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ListAppointmentsUseCase } from '../../../appointments/application/use-cases/list-appointments.use-case.js';
 import { ListAvailableSlotsUseCase } from '../../../appointments/application/use-cases/list-available-slots.use-case.js';
+import { RescheduleAppointmentUseCase } from '../../../appointments/application/use-cases/reschedule-appointment.use-case.js';
 import { ScheduleAppointmentUseCase } from '../../../appointments/application/use-cases/schedule-appointment.use-case.js';
+import { SetAppointmentCancelledUseCase } from '../../../appointments/application/use-cases/set-appointment-cancelled.use-case.js';
 import { GetServicePriceUseCase } from '../../../shop-settings/application/use-cases/get-service-price.use-case.js';
+import { NotifyBookingChangeUseCase } from '../../../notifications/application/use-cases/notify-booking-change.use-case.js';
 import { NotifyNewBookingUseCase } from '../../../notifications/application/use-cases/notify-new-booking.use-case.js';
 import type { AppointmentDto, DaySlotsDto, ScheduleAppointmentInput } from '../../../appointments/application/dtos/appointment.dto.js';
 import { DomainError } from '../../../../shared/errors/domain.error.js';
@@ -10,6 +13,7 @@ import { localIsoDate } from '../../../../shared/utils/local-date.js';
 import { BookingMessage } from '../../domain/entities/booking-message.entity.js';
 import type { BookingDay } from '../../domain/entities/booking-message.entity.js';
 import { ClientChoice } from '../../domain/entities/client-choice.entity.js';
+import type { ClientChoiceKind } from '../../domain/entities/client-choice.entity.js';
 import { CLIENT_ACTIVITY_REPOSITORY } from '../../domain/ports/client-activity.repository.js';
 import type { ClientActivityRepository } from '../../domain/ports/client-activity.repository.js';
 import { HANDOFF_REPOSITORY } from '../../domain/ports/handoff.repository.js';
@@ -49,6 +53,19 @@ const BOOKINGS_FULL_REPLY =
 
 const TALK_HINT = 'Si prefieres hablar con el barbero, responde *2*.';
 
+// A client with a pending booking may cancel it or move it once, up to this long before it starts.
+const CHANGE_CUTOFF_MINUTES = 30;
+const MAX_RESCHEDULES = 1;
+
+const TOO_LATE_REPLY =
+  `Tu cita es en menos de ${CHANGE_CUTOFF_MINUTES} minutos, así que ya no se puede cambiar por aquí. ` +
+  'Responde *2* y el barbero te ayuda.';
+const RESCHEDULE_LIMIT_REPLY =
+  'Tu cita ya se cambió una vez, así que no se puede volver a cambiar por aquí. Responde *2* y el barbero te ayuda.';
+const HOW_TO_RESCHEDULE = 'Escribe el día y la nueva hora, por ejemplo: *mañana 4:00 pm*';
+/** Choices that touch a pending booking; without one they only get the menu. */
+const CHANGE_CHOICES: ReadonlySet<ClientChoiceKind> = new Set(['cancel', 'confirmCancel', 'reschedule']);
+
 const dateFormat = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 
 /**
@@ -60,7 +77,10 @@ const dateFormat = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'num
  *   "send nothing" (the open-wa bot and the Meta webhook both skip it).
  * - A message with a name and a time books that slot directly. An hour from 1 to 11 without am/pm
  *   ("mañana 7:00") is not booked: the bot asks whether it is morning or evening.
- * When the phone is known, a client can hold only one pending booking.
+ * A client known by phone (Meta) or chat id (open-wa) holds at most one pending booking. With one,
+ * any message gets the menu of that booking: "3" cancels it (after "SI CANCELAR"), "4" or a new day
+ * and time moves it (once), "2" talks with the barber. Less than CHANGE_CUTOFF_MINUTES before it
+ * starts, changes go through the barber.
  */
 @Injectable()
 export class ReplyToClientMessageUseCase {
@@ -68,7 +88,10 @@ export class ReplyToClientMessageUseCase {
     private readonly availableSlots: ListAvailableSlotsUseCase,
     private readonly scheduleAppointment: ScheduleAppointmentUseCase,
     private readonly listAppointments: ListAppointmentsUseCase,
+    private readonly setCancelled: SetAppointmentCancelledUseCase,
+    private readonly rescheduleAppointment: RescheduleAppointmentUseCase,
     private readonly notifyNewBooking: NotifyNewBookingUseCase,
+    private readonly notifyBookingChange: NotifyBookingChangeUseCase,
     @Inject(HANDOFF_REPOSITORY) private readonly handoffs: HandoffRepository,
     private readonly servicePrice: GetServicePriceUseCase,
     @Inject(CLIENT_ACTIVITY_REPOSITORY) private readonly activity: ClientActivityRepository,
@@ -99,17 +122,12 @@ export class ReplyToClientMessageUseCase {
 
     const pending = await this.findPendingBooking(input);
     if (pending) {
-      return {
-        reply:
-          `Hola ${pending.client} 👋, ya tienes una cita agendada para el ` +
-          `${formatDate(pending.date)} a las ${formatTime(pending.time)}. Si necesitas cambiarla o cancelarla, ` +
-          `responde *2* y el barbero te ayuda.`,
-      };
+      return { reply: await this.handlePending(pending, message, chosen) };
     }
     if (chosen === 'book') {
       return { reply: slotsReply(await this.listSlots()) };
     }
-    if (!message.hasTime) {
+    if (!message.hasTime || (chosen && CHANGE_CHOICES.has(chosen))) {
       return { reply: menu(input.clientName) };
     }
     const days = await this.listSlots();
@@ -117,7 +135,7 @@ export class ReplyToClientMessageUseCase {
       return { reply: `¿A nombre de quién agendamos la cita?\n\n${HOW_TO_BOOK}` };
     }
     if (message.needsDayPart) {
-      return { reply: askDayPart(message) };
+      return { reply: askDayPart(message, true) };
     }
 
     const wanted = message.day ? days.filter((d) => d.day === message.day) : days;
@@ -163,6 +181,73 @@ export class ReplyToClientMessageUseCase {
   }
 
   /**
+   * A client who already holds a future booking: cancel it (after confirming), move it once to another
+   * free slot by writing the new day and time, or get the menu of their booking. Close to the start
+   * (CHANGE_CUTOFF_MINUTES) changes go through the barber.
+   */
+  private async handlePending(
+    pending: AppointmentDto,
+    message: BookingMessage,
+    chosen: ClientChoiceKind | undefined,
+  ): Promise<string> {
+    const wantsChange = (chosen && CHANGE_CHOICES.has(chosen)) || (!chosen && message.hasTime);
+    if (!wantsChange) return pendingMenu(pending);
+    if (startsAt(pending) - Date.now() < CHANGE_CUTOFF_MINUTES * 60_000) return TOO_LATE_REPLY;
+    const when = `${formatDate(pending.date)} a las ${formatTime(pending.time)}`;
+
+    if (chosen === 'cancel') {
+      return `¿Seguro que quieres cancelar tu cita del ${when}?\n\nPara confirmar responde *SI CANCELAR*.`;
+    }
+    if (chosen === 'confirmCancel') {
+      await this.setCancelled.execute(pending.id, true);
+      await this.notifyBookingChange.execute({
+        kind: 'cancelled',
+        client: pending.client,
+        date: pending.date,
+        time: pending.time,
+      });
+      return `❌ Tu cita del ${when} quedó cancelada. Si quieres agendar otra, escribe *1*.`;
+    }
+    if (pending.rescheduleCount >= MAX_RESCHEDULES) return RESCHEDULE_LIMIT_REPLY;
+    if (chosen === 'reschedule') {
+      return [`Tu cita es el ${when}.`, '', listSlots(await this.listSlots()), '', HOW_TO_RESCHEDULE].join('\n');
+    }
+    return this.reschedule(pending, message);
+  }
+
+  /** Moves the pending booking to the slot the client wrote ("mañana 4:00 pm"). */
+  private async reschedule(pending: AppointmentDto, message: BookingMessage): Promise<string> {
+    if (message.needsDayPart) return askDayPart(message, false);
+    const days = await this.listSlots();
+    const wanted = message.day ? days.filter((d) => d.day === message.day) : days;
+    // The client's own slot is not free (they hold it), so it is checked before looking for one.
+    if (wanted.some((d) => d.date === pending.date) && message.candidateTimes.includes(pending.time)) {
+      return `Esa ya es la hora de tu cita 🙂. Si quieres otra, ${HOW_TO_RESCHEDULE.charAt(0).toLowerCase()}${HOW_TO_RESCHEDULE.slice(1)}`;
+    }
+    const slot = findSlot(wanted, message.candidateTimes);
+    if (!slot) {
+      return `Esa hora no está disponible 😕.\n\n${listSlots(days)}\n\n${HOW_TO_RESCHEDULE}`;
+    }
+    try {
+      await this.rescheduleAppointment.execute(pending.id, slot.date, slot.time);
+    } catch (error) {
+      if (!(error instanceof DomainError)) throw error;
+      const fresh = await this.listSlots();
+      return `Esa hora se acaba de ocupar 😕.\n\n${listSlots(fresh)}\n\n${HOW_TO_RESCHEDULE}`;
+    }
+    await this.notifyBookingChange.execute({
+      kind: 'rescheduled',
+      client: pending.client,
+      date: slot.date,
+      time: slot.time,
+    });
+    return (
+      `🔁 Listo ${pending.client}, tu cita quedó para ` +
+      `${DAY_LABELS[slot.day].toLowerCase()} ${formatDate(slot.date)} a las ${formatTime(slot.time)}. ¡Te esperamos! 💈`
+    );
+  }
+
+  /**
    * Price set in the app's settings ("Valor del servicio"). If it cannot be read, the booking still
    * goes through at $0 (the barber can fix the price in the app), so the client is never left waiting.
    */
@@ -204,7 +289,7 @@ export class ReplyToClientMessageUseCase {
       (a) =>
         ((phone && a.phone === phone) || (chatId && a.chatId === chatId)) &&
         !a.cancelled && !a.walkIn && !a.completed &&
-        new Date(`${a.date}T${a.time}:00`).getTime() > now,
+        startsAt(a) > now,
     );
   }
 
@@ -230,13 +315,14 @@ function findSlot(
 
 /**
  * "7" alone could be 7 am or 7 pm. The bot keeps no conversation state, so the question carries both
- * full answers (name, day and time) for the client to copy back as they are.
+ * full answers (name when booking, day and time) for the client to copy back as they are.
  */
-function askDayPart(message: BookingMessage): string {
+function askDayPart(message: BookingMessage, withName: boolean): string {
   const clock = message.clock ?? '';
   const evening = Number(clock.split(':')[0]) <= 6 ? 'de la tarde' : 'de la noche';
-  const day = message.day ? ` ${DAY_LABELS[message.day].toLowerCase()}` : '';
-  const answer = `${message.client}${day} ${clock}`;
+  const name = withName && message.client ? message.client : '';
+  const day = message.day ? DAY_LABELS[message.day].toLowerCase() : '';
+  const answer = [name, day, clock].filter(Boolean).join(' ');
   return [
     `¿A las ${clock} de la mañana o ${evening}? 🤔`,
     '',
@@ -256,6 +342,24 @@ function menu(clientName: string | undefined): string {
     '',
     'Responde con el número.',
   ].join('\n');
+}
+
+/** What a client with a pending booking can do with it. */
+function pendingMenu(pending: AppointmentDto): string {
+  return [
+    `Hola ${pending.client} 👋, tienes una cita el ${formatDate(pending.date)} a las ${formatTime(pending.time)}.`,
+    '',
+    '3️⃣ Cancelar la cita',
+    '4️⃣ Cambiar la hora',
+    '2️⃣ Hablar con el barbero',
+    '',
+    'Responde con el número.',
+  ].join('\n');
+}
+
+/** Epoch ms when the appointment starts (read in the server time zone, the shop's). */
+function startsAt(appointment: AppointmentDto): number {
+  return new Date(`${appointment.date}T${appointment.time}:00`).getTime();
 }
 
 function slotsReply(days: (DaySlotsDto & { day: BookingDay })[]): string {

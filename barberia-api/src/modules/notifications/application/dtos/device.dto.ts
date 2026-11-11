@@ -10,3 +10,12 @@ export interface NewBookingInput {
   /** `HH:mm`. */
   time: string;
 }
+
+export interface BookingChangeInput {
+  kind: 'cancelled' | 'rescheduled';
+  client: string;
+  /** `YYYY-MM-DD`: the cancelled date, or the new one when rescheduled. */
+  date: string;
+  /** `HH:mm`: the cancelled time, or the new one when rescheduled. */
+  time: string;
+}
