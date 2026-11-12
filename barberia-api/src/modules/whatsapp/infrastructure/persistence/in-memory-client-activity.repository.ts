@@ -21,6 +21,8 @@ interface ClientEntry {
 export class InMemoryClientActivityRepository implements ClientActivityRepository {
   private readonly clients = new Map<string, ClientEntry>();
   private bookings: number[] = [];
+  /** Last reply per client; bounded like `clients`. */
+  private readonly replies = new Map<string, { text: string; at: number }>();
 
   async recordMessage(clientKey: string, text: string, now: number, windowMs: number): Promise<MessageActivity> {
     const entry = this.clients.get(clientKey);
@@ -39,6 +41,18 @@ export class InMemoryClientActivityRepository implements ClientActivityRepositor
 
   async bookingsSince(since: number): Promise<number> {
     return this.bookings.filter((t) => t > since).length;
+  }
+
+  async lastReply(clientKey: string): Promise<{ text: string; at: number } | undefined> {
+    return this.replies.get(clientKey);
+  }
+
+  async recordReply(clientKey: string, text: string, at: number): Promise<void> {
+    this.replies.delete(clientKey);
+    this.replies.set(clientKey, { text, at });
+    if (this.replies.size > LIMIT) {
+      this.replies.delete(this.replies.keys().next().value as string);
+    }
   }
 
   async recordBooking(at: number): Promise<void> {

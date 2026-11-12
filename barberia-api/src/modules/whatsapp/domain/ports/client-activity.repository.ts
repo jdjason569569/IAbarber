@@ -15,4 +15,7 @@ export interface ClientActivityRepository {
   /** Bookings made through WhatsApp since `since` (epoch ms), across all clients. */
   bookingsSince(since: number): Promise<number>;
   recordBooking(at: number): Promise<void>;
+  /** The last reply sent to the client and when (epoch ms), if any. */
+  lastReply(clientKey: string): Promise<{ text: string; at: number } | undefined>;
+  recordReply(clientKey: string, text: string, at: number): Promise<void>;
 }

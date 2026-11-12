@@ -789,3 +789,15 @@ This file records, in chronological order, every change made to the backend.
 
 **What was done**
 - Flood limit changed from 8 messages in 5 minutes to **15 messages in 3 minutes** (`FLOOD_MAX_MESSAGES`, `FLOOD_WINDOW_MINUTES`). The 16th message gets the notice, then 30 minutes of silence as before.
+
+---
+
+## 2026-11-11 · WhatsApp: no repeated menu for a split greeting
+
+**What was done**
+- A client who writes "hola", "como", "estas" as separate messages got the menu three times. `ReplyToClientMessageUseCase` now skips a menu (main menu or pending-booking menu) when it is exactly the last reply sent to that client less than `MENU_REPEAT_MINUTES` (2) ago.
+- `ClientActivityRepository` gained `lastReply` / `recordReply` (in memory, bounded to 1000 clients). Menus share the `MENU_FOOTER` constant to be recognised.
+- Applies to both channels (open-wa `/whatsapp/reply` and the Meta webhook); the open-wa bot is unchanged.
+
+**Current state**
+- Any other reply (slots, booking, errors) in between makes the menu show again on the next greeting.

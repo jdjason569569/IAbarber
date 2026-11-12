@@ -53,6 +53,14 @@ const BOOKINGS_FULL_REPLY =
 
 const TALK_HINT = 'Si prefieres hablar con el barbero, responde *2*.';
 
+/** Last line of both menus; tells a menu reply apart from the others. */
+const MENU_FOOTER = 'Responde con el número.';
+/**
+ * A client often splits a greeting in several messages ("hola", "como", "estas"). Each one would get
+ * the menu again, so the same menu right after itself within this time is not sent.
+ */
+const MENU_REPEAT_MINUTES = 2;
+
 // A client with a pending booking may cancel it or move it once, up to this long before it starts.
 const CHANGE_CUTOFF_MINUTES = 30;
 const MAX_RESCHEDULES = 1;
@@ -110,6 +118,21 @@ export class ReplyToClientMessageUseCase {
       if (stop !== undefined) return { reply: stop };
     }
 
+    const reply = await this.respond(input, key);
+    if (key && reply && (await this.isRepeatedMenu(key, reply))) return { reply: '' };
+    if (key && reply) await this.activity.recordReply(key, reply, Date.now());
+    return { reply };
+  }
+
+  /** True when this menu is the last reply the client got, a moment ago (a split greeting). */
+  private async isRepeatedMenu(key: string, reply: string): Promise<boolean> {
+    if (!reply.endsWith(MENU_FOOTER)) return false;
+    const last = await this.activity.lastReply(key);
+    return !!last && last.text === reply && Date.now() - last.at < MENU_REPEAT_MINUTES * 60_000;
+  }
+
+  /** The reply to a client that is not silenced nor flooding. */
+  private async respond(input: ClientMessageInput, key: string | undefined): Promise<string> {
     const message = BookingMessage.parse(input.text);
     const choice = ClientChoice.parse(input.text);
     // A lone "1"/"2" is the menu answer, not a time; words only count when there is no time.
@@ -117,36 +140,36 @@ export class ReplyToClientMessageUseCase {
 
     if (chosen === 'talk') {
       if (key) await this.handoffs.silence(key, handoffEnd());
-      return { reply: 'Listo 👍, el barbero te escribe en un momento por aquí.' };
+      return 'Listo 👍, el barbero te escribe en un momento por aquí.';
     }
 
     const pending = await this.findPendingBooking(input);
     if (pending) {
-      return { reply: await this.handlePending(pending, message, chosen) };
+      return await this.handlePending(pending, message, chosen);
     }
     if (chosen === 'book') {
-      return { reply: slotsReply(await this.listSlots()) };
+      return slotsReply(await this.listSlots());
     }
     if (!message.hasTime || (chosen && CHANGE_CHOICES.has(chosen))) {
-      return { reply: menu(input.clientName) };
+      return menu(input.clientName);
     }
     const days = await this.listSlots();
     if (!message.client) {
-      return { reply: `¿A nombre de quién agendamos la cita?\n\n${HOW_TO_BOOK}` };
+      return `¿A nombre de quién agendamos la cita?\n\n${HOW_TO_BOOK}`;
     }
     if (message.needsDayPart) {
-      return { reply: askDayPart(message, true) };
+      return askDayPart(message, true);
     }
 
     const wanted = message.day ? days.filter((d) => d.day === message.day) : days;
     const slot = findSlot(wanted, message.candidateTimes);
     if (!slot) {
-      return { reply: `Esa hora no está disponible 😕.\n\n${listSlots(days)}\n\n${HOW_TO_BOOK}` };
+      return `Esa hora no está disponible 😕.\n\n${listSlots(days)}\n\n${HOW_TO_BOOK}`;
     }
 
     // Safety net for someone booking under many names: a few WhatsApp bookings per hour at most.
     if ((await this.activity.bookingsSince(Date.now() - 60 * 60_000)) >= MAX_BOOKINGS_PER_HOUR) {
-      return { reply: BOOKINGS_FULL_REPLY };
+      return BOOKINGS_FULL_REPLY;
     }
 
     const price = await this.priceForBooking();
@@ -165,19 +188,18 @@ export class ReplyToClientMessageUseCase {
       // Someone else may have taken the slot between listing and booking.
       if (!(error instanceof DomainError)) throw error;
       const fresh = await this.listSlots();
-      return { reply: `Esa hora se acaba de ocupar 😕.\n\n${listSlots(fresh)}\n\n${HOW_TO_BOOK}` };
+      return `Esa hora se acaba de ocupar 😕.\n\n${listSlots(fresh)}\n\n${HOW_TO_BOOK}`;
     }
     await this.activity.recordBooking(Date.now());
     // Tell the barber's phone; it never throws, so the client always gets the confirmation.
     await this.notifyNewBooking.execute({ client: message.client, date: slot.date, time: slot.time });
 
-    return {
-      reply:
-        `✅ Listo ${message.client}, tu cita quedó agendada para ` +
+    return (
+      `✅ Listo ${message.client}, tu cita quedó agendada para ` +
         `${DAY_LABELS[slot.day].toLowerCase()} ${formatDate(slot.date)} a las ${formatTime(slot.time)}.` +
         (price > 0 ? ` Valor del corte: ${formatMoney(price)}.` : '') +
-        ' ¡Te esperamos! 💈',
-    };
+      ' ¡Te esperamos! 💈'
+    );
   }
 
   /**
@@ -340,7 +362,7 @@ function menu(clientName: string | undefined): string {
     '1️⃣ Agendar una cita',
     '2️⃣ Hablar con el barbero',
     '',
-    'Responde con el número.',
+    MENU_FOOTER,
   ].join('\n');
 }
 
@@ -353,7 +375,7 @@ function pendingMenu(pending: AppointmentDto): string {
     '4️⃣ Cambiar la hora',
     '2️⃣ Hablar con el barbero',
     '',
-    'Responde con el número.',
+    MENU_FOOTER,
   ].join('\n');
 }
 
