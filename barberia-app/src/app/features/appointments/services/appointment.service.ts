@@ -16,6 +16,8 @@ interface AppointmentDto {
   cancelled: boolean;
   walkIn: boolean;
   completed: boolean;
+  /** Missing on an older API version. */
+  phone?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -56,6 +58,6 @@ export class AppointmentService {
 }
 
 function toAppointment(dto: AppointmentDto): Appointment {
-  const { client, ...rest } = dto;
-  return { ...rest, clientName: client };
+  const { client, phone, ...rest } = dto;
+  return { ...rest, clientName: client, phone: phone || null };
 }

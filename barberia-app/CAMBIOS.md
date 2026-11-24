@@ -1333,3 +1333,16 @@ npx ionic capacitor add android   # añadir plataforma Android
 **Pendiente / notas**
 - El enlace de producción (`https://iabarber.onrender.com/reservar`) funciona cuando el backend con el módulo `public-booking` esté desplegado en Render.
 - Para el teléfono: `npm run install_app:prod`.
+
+---
+
+## 2026-11-23 · Teléfono del cliente en la tarjeta de la cita (toca para llamar)
+
+**Qué se hizo**
+- `Appointment` ahora tiene `phone` (`string | null`), que la API ya enviaba. Llega en las reservas de la página `/reservar` y en las de WhatsApp por Meta. Las de open-wa solo tienen el chat id, así que no lo traen.
+- En la tarjeta de la cita (`appointment-list.page.html`), debajo del nombre, se muestra el número como enlace `tel:` con el icono `call-outline`. Al tocarlo se abre el marcador del teléfono con el número listo para llamar. Por eso no se necesita el permiso `CALL_PHONE`.
+- `displayPhone()` muestra `573001234567` como `300 123 4567`; los demás números se muestran con `+`.
+- Clave nueva: `appointments.callClient` ("Llamar a {client}"), usada como aria-label.
+
+**Estado actual**
+- Compila en modo desarrollo y el lint pasa. Falta probarlo en el teléfono.

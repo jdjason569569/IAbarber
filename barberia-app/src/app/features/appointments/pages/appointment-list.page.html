@@ -46,6 +46,17 @@
             <div class="appt-when">
               <span class="appt-time">{{ appointment.time | timeRange }}</span>
               <h2 class="appt-client">{{ appointment.clientName }}</h2>
+              @if (appointment.phone; as phone) {
+                <!-- Opens the phone's dialer with the client's number. -->
+                <a
+                  class="appt-phone"
+                  [href]="'tel:+' + phone"
+                  [attr.aria-label]="'appointments.callClient' | t: { client: appointment.clientName }"
+                >
+                  <ion-icon name="call-outline" aria-hidden="true"></ion-icon>
+                  {{ displayPhone(phone) }}
+                </a>
+              }
             </div>
             <div class="appt-badges">
               @if (appointment.walkIn) {

@@ -246,6 +246,22 @@
   white-space: nowrap;
 }
 
+.appt-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  padding: 2px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ion-color-primary);
+  text-decoration: none;
+
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
 .appt-badges {
   display: flex;
   gap: 4px;

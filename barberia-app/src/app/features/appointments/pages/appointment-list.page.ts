@@ -5,7 +5,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, injec
 import { AlertController, IonicModule, ModalController, ToastController } from '@ionic/angular/lazy';
 import type { RefresherCustomEvent } from '@ionic/core';
 import { addIcons } from 'ionicons';
-import { checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send } from 'ionicons/icons';
+import { callOutline, checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send } from 'ionicons/icons';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { PushNotificationsService } from '../../../core/notifications/push-notifications.service';
 import { MessageKey } from '../../../core/i18n/messages.es';
@@ -201,7 +201,7 @@ export class AppointmentListPage {
   private readonly answerInput = viewChild<ElementRef<HTMLIonInputElement>>('answerInput');
 
   constructor() {
-    addIcons({ checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send });
+    addIcons({ callOutline, checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send });
     // A client just booked on WhatsApp (push received or tapped): show it without pulling to refresh.
     this.pushNotifications.bookingReceived$
       .pipe(takeUntilDestroyed())
@@ -774,6 +774,14 @@ export class AppointmentListPage {
   protected stateColor(appointment: Appointment): string {
     if (appointment.cancelled) return 'danger';
     return appointment.completed ? 'primary' : 'success';
+  }
+
+  /** "573001234567" → "300 123 4567" (Colombian mobile); other numbers are shown with "+" as stored. */
+  protected displayPhone(phone: string): string {
+    const local = phone.length === 12 && phone.startsWith('57') ? phone.slice(2) : null;
+    return local && /^3\d{9}$/.test(local)
+      ? `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`
+      : `+${phone}`;
   }
 
   protected total(appointment: Appointment): number {

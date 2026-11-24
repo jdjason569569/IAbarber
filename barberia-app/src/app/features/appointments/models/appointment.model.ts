@@ -17,4 +17,6 @@ export interface Appointment {
   walkIn: boolean;
   /** true = the barber confirmed the service was done (button "Completar"). */
   completed: boolean;
+  /** Client phone in international format without "+" (573001234567), set when the client booked on WhatsApp (Meta) or on the booking page; null otherwise. */
+  phone: string | null;
 }

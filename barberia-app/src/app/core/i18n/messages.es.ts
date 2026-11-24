@@ -130,6 +130,7 @@ export const MESSAGES_ES = {
   'appointments.loadError': 'No se pudieron cargar las citas',
   'appointments.service': 'Precio',
   'appointments.total': 'Total',
+  'appointments.callClient': 'Llamar a {client}',
   'appointments.micLabel': 'Crear cita por voz',
   'appointments.keyboardLabel': 'Crear cita escribiendo',
 
