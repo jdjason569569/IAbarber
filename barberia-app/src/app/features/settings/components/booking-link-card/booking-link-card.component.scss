@@ -1,0 +1,22 @@
+.hint {
+  margin: 0 16px 8px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.link {
+  margin: 0 16px 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--ion-color-medium);
+  border-radius: 8px;
+  font-size: 14px;
+  word-break: break-all;
+  user-select: all;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-bottom: 8px;
+}

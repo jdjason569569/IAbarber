@@ -7,6 +7,7 @@ import { HaircutAdvisorModule } from './modules/haircut-advisor/haircut-advisor.
 import { BusinessHoursModule } from './modules/business-hours/business-hours.module.js';
 import { StatisticsModule } from './modules/statistics/statistics.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { PublicBookingModule } from './modules/public-booking/public-booking.module.js';
 import { ShopSettingsModule } from './modules/shop-settings/shop-settings.module.js';
 import { WhatsappModule } from './modules/whatsapp/whatsapp.module.js';
 
@@ -19,6 +20,7 @@ import { WhatsappModule } from './modules/whatsapp/whatsapp.module.js';
     BusinessHoursModule,
     HaircutAdvisorModule,
     NotificationsModule,
+    PublicBookingModule,
     ShopSettingsModule,
     StatisticsModule,
     WhatsappModule,

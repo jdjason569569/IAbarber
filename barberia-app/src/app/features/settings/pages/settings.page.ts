@@ -4,6 +4,7 @@ import { addIcons } from 'ionicons';
 import { logOutOutline } from 'ionicons/icons';
 import { AuthService } from '../../../core/auth/auth.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { BookingLinkCardComponent } from '../components/booking-link-card/booking-link-card.component';
 import { DayBlocksEditorComponent } from '../components/day-blocks-editor/day-blocks-editor.component';
 import { ServicePriceEditorComponent } from '../components/service-price-editor/service-price-editor.component';
 
@@ -11,7 +12,7 @@ import { ServicePriceEditorComponent } from '../components/service-price-editor/
   selector: 'app-settings',
   templateUrl: 'settings.page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonicModule, TranslatePipe, DayBlocksEditorComponent, ServicePriceEditorComponent],
+  imports: [IonicModule, TranslatePipe, BookingLinkCardComponent, DayBlocksEditorComponent, ServicePriceEditorComponent],
 })
 export class SettingsPage {
   private readonly auth = inject(AuthService);

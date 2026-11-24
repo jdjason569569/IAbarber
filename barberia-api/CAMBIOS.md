@@ -801,3 +801,38 @@ This file records, in chronological order, every change made to the backend.
 
 **Current state**
 - Any other reply (slots, booking, errors) in between makes the menu show again on the next greeting.
+
+---
+
+## 2026-11-23 · Third booking channel: public booking page `/reservar`
+
+**What was done**
+- New module `public-booking`: a public page where clients book with only a **name and a phone** (no email, no login). Calendly was tried first and dropped because it requires an email; its code was reverted before committing.
+- Same rules as WhatsApp:
+  - free slots of **today and tomorrow** from `ListAvailableSlotsUseCase`;
+  - one pending booking per phone;
+  - service price from the settings;
+  - push "Nueva cita" (`NotifyNewBookingUseCase`).
+- Private link `/reservar/cita/<id>/<token>`: the token is an HMAC of the booking id, so nothing new is stored. With it the client can **cancel** the booking, or **move it once**, up to 30 minutes before it starts. Moves only go to offered free slots, because `RescheduleAppointmentUseCase` does not check the weekly hours. Both send the existing change pushes.
+- Domain:
+  - `ClientPhone`: a Colombian mobile, stored as `57XXXXXXXXXX` like the Meta channel, so the Meta bot also finds the booking;
+  - `BookingName`;
+  - errors mapped to Spanish messages (400, 404, 409, 429).
+- Abuse protection: 3 bookings per IP per hour (from `X-Forwarded-For`), 6 web bookings per hour in total, and a honeypot field.
+- Page: `infrastructure/http/page/reservar.{html,css,js}`, written in vanilla JS with every text set through `textContent`. It is served with a strict CSP (no inline scripts) and copied to `dist` by the new `assets` entry in `nest-cli.json`.
+- `AuthMiddleware`: `/reservar` joins the public prefixes (`PUBLIC_PREFIXES`).
+- `shared/utils/local-date.ts`: `addDays`.
+- Link key: `BOOKING_LINK_SECRET`. Without it, a key derived from `SUPABASE_SERVICE_KEY` is used. Changing the key invalidates the links already sent.
+
+**Current state**
+- Verified locally with in-memory repositories (curl and headless Chrome):
+  - slots, booking and the slot disappearing afterwards;
+  - same phone refused, taken slot, invalid phone, name and date, honeypot;
+  - wrong token answers 404;
+  - one move, the second one refused, then cancel;
+  - the 4th booking from one IP answers 429;
+  - the app routes still need a login.
+
+**Pending / notes**
+- No migration. Optional: set `BOOKING_LINK_SECRET` on Render (`openssl rand -hex 32`) before sharing links.
+- Render sleeps from 23:00 to 6:00, so the first load at night takes about a minute.

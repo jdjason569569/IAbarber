@@ -1315,3 +1315,21 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Estado actual**
 - Compila en modo desarrollo. Falta probarlo en el teléfono con un aviso real.
+
+---
+
+## 2026-11-23 · Tarjeta "Enlace de reservas" en Configuración
+
+**Qué se hizo**
+- Nuevo componente `features/settings/components/booking-link-card`, que va primero en la pestaña Configuración. Muestra el enlace `${apiUrl}/reservar` de la página pública de reservas del backend (nombre y celular, sin correo).
+  - **Copiar**: copia el enlace con `navigator.clipboard` y muestra un toast.
+  - **Compartir**: abre el menú de compartir de Android. Si no se puede compartir, copia el enlace.
+- Nueva dependencia `@capacitor/share` 8.0.3, sincronizada en el proyecto Android con `npm run android:sync`.
+- Textos nuevos en el catálogo: `settings.bookingLink.*`.
+
+**Estado actual**
+- Compila en modo desarrollo y el lint pasa. Falta probarlo en el teléfono.
+
+**Pendiente / notas**
+- El enlace de producción (`https://iabarber.onrender.com/reservar`) funciona cuando el backend con el módulo `public-booking` esté desplegado en Render.
+- Para el teléfono: `npm run install_app:prod`.

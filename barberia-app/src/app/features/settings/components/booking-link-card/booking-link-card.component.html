@@ -1,0 +1,13 @@
+<ion-list-header>{{ 'settings.bookingLink.title' | t }}</ion-list-header>
+<p class="hint">{{ 'settings.bookingLink.hint' | t }}</p>
+<p class="link">{{ link }}</p>
+<div class="actions ion-padding-horizontal">
+  <ion-button fill="outline" (click)="copy()">
+    <ion-icon slot="start" name="copy-outline"></ion-icon>
+    {{ 'settings.bookingLink.copy' | t }}
+  </ion-button>
+  <ion-button (click)="share()">
+    <ion-icon slot="start" name="share-social-outline"></ion-icon>
+    {{ 'settings.bookingLink.share' | t }}
+  </ion-button>
+</div>
