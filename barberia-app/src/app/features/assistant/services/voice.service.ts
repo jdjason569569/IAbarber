@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+import { QueueStrategy, TextToSpeech } from '@capacitor-community/text-to-speech';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { VoiceError, VoiceErrorCode } from '../models/voice-error';
 
@@ -14,6 +15,12 @@ interface WebSpeechRecognition {
 }
 
 type WebSpeechRecognitionCtor = new () => WebSpeechRecognition;
+
+/**
+ * Locale of the phone's TTS voice. Google's engine has no es-CO voice and may pick a Spain accent;
+ * es-US is its Latin American Spanish.
+ */
+const NATIVE_TTS_LANG = 'es-US';
 
 /** A native session rejected faster than this never really listened. */
 const NATIVE_EARLY_FAILURE_MS = 1000;
@@ -45,8 +52,37 @@ export class VoiceService {
   /** Set once the device recognizer rejected the app locale; later sessions use the device language. */
   private useDeviceLanguage = false;
 
-  /** Reads the text aloud and resolves when finished (or immediately if unsupported). */
+  /**
+   * Reads the text aloud and resolves when finished (or immediately if unsupported).
+   * The Android WebView has no `speechSynthesis`, so the native app uses the phone's TTS engine.
+   */
   speak(text: string): Promise<void> {
+    return Capacitor.isNativePlatform() ? this.speakNative(text) : this.speakWeb(text);
+  }
+
+  /** Cuts off whatever is being read aloud; the pending `speak()` resolves. */
+  stopSpeaking(): void {
+    if (Capacitor.isNativePlatform()) {
+      void TextToSpeech.stop().catch(() => undefined);
+      return;
+    }
+    window.speechSynthesis?.cancel();
+  }
+
+  private async speakNative(text: string): Promise<void> {
+    try {
+      await TextToSpeech.speak({ text, lang: NATIVE_TTS_LANG, queueStrategy: QueueStrategy.Flush });
+    } catch {
+      // The engine may lack es-US (e.g. Samsung's only has Mexican Spanish): retry with plain Spanish.
+      try {
+        await TextToSpeech.speak({ text, lang: 'es', queueStrategy: QueueStrategy.Flush });
+      } catch (error) {
+        console.error('Text to speech failed', error);
+      }
+    }
+  }
+
+  private speakWeb(text: string): Promise<void> {
     const synth = window.speechSynthesis;
     if (!synth || typeof SpeechSynthesisUtterance === 'undefined') {
       return Promise.resolve();
@@ -67,10 +103,6 @@ export class VoiceService {
     });
   }
 
-  /** Cuts off whatever is being read aloud; the pending `speak()` resolves. */
-  stopSpeaking(): void {
-    window.speechSynthesis?.cancel();
-  }
 
   /** Listens once and resolves with the transcript. Rejects if nothing was captured. */
   listen(): Promise<string> {

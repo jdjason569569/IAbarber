@@ -4,6 +4,7 @@ import { DEVICE_TOKEN_REPOSITORY } from '../../domain/ports/device-token.reposit
 import type { DeviceTokenRepository } from '../../domain/ports/device-token.repository.js';
 import { PUSH_SENDER } from '../../domain/ports/push-sender.port.js';
 import type { PushSender } from '../../domain/ports/push-sender.port.js';
+import { spokenTime } from '../spoken-time.js';
 import type { NewBookingInput } from '../dtos/device.dto.js';
 
 const dateFormat = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -27,6 +28,7 @@ export class NotifyNewBookingUseCase {
         title: '💈 Nueva cita',
         body: `${booking.client} agendó para el ${formatDate(booking.date)} a las ${booking.time}`,
         data: { type: 'new-booking', date: booking.date, time: booking.time },
+        speech: `Nueva cita de ${booking.client}, el ${formatDate(booking.date)} ${spokenTime(booking.time)}.`,
       });
       if (invalidTokens.length > 0) {
         await this.devices.remove(invalidTokens);

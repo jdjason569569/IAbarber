@@ -7,6 +7,11 @@ export interface PushMessage {
   data?: Record<string, string>;
   /** Android tag: identifies the notification in the tray; a new one with the same tag replaces it. */
   tag?: string;
+  /**
+   * Text the phone reads aloud. When set, the push goes as data-only so the app gets it even when
+   * closed: it shows the notification itself and speaks this text.
+   */
+  speech?: string;
 }
 
 export interface PushSendResult {

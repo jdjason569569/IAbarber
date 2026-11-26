@@ -246,6 +246,12 @@ export class AppointmentListPage {
     this.pushNotifications.reminderReceived$
       .pipe(takeUntilDestroyed())
       .subscribe((reminder) => void this.announceReminder(reminder));
+    // A client just booked: say who (unless the assistant is talking).
+    this.pushNotifications.speechReceived$
+      .pipe(takeUntilDestroyed())
+      .subscribe((speech) => {
+        if (!this.dialogActive()) void this.voice.speak(speech);
+      });
     // Text mode opens the keyboard as soon as a question waits for the answer.
     effect(() => {
       const input = this.answerInput();

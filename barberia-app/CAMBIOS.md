@@ -1380,3 +1380,42 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Estado actual**
 - Compila y el lint pasa. Falta probarlo en el teléfono.
+
+## 2026-11-25 · Voz nativa en el teléfono (text-to-speech)
+
+**Problema**
+- En el teléfono la app nunca hablaba: el WebView de Android no tiene `window.speechSynthesis` (comprobado con las DevTools del WebView). `VoiceService.speak()` terminaba en silencio. Afectaba al botón Disponibilidad, a los avisos de 5 minutos y a las preguntas del asistente.
+
+**Qué se hizo**
+- Dependencia nueva: `@capacitor-community/text-to-speech@^8.0.2`.
+- `VoiceService.speak()` usa en la app nativa `TextToSpeech.speak()` (motor de voz del teléfono) con `es-CO`, y reintenta con `es` si falla. En el navegador sigue usando `speechSynthesis`. `stopSpeaking()` llama a `TextToSpeech.stop()` en nativo.
+- `AndroidManifest.xml`: `<queries>` con `android.intent.action.TTS_SERVICE`, que Android 11+ exige para encontrar el motor de voz.
+
+**Estado actual**
+- Instalado en el teléfono (`installDebug`). La llamada `TextToSpeech.speak()` desde la app respondió bien en el teléfono.
+- El asistente de voz ahora también lee sus preguntas en voz alta en el teléfono.
+
+## 2026-11-25 · Voz más natural: motor de Google y acento latino
+
+**Qué se hizo**
+- El teléfono usaba el motor de voz de Samsung (`com.samsung.SMT`), que solo tiene dos voces básicas de español de México y suena robótico. Se cambió el motor por defecto del teléfono al de Google (`com.google.android.tts`, ya instalado) con `adb shell settings put secure tts_default_synth com.google.android.tts`. Para volver al de Samsung: el mismo comando con `com.samsung.SMT`, o Ajustes → Administración general → Texto a voz.
+- `VoiceService` pide la voz `es-US` (español latinoamericano de Google) en lugar de `es-CO`, que Google no tiene y podía dar acento de España. Si falla, reintenta con `es`.
+
+**Estado actual**
+- Instalado en el teléfono; la voz `es-US` de Google respondió bien.
+- Es un ajuste del teléfono, no de la app: otro teléfono con el motor de Samsung seguirá sonando robótico hasta que se cambie el motor.
+
+## 2026-11-25 · Las notificaciones de cita nueva dicen el nombre en voz alta
+
+**Qué se hizo**
+- Al agendarse una cita, el teléfono dice en voz alta *"Nueva cita de Juan, el jueves 26 de noviembre a las 3 y media de la tarde."*, también con la app cerrada o en segundo plano. Los avisos de 5 minutos ahora también hablan con la app cerrada.
+- **Android – `SpeakingMessagingService`** (nuevo, reemplaza el servicio del plugin de push con `tools:node="remove"` en el manifiesto):
+  - Los pushes con campo `speech` llegan como "solo datos". Con la app en segundo plano o cerrada, el servicio arma la notificación (canal `bookings`, tag, título y texto) y lee `speech` con el motor de voz del teléfono (`es-US`, volumen de notificaciones: en silencio no habla).
+  - Al tocar la notificación se abren las citas igual que antes (mismos extras que un push de FCM).
+  - Con la app en pantalla, el push pasa al código web como siempre. Los demás pushes no cambian.
+- `app/build.gradle`: dependencia `firebase-messaging` (misma versión que el plugin) para compilar el servicio.
+- **Web:** `PushNotificationsService` lee título y texto desde `data` en los pushes de solo datos y emite `speechReceived$`. La página de citas lo dice en voz alta, salvo si el asistente está hablando.
+
+**Estado actual**
+- Instalado en el teléfono. Probado con un push real y la app en segundo plano: apareció la notificación y el motor de Google leyó la frase.
+- Hay que tener la app nueva instalada **antes** de desplegar la API: una app vieja no muestra los pushes de solo datos cuando está cerrada.

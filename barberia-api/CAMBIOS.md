@@ -859,3 +859,27 @@ This file records, in chronological order, every change made to the backend.
 
 **Current state**
 - Checked locally: `/health` answers 200 without login; `/appointments` still answers 401.
+
+## 2026-11-25 · Spoken pushes: client name read aloud on new bookings
+
+**What was done**
+- `PushMessage.speech` (optional): text the phone reads aloud. With it, `FirebasePushSender` sends a **data-only** message (`title`, `body`, `tag` and `speech` inside `data`, Android priority high), so the app gets it even when closed and speaks it (`SpeakingMessagingService` in the app). Without it, nothing changes.
+- New booking: `speech` = "Nueva cita de Juan, el jueves, 26 de noviembre a las 3 y media de la tarde." Appointment reminder: "Atención: en 5 minutos tienes cita con Juan."
+- `notifications/application/spoken-time.ts`: `spokenTime("15:30")` → "a las 3 y media de la tarde".
+
+**Current state**
+- Compiles. A real data-only push was sent to the phone with the app in the background: notification shown and read aloud.
+
+**Pending / notes**
+- Install the new app on the phone **before** deploying this to Render. Older app versions show nothing for data-only pushes while closed.
+
+## 2026-11-25 · Cancellations and reschedules are read aloud too
+
+**What was done**
+- `NotifyBookingChangeUseCase` now sets `speech`:
+  - cancelled: "Cita cancelada: Juan canceló su cita del jueves, 26 de noviembre a las 3 de la tarde."
+  - rescheduled: "Cita reagendada: Juan movió su cita al … a las …"
+- Like new bookings, these pushes now go data-only and the phone speaks them even when the app is closed. The app needed no change: it speaks any push that carries `speech`.
+
+**Current state**
+- Compiles. A real "cancelled" push was sent with the app in the background, and the phone read it aloud.

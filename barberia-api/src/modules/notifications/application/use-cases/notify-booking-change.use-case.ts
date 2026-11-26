@@ -4,6 +4,7 @@ import { DEVICE_TOKEN_REPOSITORY } from '../../domain/ports/device-token.reposit
 import type { DeviceTokenRepository } from '../../domain/ports/device-token.repository.js';
 import { PUSH_SENDER } from '../../domain/ports/push-sender.port.js';
 import type { PushSender } from '../../domain/ports/push-sender.port.js';
+import { spokenTime } from '../spoken-time.js';
 import type { BookingChangeInput } from '../dtos/device.dto.js';
 
 const dateFormat = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -34,6 +35,9 @@ export class NotifyBookingChangeUseCase {
           date: change.date,
           time: change.time,
         },
+        speech: cancelled
+          ? `Cita cancelada: ${change.client} canceló su cita del ${formatDate(change.date)} ${spokenTime(change.time)}.`
+          : `Cita reagendada: ${change.client} movió su cita al ${formatDate(change.date)} ${spokenTime(change.time)}.`,
       });
       if (invalidTokens.length > 0) {
         await this.devices.remove(invalidTokens);

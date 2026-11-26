@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import type { App, ServiceAccount } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
+import type { MulticastMessage } from 'firebase-admin/messaging';
 import type { PushMessage, PushSender, PushSendResult } from '../../domain/ports/push-sender.port.js';
 
 /** FCM accepts up to 500 tokens per multicast call. */
@@ -29,12 +30,9 @@ export class FirebasePushSender implements PushSender {
     const invalidTokens: string[] = [];
     for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
       const batch = tokens.slice(i, i + BATCH_SIZE);
-      const result = await messaging.sendEachForMulticast({
-        tokens: batch,
-        notification: { title: message.title, body: message.body },
-        data: message.data,
-        android: { priority: 'high', notification: { channelId: ANDROID_CHANNEL_ID, sound: 'default', tag: message.tag } },
-      });
+      const result = await messaging.sendEachForMulticast(
+        message.speech ? spokenMessage(batch, message) : displayMessage(batch, message),
+      );
       result.responses.forEach((response, index) => {
         if (response.success) return;
         if (response.error && isDeadToken(response.error.code, response.error.message)) {
@@ -63,4 +61,29 @@ export class FirebasePushSender implements PushSender {
 function isDeadToken(code: string, message: string): boolean {
   // A malformed token comes back as a generic invalid-argument error that names the token.
   return DEAD_TOKEN_CODES.has(code) || (code === 'messaging/invalid-argument' && /registration token/i.test(message));
+}
+
+/** Shown by Android itself; the app only hears of it when open or tapped. */
+function displayMessage(tokens: string[], message: PushMessage): MulticastMessage {
+  return {
+    tokens,
+    notification: { title: message.title, body: message.body },
+    data: message.data,
+    android: { priority: 'high', notification: { channelId: ANDROID_CHANNEL_ID, sound: 'default', tag: message.tag } },
+  };
+}
+
+/**
+ * Data-only: Android hands it to the app even when closed (SpeakingMessagingService), which shows
+ * the notification on ANDROID_CHANNEL_ID and reads `speech` aloud.
+ */
+function spokenMessage(tokens: string[], message: PushMessage): MulticastMessage {
+  const data: Record<string, string> = {
+    ...message.data,
+    title: message.title,
+    body: message.body,
+    speech: message.speech ?? '',
+  };
+  if (message.tag) data.tag = message.tag;
+  return { tokens, data, android: { priority: 'high' } };
 }

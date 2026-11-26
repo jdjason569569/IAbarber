@@ -55,6 +55,8 @@ export class PushNotificationsService {
   readonly bookingReceived$ = new Subject<void>();
   /** Emits when an appointment reminder arrives with the app open; the appointments page reads it aloud. */
   readonly reminderReceived$ = new Subject<AppointmentReminder>();
+  /** Text the API asks to read aloud (e.g. "Nueva cita de Juan…") for a push received with the app open. */
+  readonly speechReceived$ = new Subject<string>();
 
   private token: string | null = null;
   private listening = false;
@@ -123,6 +125,8 @@ export class PushNotificationsService {
           });
           return;
         }
+        const speech = notification.data?.speech as string | undefined;
+        if (speech) this.speechReceived$.next(speech);
         void this.addForegroundBooking(notification);
       });
     });
@@ -167,7 +171,10 @@ export class PushNotificationsService {
 
   /** Push received with the app open: Android shows nothing, so the modal is the notice. */
   private async addForegroundBooking(notification: PushNotificationSchema): Promise<void> {
-    this.unseen.set(notification.body ?? '', notification.title ?? '');
+    // Spoken pushes come data-only: their texts travel in `data`.
+    const body = notification.body ?? (notification.data?.body as string | undefined) ?? '';
+    const title = notification.title ?? (notification.data?.title as string | undefined) ?? '';
+    this.unseen.set(body, title);
     await this.showUnseenBookings();
   }
 
