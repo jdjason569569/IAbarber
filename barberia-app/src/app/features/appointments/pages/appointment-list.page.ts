@@ -197,7 +197,41 @@ export class AppointmentListPage {
       cssClass: 'multiline-alert',
       buttons: [this.i18n.t('appointments.availability.close')],
     });
+    // Closing the alert cuts the voice off.
+    void alert.onWillDismiss().then(() => this.voice.stopSpeaking());
     await alert.present();
+    // Speaking now would cut off the assistant's own question.
+    if (!this.dialogActive()) {
+      await this.voice.speak(this.availabilitySpeech(free));
+    }
+  }
+
+  /**
+   * Free slots read aloud as ranges, so consecutive half hours are not listed one by one:
+   * ["14:00", "14:30", "17:00"] -> "Hoy tienes disponible de 2:00 p. m. a 3:00 p. m. y de 5:00 p. m. a 5:30 p. m.".
+   */
+  private availabilitySpeech(free: string[]): string {
+    if (free.length === 0) {
+      return this.i18n.t('appointments.availability.none');
+    }
+    const ranges: { from: number; to: number }[] = [];
+    for (const start of free.map(toMinutes)) {
+      const last = ranges.at(-1);
+      if (last && last.to === start) {
+        last.to = start + APPOINTMENT_MINUTES;
+      } else {
+        ranges.push({ from: start, to: start + APPOINTMENT_MINUTES });
+      }
+    }
+    const labels = this.i18n.meridiemLabels();
+    const clock = (minutes: number) =>
+      formatTime12(`${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`, labels);
+    const parts = ranges.map((r) =>
+      this.i18n.t('appointments.availability.speechRange', { from: clock(r.from), to: clock(r.to) }),
+    );
+    return this.i18n.t('appointments.availability.speech', {
+      ranges: new Intl.ListFormat(this.i18n.locale, { type: 'conjunction' }).format(parts),
+    });
   }
 
   private readonly answerInput = viewChild<ElementRef<HTMLIonInputElement>>('answerInput');

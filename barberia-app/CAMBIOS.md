@@ -1369,3 +1369,14 @@ npx ionic capacitor add android   # añadir plataforma Android
 **Estado actual**
 - La app y la API compilan, y el lint de la app pasa. La API arranca con el módulo nuevo. La lógica se probó con datos falsos (avisa una vez, se salta canceladas y otros días). Falta probarlo en el teléfono con un push real.
 - Los avisos solo salen mientras la API está corriendo.
+
+## 2026-11-25 · El botón "Disponibilidad" responde con voz
+
+**Qué se hizo**
+- Al tocar **Disponibilidad**, además de la ventana con las horas libres, la app las lee en voz alta con `VoiceService.speak()`.
+- Las medias horas seguidas se agrupan en rangos para no leerlas una por una: *"Hoy tienes disponible de 2:00 p. m. a 4:00 p. m. y de 5:00 p. m. a 5:30 p. m."*. Si no hay horas: *"No quedan horas disponibles hoy."*
+- Al cerrar la ventana se corta la voz. Si el asistente está en un diálogo, no habla, para no cortarlo.
+- Claves nuevas: `appointments.availability.speech` y `appointments.availability.speechRange`.
+
+**Estado actual**
+- Compila y el lint pasa. Falta probarlo en el teléfono.

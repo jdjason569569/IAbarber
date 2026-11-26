@@ -119,6 +119,8 @@ export const MESSAGES_ES = {
   'appointments.availability.title': 'Horas disponibles hoy',
   'appointments.availability.none': 'No quedan horas disponibles hoy.',
   'appointments.availability.close': 'Cerrar',
+  'appointments.availability.speech': 'Hoy tienes disponible {ranges}.',
+  'appointments.availability.speechRange': 'de {from} a {to}',
   'appointments.walkIn.button': 'Cliente casual',
   'appointments.walkIn.badge': 'Casual',
   'appointments.emptyDay': 'No hay citas este día',
