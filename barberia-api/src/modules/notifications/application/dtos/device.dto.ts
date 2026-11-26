@@ -19,3 +19,13 @@ export interface BookingChangeInput {
   /** `HH:mm`: the cancelled time, or the new one when rescheduled. */
   time: string;
 }
+
+export interface UpcomingAppointmentInput {
+  client: string;
+  /** `YYYY-MM-DD`. */
+  date: string;
+  /** `HH:mm`. */
+  time: string;
+  /** Minutes left until the appointment starts. */
+  minutes: number;
+}

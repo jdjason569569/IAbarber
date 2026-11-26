@@ -5,6 +5,8 @@ export interface PushMessage {
   body: string;
   /** Extra key/value pairs the app reads when the notification is opened. */
   data?: Record<string, string>;
+  /** Android tag: identifies the notification in the tray; a new one with the same tag replaces it. */
+  tag?: string;
 }
 
 export interface PushSendResult {

@@ -1346,3 +1346,26 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Estado actual**
 - Compila en modo desarrollo y el lint pasa. Falta probarlo en el teléfono.
+
+## 2026-11-25 · Orden de las citas del día
+
+**Qué se hizo**
+- La lista de citas del día se ordena por hora numérica (minutos desde medianoche), de la más temprana arriba a la más tardía abajo; si dos citas tienen la misma hora, va primero la creada antes.
+- Antes se comparaba el texto de la hora; si alguna llegaba sin cero inicial (p. ej. `9:00`), quedaba después de `10:00`. Ahora el orden no depende del formato.
+
+**Archivos**
+- `src/app/features/appointments/pages/appointment-list.page.ts`
+
+## 2026-11-25 · Aviso 5 minutos antes de cada cita (push + voz)
+
+**Qué se hizo**
+- **API – módulo nuevo `reminders`:** `AppointmentReminderScheduler` revisa la agenda cada 30 s. `SendAppointmentRemindersUseCase` busca, en cada workspace con teléfonos registrados, las citas de hoy que empiezan en 5 minutos o menos y manda un push: título "⏰ Cita en 5 minutos", texto "Juan a las 15:00". No avisa citas canceladas, completadas ni de clientes casuales.
+- Cada cita se avisa una sola vez por fecha y hora (si se reagenda, se avisa de nuevo a la hora nueva). Las enviadas se guardan en memoria (`InMemorySentReminderStore`). Si la API se reinicia, una cita a menos de 5 minutos puede avisarse otra vez.
+- **API – notificaciones:** `NotifyUpcomingAppointmentUseCase` y `ListNotifiedWorkspacesUseCase`. `DeviceTokenRepository.findWorkspaceIds()` nuevo. `PushMessage.tag` nuevo: los avisos llevan el tag Android `appointment-reminder:<fecha>:<hora>`.
+- **App:** `PushNotificationsService` emite `reminderReceived$` cuando llega un aviso con la app abierta y lo deja fuera del modal de reservas nuevas (por `data.type` o por el tag). La página de citas muestra un toast y lo lee en voz alta con `VoiceService.speak()`, salvo si el asistente está hablando.
+- Con la app cerrada o en segundo plano, Android muestra la notificación con sonido y vibración (canal `bookings`).
+- Claves nuevas: `notifications.reminder`, `notifications.reminderSpeech`, `notifications.reminderSpeechOne`. Se actualizó `notifications.channelDescription`.
+
+**Estado actual**
+- La app y la API compilan, y el lint de la app pasa. La API arranca con el módulo nuevo. La lógica se probó con datos falsos (avisa una vez, se salta canceladas y otros días). Falta probarlo en el teléfono con un push real.
+- Los avisos solo salen mientras la API está corriendo.

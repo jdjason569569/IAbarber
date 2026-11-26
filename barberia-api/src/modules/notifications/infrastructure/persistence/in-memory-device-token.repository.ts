@@ -19,4 +19,8 @@ export class InMemoryDeviceTokenRepository implements DeviceTokenRepository {
   findByWorkspace(workspaceId: string): Promise<string[]> {
     return Promise.resolve([...this.tokens].filter(([, ws]) => ws === workspaceId).map(([token]) => token));
   }
+
+  findWorkspaceIds(): Promise<string[]> {
+    return Promise.resolve([...new Set(this.tokens.values())]);
+  }
 }

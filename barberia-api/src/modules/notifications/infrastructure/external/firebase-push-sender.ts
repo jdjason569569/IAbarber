@@ -33,7 +33,7 @@ export class FirebasePushSender implements PushSender {
         tokens: batch,
         notification: { title: message.title, body: message.body },
         data: message.data,
-        android: { priority: 'high', notification: { channelId: ANDROID_CHANNEL_ID, sound: 'default' } },
+        android: { priority: 'high', notification: { channelId: ANDROID_CHANNEL_ID, sound: 'default', tag: message.tag } },
       });
       result.responses.forEach((response, index) => {
         if (response.success) return;

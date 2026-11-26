@@ -14,8 +14,9 @@ import { UnauthorizedError } from '../../domain/errors/unauthorized.error.js';
  * Public routes, without login. They always use the admin workspace and protect themselves:
  * - WhatsApp: called by Meta and the open-wa bot, with their own credentials (Meta's signature, the bot secret).
  * - `/reservar`: the clients' booking page, limited per IP and per phone.
+ * - `/health`: keep-alive ping from cron-job.org; answers a constant and reads no data.
  */
-const PUBLIC_PREFIXES = ['/whatsapp/', '/bot/', '/reservar'];
+const PUBLIC_PREFIXES = ['/whatsapp/', '/bot/', '/reservar', '/health'];
 
 /**
  * Runs every app request inside its workspace:

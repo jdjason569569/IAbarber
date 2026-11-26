@@ -7,6 +7,10 @@ interface DeviceTokenRow {
   token: string;
 }
 
+interface WorkspaceRow {
+  workspace_id: string;
+}
+
 /** Table created by docs/migrations/002_device_tokens.sql. */
 const TABLE = 'device_tokens';
 
@@ -37,5 +41,11 @@ export class SupabaseDeviceTokenRepository implements DeviceTokenRepository {
       .eq('workspace_id', workspaceId);
     if (error) throw new Error(error.message);
     return (data as DeviceTokenRow[]).map((row) => row.token);
+  }
+
+  async findWorkspaceIds(): Promise<string[]> {
+    const { data, error } = await this.supabase.from(TABLE).select('workspace_id');
+    if (error) throw new Error(error.message);
+    return [...new Set((data as WorkspaceRow[]).map((row) => row.workspace_id))];
   }
 }

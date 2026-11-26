@@ -14,6 +14,15 @@ import { parseIsoDate } from '../../shared/utils/date.util';
 /** Must match ANDROID_CHANNEL_ID in the API (FirebasePushSender). */
 const BOOKINGS_CHANNEL_ID = 'bookings';
 
+/** Type (data) and Android tag prefix of the "appointment in 5 minutes" push (API). */
+const REMINDER_TYPE = 'appointment-reminder';
+
+/** An appointment about to start, announced by the API a few minutes before. */
+export interface AppointmentReminder {
+  client: string;
+  minutes: number;
+}
+
 /** Text right after the client name in a booking push (API) and in `notifications.bookingLine`. */
 const CLIENT_NAME_END = ' agendó para ';
 
@@ -44,6 +53,8 @@ export class PushNotificationsService {
 
   /** Emits when a booking push arrives with the app open or is tapped; pages reload their data. */
   readonly bookingReceived$ = new Subject<void>();
+  /** Emits when an appointment reminder arrives with the app open; the appointments page reads it aloud. */
+  readonly reminderReceived$ = new Subject<AppointmentReminder>();
 
   private token: string | null = null;
   private listening = false;
@@ -104,7 +115,16 @@ export class PushNotificationsService {
     });
     // With the app open Android shows nothing, so a modal tells the barber and stays until seen.
     await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-      this.zone.run(() => void this.addForegroundBooking(notification));
+      this.zone.run(() => {
+        if (notification.data?.type === REMINDER_TYPE) {
+          this.reminderReceived$.next({
+            client: String(notification.data.client ?? ''),
+            minutes: Number(notification.data.minutes) || 5,
+          });
+          return;
+        }
+        void this.addForegroundBooking(notification);
+      });
     });
     await PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
       this.zone.run(() => {
@@ -133,6 +153,8 @@ export class PushNotificationsService {
       const { notifications } = await PushNotifications.getDeliveredNotifications();
       const known = this.unseen.size;
       for (const notification of notifications) {
+        // Reminders are not bookings: by the time the barber looks, the appointment is starting.
+        if (notification.tag?.startsWith(REMINDER_TYPE)) continue;
         // Android's auto-group summary has no text.
         const line = notification.body ?? notification.title;
         if (line) this.unseen.set(line, notification.title ?? '');

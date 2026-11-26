@@ -292,11 +292,15 @@ export const MESSAGES_ES = {
   'settings.blocks.errors.clash':
     'No se guardó: hay citas en esos horarios ({appointments}). Cancélalas primero si quieres bloquear ese tramo.',
   'notifications.channelName': 'Citas',
-  'notifications.channelDescription': 'Avisos cuando un cliente agenda, cambia o cancela una cita por WhatsApp',
+  'notifications.channelDescription':
+    'Avisos cuando un cliente agenda, cambia o cancela una cita, y 5 minutos antes de cada cita',
   'notifications.dismiss': 'Entendido',
   'notifications.viewAppointments': 'Ver citas',
   'notifications.unseenTitle': '💈 Novedades en tu agenda',
   'notifications.bookingLine': '{client} agendó para el {date} a las {time}',
+  'notifications.reminder': '⏰ En {minutes} min: cita con {client}',
+  'notifications.reminderSpeech': 'Atención: en {minutes} minutos tienes cita con {client}.',
+  'notifications.reminderSpeechOne': 'Atención: en un minuto tienes cita con {client}.',
   'time.am': 'a. m.',
   'time.pm': 'p. m.',
 } as const;

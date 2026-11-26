@@ -836,3 +836,26 @@ This file records, in chronological order, every change made to the backend.
 **Pending / notes**
 - No migration. Optional: set `BOOKING_LINK_SECRET` on Render (`openssl rand -hex 32`) before sharing links.
 - Render sleeps from 23:00 to 6:00, so the first load at night takes about a minute.
+
+## 2026-11-25 · Reminder push 5 minutes before each appointment
+
+**What was done**
+- New `reminders` module: `AppointmentReminderScheduler` (setInterval, every 30 s) runs `SendAppointmentRemindersUseCase`. For each workspace with registered phones, it pushes "⏰ Cita en 5 minutos / Juan a las 15:00" for today's bookings that start within 5 minutes. Cancelled, completed and walk-in appointments are skipped.
+- One push per appointment slot (`workspace:id:date:time`). A rescheduled appointment is reminded again at its new time. Sent keys live in memory (`InMemorySentReminderStore`, port `SENT_REMINDER_STORE`); a restart may repeat a reminder that is less than 5 minutes away.
+- Notifications: `NotifyUpcomingAppointmentUseCase`, `ListNotifiedWorkspacesUseCase` (both exported), `DeviceTokenRepository.findWorkspaceIds()`, and optional `PushMessage.tag` (Android tag `appointment-reminder:<date>:<time>`; the app uses it to keep reminders out of the bookings modal). Push data: `type=appointment-reminder`, `client`, `date`, `time`, `minutes`.
+
+**Current state**
+- Compiles; the API starts with the module. The logic was checked with fakes (one push per appointment; cancelled ones and other days skipped).
+
+**Pending / notes**
+- Deploy to Render. No migration.
+- Reminders only go out while the API process is awake. If the Render instance sleeps (free plan after inactivity, or the 23:00–6:00 window), nothing is sent.
+
+## 2026-11-25 · `/health` keep-alive for cron-job.org
+
+**What was done**
+- New `health` module: `GET /health` → `{ "status": "ok" }`. Public (added to `PUBLIC_PREFIXES` in `AuthMiddleware`), reads no data.
+- cron-job.org calls `https://iabarber.onrender.com/health` every 10 minutes so Render does not put the API to sleep and the appointment reminders keep running.
+
+**Current state**
+- Checked locally: `/health` answers 200 without login; `/appointments` still answers 401.

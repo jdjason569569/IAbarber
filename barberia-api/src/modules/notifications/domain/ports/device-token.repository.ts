@@ -6,4 +6,6 @@ export interface DeviceTokenRepository {
   save(token: string, workspaceId: string, platform: string): Promise<void>;
   remove(tokens: string[]): Promise<void>;
   findByWorkspace(workspaceId: string): Promise<string[]>;
+  /** Workspaces with at least one phone registered. */
+  findWorkspaceIds(): Promise<string[]>;
 }

@@ -8,6 +8,7 @@ import { addIcons } from 'ionicons';
 import { callOutline, checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send } from 'ionicons/icons';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { PushNotificationsService } from '../../../core/notifications/push-notifications.service';
+import type { AppointmentReminder } from '../../../core/notifications/push-notifications.service';
 import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { parseIsoDate, toLocalIsoDate } from '../../../shared/utils/date.util';
@@ -131,10 +132,11 @@ export class AppointmentListPage {
   /** Day shown in the list (`YYYY-MM-DD`, device local time). Today by default. */
   protected readonly selectedDate = signal(toLocalIsoDate(new Date()));
 
+  /** Appointments of the selected day, earliest first: later hours always go to the bottom. */
   protected readonly dayAppointments = computed(() =>
     this.appointments()
       .filter((a) => a.date === this.selectedDate())
-      .sort((a, b) => a.time.localeCompare(b.time)),
+      .sort((a, b) => toMinutes(a.time) - toMinutes(b.time) || a.id - b.id),
   );
 
   protected readonly dayNumber = computed(() => parseIsoDate(this.selectedDate()).getDate());
@@ -206,6 +208,10 @@ export class AppointmentListPage {
     this.pushNotifications.bookingReceived$
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.refresh());
+    // An appointment starts in a few minutes: say it aloud (unless the assistant is talking) and show it.
+    this.pushNotifications.reminderReceived$
+      .pipe(takeUntilDestroyed())
+      .subscribe((reminder) => void this.announceReminder(reminder));
     // Text mode opens the keyboard as soon as a question waits for the answer.
     effect(() => {
       const input = this.answerInput();
@@ -713,6 +719,23 @@ export class AppointmentListPage {
         this.appointments.update((items) => items.map((a) => (a.id === updated.id ? updated : a))),
       error: () => void this.showError('appointments.edit.error'),
     });
+  }
+
+  private async announceReminder({ client, minutes }: AppointmentReminder): Promise<void> {
+    const toast = await this.toastController.create({
+      message: this.i18n.t('notifications.reminder', { client, minutes }),
+      duration: 8000,
+      color: 'warning',
+      position: 'top',
+    });
+    await toast.present();
+    // Speaking now would cut off the assistant's own question.
+    if (this.dialogActive()) return;
+    const speech =
+      minutes === 1
+        ? this.i18n.t('notifications.reminderSpeechOne', { client })
+        : this.i18n.t('notifications.reminderSpeech', { client, minutes });
+    await this.voice.speak(speech);
   }
 
   private async showError(key: MessageKey): Promise<void> {
