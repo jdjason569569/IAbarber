@@ -24,7 +24,6 @@ import { GetWebBookingUseCase } from '../../application/use-cases/get-web-bookin
 import { RescheduleWebBookingUseCase } from '../../application/use-cases/reschedule-web-booking.use-case.js';
 import { InvalidBookingLinkError } from '../../domain/errors/invalid-booking-link.error.js';
 import { InvalidWebBookingError } from '../../domain/errors/invalid-web-booking.error.js';
-import { PendingBookingExistsError } from '../../domain/errors/pending-booking-exists.error.js';
 import { RescheduleLimitError } from '../../domain/errors/reschedule-limit.error.js';
 import { TooLateToChangeError } from '../../domain/errors/too-late-to-change.error.js';
 import { TooManyBookingsError } from '../../domain/errors/too-many-bookings.error.js';
@@ -46,7 +45,6 @@ const MESSAGES = {
   name: 'Escribe tu nombre (mínimo 2 letras).',
   phone: 'Escribe un número de celular válido, por ejemplo 300 123 4567.',
   date: 'Solo puedes reservar para hoy o mañana.',
-  pending: 'Ya tienes una cita pendiente con este número. Usa el enlace de tu cita para cambiarla o cancelarla.',
   tooMany: 'Se hicieron muchas reservas en poco tiempo. Intenta más tarde o escríbenos por WhatsApp.',
   slot: 'Esa hora ya no está disponible. Elige otra.',
   link: 'No encontramos esta cita. Revisa el enlace.',
@@ -164,7 +162,6 @@ export class PublicBookingController {
 function toHttpError(error: unknown): unknown {
   if (error instanceof InvalidWebBookingError) return new BadRequestException(MESSAGES[error.field]);
   if (error instanceof InvalidBookingLinkError) return new NotFoundException(MESSAGES.link);
-  if (error instanceof PendingBookingExistsError) return new ConflictException(MESSAGES.pending);
   if (error instanceof TooManyBookingsError) return new HttpException(MESSAGES.tooMany, HttpStatus.TOO_MANY_REQUESTS);
   if (error instanceof TooLateToChangeError) return new ConflictException(MESSAGES.tooLate);
   if (error instanceof RescheduleLimitError) return new ConflictException(MESSAGES.rescheduleLimit);

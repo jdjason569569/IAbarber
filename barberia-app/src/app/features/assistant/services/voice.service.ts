@@ -22,6 +22,16 @@ type WebSpeechRecognitionCtor = new () => WebSpeechRecognition;
  */
 const NATIVE_TTS_LANG = 'es-US';
 
+/**
+ * Google's higher quality "network" voice (synthesized on Google's servers; without internet the
+ * engine falls back to the same voice built into the phone). Must match VOICE_NAME in
+ * SpeakingMessagingService. Other options: es-us-x-esc-network, es-us-x-esf-network, es-us-x-sfb-network.
+ */
+const NATIVE_VOICE_NAME = 'es-us-x-esd-network';
+
+/** A little slower than normal sounds less mechanical. Must match SPEECH_RATE in SpeakingMessagingService. */
+const NATIVE_SPEECH_RATE = 0.95;
+
 /** A native session rejected faster than this never really listened. */
 const NATIVE_EARLY_FAILURE_MS = 1000;
 /** Gives the speech service time to release the previous session before retrying. */
@@ -51,6 +61,8 @@ export class VoiceService {
   private webRecognition: WebSpeechRecognition | null = null;
   /** Set once the device recognizer rejected the app locale; later sessions use the device language. */
   private useDeviceLanguage = false;
+  /** Index of NATIVE_VOICE_NAME in the engine's voice list; undefined when the engine lacks it (e.g. Samsung's). */
+  private nativeVoice: Promise<number | undefined> | null = null;
 
   /**
    * Reads the text aloud and resolves when finished (or immediately if unsupported).
@@ -71,15 +83,33 @@ export class VoiceService {
 
   private async speakNative(text: string): Promise<void> {
     try {
-      await TextToSpeech.speak({ text, lang: NATIVE_TTS_LANG, queueStrategy: QueueStrategy.Flush });
+      const voice = await this.findNativeVoice();
+      await TextToSpeech.speak({
+        text,
+        lang: NATIVE_TTS_LANG,
+        voice,
+        rate: NATIVE_SPEECH_RATE,
+        queueStrategy: QueueStrategy.Flush,
+      });
     } catch {
       // The engine may lack es-US (e.g. Samsung's only has Mexican Spanish): retry with plain Spanish.
       try {
-        await TextToSpeech.speak({ text, lang: 'es', queueStrategy: QueueStrategy.Flush });
+        await TextToSpeech.speak({ text, lang: 'es', rate: NATIVE_SPEECH_RATE, queueStrategy: QueueStrategy.Flush });
       } catch (error) {
         console.error('Text to speech failed', error);
       }
     }
+  }
+
+  /** Looked up once: the plugin picks voices by their position in the engine's list. */
+  private findNativeVoice(): Promise<number | undefined> {
+    this.nativeVoice ??= TextToSpeech.getSupportedVoices()
+      .then(({ voices }) => {
+        const index = voices.findIndex((v) => v.voiceURI === NATIVE_VOICE_NAME);
+        return index >= 0 ? index : undefined;
+      })
+      .catch(() => undefined);
+    return this.nativeVoice;
   }
 
   private speakWeb(text: string): Promise<void> {

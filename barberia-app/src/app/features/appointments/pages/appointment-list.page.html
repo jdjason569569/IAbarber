@@ -20,9 +20,6 @@
       <ion-button size="small" fill="outline" color="primary" [disabled]="dialogActive()" (click)="onWalkInClick()">
         {{ 'appointments.walkIn.button' | t }}
       </ion-button>
-      <ion-button size="small" fill="outline" color="primary" (click)="showAvailability()">
-        {{ 'appointments.availability.button' | t }}
-      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
@@ -272,16 +269,28 @@
             </ion-button>
             <span class="mode-label">{{ 'assistant.modeVoice' | t }}</span>
           </div>
-          <div class="mode-action">
-            <ion-button
-              class="keyboard-button"
-              [attr.aria-label]="(dialogActive() ? 'assistant.switchToText' : 'appointments.keyboardLabel') | t"
-              (click)="onMicClick(true)"
-            >
-              <ion-icon slot="icon-only" name="keypad"></ion-icon>
-            </ion-button>
-            <span class="mode-label">{{ 'assistant.modeText' | t }}</span>
-          </div>
+          <!-- "Escribir" (book by typing) is hidden at rest; during a dialog it switches the answer to text. -->
+          @if (dialogActive()) {
+            <div class="mode-action">
+              <ion-button
+                class="keyboard-button"
+                [attr.aria-label]="'assistant.switchToText' | t"
+                (click)="onMicClick(true)"
+              >
+                <ion-icon slot="icon-only" name="keypad"></ion-icon>
+              </ion-button>
+              <span class="mode-label">{{ 'assistant.modeText' | t }}</span>
+            </div>
+          }
+          @if (!dialogActive()) {
+            <!-- Asks what the barber needs and answers aloud (free hours, next appointment). -->
+            <div class="mode-action">
+              <ion-button class="ask-button" [attr.aria-label]="'commands.buttonLabel' | t" (click)="onAskClick()">
+                <ion-icon slot="icon-only" name="chatbubble-ellipses"></ion-icon>
+              </ion-button>
+              <span class="mode-label">{{ 'commands.button' | t }}</span>
+            </div>
+          }
         </div>
       }
       @if (dialogActive()) {

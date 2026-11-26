@@ -117,6 +117,21 @@
 }
 
 /* Solid red so it reads as an active option next to the white microphone, not as a disabled button. */
+/* "Preguntar": same size as the keyboard button, in the tertiary color. */
+.ask-button {
+  width: 56px;
+  height: 56px;
+  margin: 0;
+  font-size: 24px;
+  --padding-start: 0;
+  --padding-end: 0;
+  --border-radius: 50%;
+  --background: var(--ion-color-tertiary);
+  --background-activated: var(--ion-color-tertiary-shade);
+  --color: var(--ion-color-tertiary-contrast);
+  --box-shadow: 0 4px 12px rgba(var(--ion-color-tertiary-rgb), 0.4);
+}
+
 .keyboard-button {
   width: 56px;
   height: 56px;

@@ -10,6 +10,7 @@ import android.media.AudioAttributes;
 import android.os.Build;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -36,6 +37,10 @@ public class SpeakingMessagingService extends MessagingService {
     private static final String CHANNEL_ID = "bookings";
     /** Latin American Spanish of Google's engine (it has no es-CO voice). */
     private static final Locale VOICE_LOCALE = new Locale("es", "US");
+    /** Google's network voice (local fallback built in). Must match NATIVE_VOICE_NAME in voice.service.ts. */
+    private static final String VOICE_NAME = "es-us-x-esd-network";
+    /** Must match NATIVE_SPEECH_RATE in voice.service.ts. */
+    private static final float SPEECH_RATE = 0.95f;
     /** onMessageReceived has about 20 s before Android may stop the service. */
     private static final long MAX_SPEECH_SECONDS = 15;
 
@@ -118,6 +123,16 @@ public class SpeakingMessagingService extends MessagingService {
             if (lang == TextToSpeech.LANG_MISSING_DATA || lang == TextToSpeech.LANG_NOT_SUPPORTED) {
                 tts.setLanguage(new Locale("es"));
             }
+            // Only Google's engine has this voice; others keep the language's default one.
+            if (tts.getVoices() != null) {
+                for (Voice voice : tts.getVoices()) {
+                    if (VOICE_NAME.equals(voice.getName())) {
+                        tts.setVoice(voice);
+                        break;
+                    }
+                }
+            }
+            tts.setSpeechRate(SPEECH_RATE);
             tts.setAudioAttributes(
                 new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION)

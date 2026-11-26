@@ -115,11 +115,8 @@ export const MESSAGES_ES = {
   'appointments.loading': 'Cargando...',
   'appointments.today': 'Citas de hoy',
   'appointments.onDate': 'Citas del {date}',
-  'appointments.availability.button': 'Disponibilidad',
-  'appointments.availability.title': 'Horas disponibles hoy',
   'appointments.availability.none': 'No quedan horas disponibles hoy.',
-  'appointments.availability.close': 'Cerrar',
-  'appointments.availability.speech': 'Hoy tienes disponible {ranges}.',
+  'appointments.availability.speech': 'Hoy tienes disponible {ranges}',
   'appointments.availability.speechRange': 'de {from} a {to}',
   'appointments.walkIn.button': 'Cliente casual',
   'appointments.walkIn.badge': 'Casual',
@@ -134,7 +131,6 @@ export const MESSAGES_ES = {
   'appointments.total': 'Total',
   'appointments.callClient': 'Llamar a {client}',
   'appointments.micLabel': 'Crear cita por voz',
-  'appointments.keyboardLabel': 'Crear cita escribiendo',
 
   // Appointment state (cancelled flag) and cancel action
   'appointments.state.active': 'Activa',
@@ -293,6 +289,16 @@ export const MESSAGES_ES = {
   'settings.blocks.errors.overlap': 'Hay tramos que se cruzan. Ajústalos o quita uno.',
   'settings.blocks.errors.clash':
     'No se guardó: hay citas en esos horarios ({appointments}). Cancélalas primero si quieres bloquear ese tramo.',
+  'commands.button': 'Preguntar',
+  'commands.buttonLabel': 'Preguntarle algo al asistente',
+  'commands.question': '¿Qué necesitas?',
+  'commands.notUnderstood': 'No te entendí. Puedes preguntarme qué horas tengo disponibles o qué cita sigue. ¿Qué necesitas?',
+  'commands.help': 'No te entendí. Puedes preguntarme qué horas tengo disponibles o qué cita sigue.',
+  'commands.cancelled': 'Pregunta cancelada.',
+  'commands.next.none': 'No tienes más citas hoy.',
+  'commands.next.now': 'La siguiente cita es con {client}, a las {time}. Ya es la hora.',
+  'commands.next.soon': 'La siguiente cita es con {client}, a las {time}, en {minutes} minutos.',
+  'commands.next.later': 'La siguiente cita es a las {time}, con {client}.',
   'notifications.channelName': 'Citas',
   'notifications.channelDescription':
     'Avisos cuando un cliente agenda, cambia o cancela una cita, y 5 minutos antes de cada cita',

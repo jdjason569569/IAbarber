@@ -5,7 +5,19 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, injec
 import { AlertController, IonicModule, ModalController, ToastController } from '@ionic/angular/lazy';
 import type { RefresherCustomEvent } from '@ionic/core';
 import { addIcons } from 'ionicons';
-import { callOutline, checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send } from 'ionicons/icons';
+import {
+  callOutline,
+  chatbubbleEllipses,
+  checkmark,
+  chevronBack,
+  chevronForward,
+  close,
+  createOutline,
+  keypad,
+  mic,
+  refresh,
+  send,
+} from 'ionicons/icons';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { PushNotificationsService } from '../../../core/notifications/push-notifications.service';
 import type { AppointmentReminder } from '../../../core/notifications/push-notifications.service';
@@ -29,6 +41,8 @@ import { Appointment } from '../models/appointment.model';
 import { AssistantService } from '../../assistant/services/assistant.service';
 import { VoiceService } from '../../assistant/services/voice.service';
 import { AppointmentService } from '../services/appointment.service';
+import { detectCommand } from '../utils/voice-commands';
+import type { VoiceCommand } from '../utils/voice-commands';
 import { DayHours } from '../../settings/models/business-hours.model';
 import { BusinessHoursService } from '../../settings/services/business-hours.service';
 import { TimeRangePipe } from '../../../shared/pipes/time-range.pipe';
@@ -161,8 +175,8 @@ export class AppointmentListPage {
     void this.onMicClick(false, { walkIn: true });
   }
 
-  /** Alert listing today's hours that are still free (open, not blocked, not taken and not already past). */
-  protected async showAvailability(): Promise<void> {
+  /** Start times (`HH:mm`) still free today: open, not blocked, not taken and not already past. */
+  private async freeSlotsToday(): Promise<string[]> {
     const now = new Date();
     const today = toLocalIsoDate(now);
     const [week, blocks] = await Promise.all([
@@ -189,21 +203,83 @@ export class AppointmentListPage {
         free.push(time);
       }
     }
-    const alert = await this.alertController.create({
-      header: this.i18n.t('appointments.availability.title'),
-      message: free.length > 0
-        ? free.map((time) => formatTimeRange(time, this.i18n.meridiemLabels())).join('\n')
-        : this.i18n.t('appointments.availability.none'),
-      cssClass: 'multiline-alert',
-      buttons: [this.i18n.t('appointments.availability.close')],
-    });
-    // Closing the alert cuts the voice off.
-    void alert.onWillDismiss().then(() => this.voice.stopSpeaking());
-    await alert.present();
-    // Speaking now would cut off the assistant's own question.
-    if (!this.dialogActive()) {
-      await this.voice.speak(this.availabilitySpeech(free));
+    return free;
+  }
+
+  /**
+   * "Preguntar" button: asks what the barber needs, listens (or reads the typed text) and answers
+   * aloud. Known questions: free hours today and the next appointment (see detectCommand).
+   */
+  protected async onAskClick(): Promise<void> {
+    if (this.dialogActive()) {
+      return;
     }
+    this.textMode.set(false);
+    this.dialogActive.set(true);
+    this.cancelled = new Promise<never>((_, reject) => (this.cancelDialog = () => reject(new DialogCancelled())));
+    this.cancelled.catch(() => undefined);
+    try {
+      let question = this.i18n.t('commands.question');
+      for (let attempt = 0; ; attempt++) {
+        this.showQuestion(question);
+        this.dialogAnswer.set(null);
+        await this.untilCancelled(this.voice.speak(question));
+        const heard = await this.awaitAnswer(question, LISTEN_SECONDS);
+        this.dialogAnswer.set(heard);
+        const command = detectCommand(heard);
+        if (command === null && attempt < MAX_RETRIES) {
+          question = this.i18n.t('commands.notUnderstood');
+          continue;
+        }
+        const reply = command === null ? this.i18n.t('commands.help') : await this.answerCommand(command);
+        this.assistantReply.set(reply);
+        await this.untilCancelled(this.voice.speak(reply));
+        return;
+      }
+    } catch (error) {
+      if (error instanceof DialogCancelled) {
+        this.assistantReply.set(this.i18n.t('commands.cancelled'));
+      } else {
+        console.error('Voice command failed', error);
+        this.assistantReply.set(this.i18n.t(this.assistantErrorKey(error)));
+      }
+    } finally {
+      this.cancelDialog = null;
+      this.listening.set(false);
+      this.dialogAnswer.set(null);
+      this.textMode.set(false);
+      this.dialogActive.set(false);
+    }
+  }
+
+  private async answerCommand(command: VoiceCommand): Promise<string> {
+    switch (command) {
+      case 'availability':
+        return this.availabilitySpeech(await this.freeSlotsToday());
+      case 'next':
+        return this.nextAppointmentSpeech();
+    }
+  }
+
+  /** "La siguiente cita es con Juan a las 3:30 p. m., en 20 minutos." for today's next booking still to start. */
+  private nextAppointmentSpeech(): string {
+    const now = new Date();
+    const today = toLocalIsoDate(now);
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const next = this.appointments()
+      .filter((a) => a.date === today && !a.cancelled && !a.walkIn && !a.completed && toMinutes(a.time) >= nowMinutes)
+      .sort((a, b) => toMinutes(a.time) - toMinutes(b.time))[0];
+    if (!next) {
+      return this.i18n.t('commands.next.none');
+    }
+    const time = formatTime12(next.time, this.i18n.meridiemLabels());
+    const minutes = toMinutes(next.time) - nowMinutes;
+    if (minutes < 60) {
+      return minutes <= 1
+        ? this.i18n.t('commands.next.now', { client: next.clientName, time })
+        : this.i18n.t('commands.next.soon', { client: next.clientName, time, minutes });
+    }
+    return this.i18n.t('commands.next.later', { client: next.clientName, time });
   }
 
   /**
@@ -237,7 +313,7 @@ export class AppointmentListPage {
   private readonly answerInput = viewChild<ElementRef<HTMLIonInputElement>>('answerInput');
 
   constructor() {
-    addIcons({ callOutline, checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send });
+    addIcons({ callOutline, chatbubbleEllipses, checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send });
     // A client just booked on WhatsApp (push received or tapped): show it without pulling to refresh.
     this.pushNotifications.bookingReceived$
       .pipe(takeUntilDestroyed())

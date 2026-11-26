@@ -1419,3 +1419,48 @@ npx ionic capacitor add android   # añadir plataforma Android
 **Estado actual**
 - Instalado en el teléfono. Probado con un push real y la app en segundo plano: apareció la notificación y el motor de Google leyó la frase.
 - Hay que tener la app nueva instalada **antes** de desplegar la API: una app vieja no muestra los pushes de solo datos cuando está cerrada.
+
+## 2026-11-25 · Voz de red de Google, un poco más lenta
+
+**Qué se hizo**
+- La voz nativa usa `es-us-x-esd-network` (la "Voz 2", elegida por el usuario), una voz de red de Google: se genera en los servidores de Google y, sin internet, el motor pasa solo a la misma voz instalada en el teléfono. La velocidad baja a 0.95 para sonar menos mecánica.
+- `VoiceService`: busca una vez el índice de esa voz con `getSupportedVoices()` y lo pasa a `TextToSpeech.speak()` junto con `rate`. Si el motor no la tiene (por ejemplo, el de Samsung), usa la voz por defecto de `es-US`.
+- `SpeakingMessagingService` (app cerrada): elige la misma voz con `setVoice()` y la misma velocidad. Las constantes de los dos archivos deben coincidir.
+- Otras voces de red disponibles: `es-us-x-esc-network`, `es-us-x-esf-network`, `es-us-x-sfb-network`.
+
+**Estado actual**
+- Instalado en el teléfono. Probado con la app abierta (botón Disponibilidad) y en segundo plano (push real): ambos usaron la voz de red de Google; luego se cambió a `es-us-x-esd-network`.
+
+## 2026-11-26 · Botón "Preguntar": órdenes por voz con respuesta hablada
+
+**Qué se hizo**
+- Botón nuevo **Preguntar** en la barra de abajo, junto a Hablar y Escribir. Al tocarlo, la app pregunta en voz alta *"¿Qué necesitas?"*, escucha la respuesta (o la recibe escrita, con el mismo cambio a teclado del asistente) y responde en voz alta. La respuesta queda escrita en la barra.
+- Órdenes que entiende (`features/appointments/utils/voice-commands.ts`, `detectCommand()`; ignora tildes y mayúsculas):
+  - **Horas disponibles** ("citas disponibles", "qué horas tengo libres", "tengo huecos"…): la misma respuesta que el botón Disponibilidad, por ejemplo *"Hoy tienes disponible de 9:00 a. m. a 10:00 a. m. y de…"*.
+  - **Qué cita sigue** ("qué cita sigue", "cuál es la próxima", "quién viene"…): la siguiente cita de hoy que no está cancelada ni completada. Si es dentro de menos de una hora, dice además en cuántos minutos.
+- Si no entiende, explica qué se puede preguntar y vuelve a escuchar (hasta 2 veces).
+- Se separó `freeSlotsToday()` de `showAvailability()` para reutilizar el cálculo de horas libres.
+- Se quitó el punto final de `appointments.availability.speech` y se reordenó `commands.next.later`: los textos terminaban en "a. m." más un punto ("a. m..").
+- Claves nuevas: `commands.*`. Icono nuevo: `chatbubble-ellipses`.
+
+**Estado actual**
+- Instalado en el teléfono. Probado escribiendo "qué cita sigue" y "citas disponibles": ambas respuestas correctas.
+
+## 2026-11-26 · Se oculta el botón "Escribir" de la barra de abajo
+
+**Qué se hizo**
+- Con la app en reposo, la barra de abajo muestra solo **Hablar** y **Preguntar**. Ya no está el botón "Escribir" para crear una cita escribiendo.
+- Durante un diálogo (crear cita o Preguntar) el botón del teclado sigue disponible, para responder escribiendo si el micrófono falla.
+- Se borró la clave `appointments.keyboardLabel`, que ya no se usa.
+
+**Estado actual**
+- Instalado en el teléfono y comprobado en pantalla.
+
+## 2026-11-26 · Se oculta el botón "Disponibilidad"
+
+**Qué se hizo**
+- Se quitó el botón **Disponibilidad** de arriba. Las horas libres ahora se piden con **Preguntar** ("citas disponibles"), que responde en voz alta con el mismo cálculo (`freeSlotsToday()` y `availabilitySpeech()`).
+- Se borraron `showAvailability()` (la ventana con la lista), las claves `appointments.availability.button`, `.title` y `.close`, y el estilo `.multiline-alert` de `global.scss`, que solo usaba esa ventana.
+
+**Estado actual**
+- Instalado en el teléfono y comprobado en pantalla: arriba solo queda "Cliente casual".

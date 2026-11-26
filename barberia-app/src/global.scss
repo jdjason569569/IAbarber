@@ -75,11 +75,6 @@ ion-modal.booked-summary-modal .ion-page {
   contain: content;
 }
 
-/* Alerts whose message is a list, one item per line (e.g. today's free half hours). */
-.multiline-alert .alert-message {
-  white-space: pre-line;
-}
-
 /* Booking notice (push): solid white with navy text so it stands out on the dark app. */
 ion-alert.booking-alert {
   --background: var(--ion-color-primary);

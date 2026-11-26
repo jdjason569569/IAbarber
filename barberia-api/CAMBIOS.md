@@ -883,3 +883,18 @@ This file records, in chronological order, every change made to the backend.
 
 **Current state**
 - Compiles. A real "cancelled" push was sent with the app in the background, and the phone read it aloud.
+
+## 2026-11-26 · Web booking: a phone may hold several bookings
+
+**What was done**
+- `BookFromWebUseCase` no longer refuses a phone that already has a pending booking. Two clients who share a number (for example a parent and a child) can both book from `/reservar`.
+- Removed `PendingBookingExistsError`, its 409 mapping and the message "Ya tienes una cita pendiente con este número…".
+- The other limits stay: 3 web bookings per IP per hour, 6 per hour overall, and the slot must be free.
+
+**Current state**
+- Checked locally with in-memory repositories: two bookings with the same phone both answered 201.
+
+**Pending / notes**
+- Deploy to Render.
+- Each booking has its own private link, so the change and cancel links keep working per booking.
+- WhatsApp keeps its own rule (one pending booking per chat). Only the web page changed.

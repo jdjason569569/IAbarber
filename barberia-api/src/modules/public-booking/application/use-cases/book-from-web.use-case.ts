@@ -5,13 +5,12 @@ import { GetServicePriceUseCase } from '../../../shop-settings/application/use-c
 import { BookingName } from '../../domain/entities/booking-name.entity.js';
 import { ClientPhone } from '../../domain/entities/client-phone.entity.js';
 import { InvalidWebBookingError } from '../../domain/errors/invalid-web-booking.error.js';
-import { PendingBookingExistsError } from '../../domain/errors/pending-booking-exists.error.js';
 import { SlotUnavailableError } from '../../domain/errors/slot-unavailable.error.js';
 import { TooManyBookingsError } from '../../domain/errors/too-many-bookings.error.js';
 import { WEB_BOOKING_ACTIVITY } from '../../domain/ports/web-booking-activity.port.js';
 import type { WebBookingActivity } from '../../domain/ports/web-booking-activity.port.js';
 import type { BookFromWebInput, BookFromWebResult } from '../dtos/web-booking.dto.js';
-import { WebBookingAccess, isPending, startOf } from '../web-booking-access.js';
+import { WebBookingAccess } from '../web-booking-access.js';
 import { priceOrZero } from './get-public-slots.use-case.js';
 
 /** Web bookings per IP in the last hour. */
@@ -21,8 +20,9 @@ const MAX_PER_HOUR = 6;
 const HOUR_MS = 60 * 60_000;
 
 /**
- * A client books from the public page with only a name and a phone. Same rules as WhatsApp: today
- * or tomorrow, a free slot, and one pending booking per phone. Returns the token of the private link.
+ * A client books from the public page with only a name and a phone: today or tomorrow and a free
+ * slot. A phone may hold several bookings (e.g. a parent booking for two children with the same
+ * number). Returns the token of the private link.
  */
 @Injectable()
 export class BookFromWebUseCase {
@@ -47,11 +47,6 @@ export class BookFromWebUseCase {
       (await this.activity.countSince(null, now - HOUR_MS)) >= MAX_PER_HOUR
     ) {
       throw new TooManyBookingsError('Too many web bookings in the last hour');
-    }
-
-    const all = await this.access.all();
-    if (all.some((a) => a.phone === phone.value && isPending(a) && startOf(a) > now)) {
-      throw new PendingBookingExistsError('This phone already has a pending booking');
     }
 
     // The page only offers free slots; one taken in between fails here with the scheduling rules.
