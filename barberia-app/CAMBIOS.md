@@ -1464,3 +1464,28 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 **Estado actual**
 - Instalado en el teléfono y comprobado en pantalla: arriba solo queda "Cliente casual".
+
+---
+
+## 2026-11-26 · Availability set by telling the assistant
+
+**What was done**
+- `features/settings/components/day-blocks-editor/`: the "Desde/Hasta" selects, "Agregar tramo" and "Guardar disponibilidad" are gone. A "Decirle al asistente a qué hora no estaré" button asks aloud "¿A qué hora no vas a estar disponible hoy?", listens (or takes a typed answer), saves the block right away and confirms aloud. The blocked hours stay listed; the trash button saves at once.
+- `features/settings/utils/unavailability-phrase.ts`: `parseUnavailability()` reads phrases without AI: "de 2 a 4 (de la tarde)", "desde las 6", "hasta las 5", "a las 10" (one hour), "entre las dos y las cuatro", "toda la mañana/tarde/noche", "todo el día", "mediodía", "medianoche". Hours without am/pm take the next reading ahead inside today's opening hours; half hours round out to whole hours. `mergeBlock()` joins overlapping or touching blocks.
+- If it does not understand, it asks once more and then gives up. If the microphone fails, it shows why and the barber can type.
+- Messages in `core/i18n/messages.es.ts` (`settings.blocks.assistant.*`, `settings.blocks.range`); removed the unused `from`, `to`, `add`, `save` and `errors.overlap` keys.
+- Reuses `VoiceService` from `features/assistant`, as the appointments page already does.
+
+**Current state**
+- Only the app changed; the API (`PUT /business-hours/blocks/:date`) is the same. A block over an existing appointment is still rejected (409) and the assistant reads out which appointments are in the way.
+
+**Pending / notes**
+- Build and install on the phone (`ng build` + `cap sync`).
+
+---
+
+## 2026-11-26 · Availability assistant opens in a popup
+
+**What was done**
+- `day-blocks-editor`: the assistant now opens in a centered `ion-modal` (auto height) instead of an inline panel. A big microphone is grey while the question is read, red with pulsing rings while listening, a spinner while saving, and a green check or red alert with the outcome, which stays a moment after it is read aloud. The popup also shows what was heard, examples and the typed-answer field.
+- New messages `settings.blocks.assistant.speaking` and `savingStatus`; `listening` is now "Te escucho... habla ahora".
