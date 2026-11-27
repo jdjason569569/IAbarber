@@ -898,3 +898,11 @@ This file records, in chronological order, every change made to the backend.
 - Deploy to Render.
 - Each booking has its own private link, so the change and cancel links keep working per booking.
 - WhatsApp keeps its own rule (one pending booking per chat). Only the web page changed.
+
+## 2026-11-26 · Dinero dicho en pesos, no en dólares
+
+- La voz del teléfono leía "$20000" como "20000 dólares". Las respuestas del asistente ya no usan "$":
+  - Cliente casual registrado: "Listo. Cliente casual registrado (20.000 pesos)." (`handle-booking-turn.use-case.ts`).
+  - Estadísticas para el asistente (`appointment-statistics.repository.ts`): formato `es-CO` sin decimales y "pesos" en lugar de `$` con formato `en-US`.
+- Los mensajes de WhatsApp a clientes siguen con "$20.000" (texto escrito, no hablado).
+- Requiere desplegar la API en Render para que el cambio llegue al teléfono; mientras tanto la app ya corrige la lectura por su lado.

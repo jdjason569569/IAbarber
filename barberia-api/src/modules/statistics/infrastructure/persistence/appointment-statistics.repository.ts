@@ -111,6 +111,7 @@ function sum(items: AppointmentDto[]): number {
   return items.reduce((acc, a) => acc + total(a), 0);
 }
 
+/** Colombian pesos, written out so the assistant's voice does not read "$" as dollars: "20.000 pesos". */
 function money(value: number): string {
-  return `$${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+  return `${value.toLocaleString('es-CO', { maximumFractionDigits: 0 })} pesos`;
 }

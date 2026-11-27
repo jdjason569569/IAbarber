@@ -10,6 +10,10 @@ export const MESSAGES_ES = {
   'tabs.settings': 'Configuración',
   'app.version': 'Versión {version}',
   'app.versionWithRole': 'Versión {version} · {role}',
+  /** Money is Colombian pesos: "$20.000 COP". */
+  'money.amount': '${amount} COP',
+  /** Money read aloud: the voice reads "$" as dollars, so it says "20000 pesos". */
+  'money.spoken': '{amount} pesos',
 
   // Welcome tutorial (shown once, the first time the app opens)
   'onboarding.skip': 'Saltar',
@@ -272,7 +276,7 @@ export const MESSAGES_ES = {
   'settings.price.save': 'Guardar valor',
   'settings.price.saved': 'Valor guardado.',
   'settings.price.loadError': 'No se pudo cargar el valor del servicio.',
-  'settings.price.errors.invalid': 'El valor máximo es $10.000.000.',
+  'settings.price.errors.invalid': 'El valor máximo es $10.000.000 COP.',
   'settings.blocks.title': 'Disponibilidad',
   'settings.blocks.hint': 'Hoy, {date}: dile al asistente a qué hora no estarás disponible y se guarda al instante.',
   'settings.blocks.empty': 'Hoy estás disponible todo el día.',
@@ -301,6 +305,17 @@ export const MESSAGES_ES = {
   'settings.blocks.assistant.saved': 'Listo. Guardé que hoy no estarás disponible de {range}.',
   'settings.blocks.errors.clash':
     'No se guardó: hay citas en esos horarios ({appointments}). Cancélalas primero si quieres bloquear ese tramo.',
+  'appointments.swipe.hint':
+    'Para completar o cancelar una cita, mantenla presionada 1 segundo y deslízala: a la derecha la completas, a la izquierda la cancelas.',
+  'appointments.swipe.hintClose': 'Ocultar la pista',
+  'appointments.swipe.tip': 'Mantén 1 s y desliza',
+  'appointments.swipe.holding': 'Sigue presionando…',
+  'appointments.swipe.armed': '← Cancelar  ·  Completar →',
+  'appointments.swipe.complete': 'Completar',
+  'appointments.swipe.cancel': 'Cancelar',
+  'appointments.swipe.tooShort': 'Mantén el dedo 1 segundo sobre la cita y luego deslízala: → completar, ← cancelar.',
+  'appointments.swipe.completed': '¡Cita completada! 💈✂️',
+  'appointments.swipe.cancelled': 'Cita cancelada',
   'commands.button': 'Preguntar',
   'commands.buttonLabel': 'Preguntarle algo al asistente',
   'commands.question': '¿Qué necesitas?',

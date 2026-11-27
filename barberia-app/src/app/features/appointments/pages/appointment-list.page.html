@@ -24,84 +24,119 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content [fullscreen]="true">
   <ion-refresher slot="fixed" (ionRefresh)="onPullRefresh($event)">
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
+  <!-- How to complete or cancel: hold an active card 1 s, then swipe it. Can be hidden. -->
+  @if (showSwipeHint()) {
+    <div class="swipe-hint">
+      <ion-icon class="swipe-hint-icon" name="hand-left-outline" aria-hidden="true"></ion-icon>
+      <p>{{ 'appointments.swipe.hint' | t }}</p>
+      <ion-button fill="clear" size="small" color="medium" [attr.aria-label]="'appointments.swipe.hintClose' | t" (click)="hideSwipeHint()">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </div>
+  }
+
   <ion-list class="appt-list" lines="none">
     @for (appointment of dayAppointments(); track appointment.id) {
-      <!-- Card: header (time, client, badges), price detail, then one row of equal-size actions. -->
-      <ion-item
-        class="appt-card"
-        [class.cancelled]="appointment.cancelled"
-        [style.--state-color]="'var(--ion-color-' + stateColor(appointment) + ')'"
+      <!-- Hold 1 s, then swipe right to complete or left to cancel (only active appointments). -->
+      <div
+        class="appt-swipe"
+        [appSwipeAction]="isActive(appointment)"
+        [attr.data-hold-label]="'appointments.swipe.holding' | t"
+        [attr.data-armed-label]="'appointments.swipe.armed' | t"
+        (swipeRight)="onSwiped('complete', appointment)"
+        (swipeLeft)="onSwiped('cancel', appointment)"
+        (releasedEarly)="onSwipeTooShort()"
       >
-        <div class="appt-body">
-          <div class="appt-header">
-            <!-- Time range on top, client name right below it. -->
-            <div class="appt-when">
-              <span class="appt-time">{{ appointment.time | timeRange }}</span>
-              <h2 class="appt-client">{{ appointment.clientName }}</h2>
-              @if (appointment.phone; as phone) {
-                <!-- Opens the phone's dialer with the client's number. -->
-                <a
-                  class="appt-phone"
-                  [href]="'tel:+' + phone"
-                  [attr.aria-label]="'appointments.callClient' | t: { client: appointment.clientName }"
-                >
-                  <ion-icon name="call-outline" aria-hidden="true"></ion-icon>
-                  {{ displayPhone(phone) }}
-                </a>
+        <div class="swipe-bg swipe-bg-right" aria-hidden="true">
+          <ion-icon name="checkmark-circle"></ion-icon>
+          {{ 'appointments.swipe.complete' | t }}
+        </div>
+        <div class="swipe-bg swipe-bg-left" aria-hidden="true">
+          {{ 'appointments.swipe.cancel' | t }}
+          <ion-icon name="close-circle"></ion-icon>
+        </div>
+        <!-- Card: header (time, client, badges), price detail, then one row of actions.
+             A plain div, not ion-item: its shadow DOM would flatten the 3D depth of the raised parts. -->
+        <div
+          class="appt-card card-3d swipe-card stagger-item"
+          appTilt3d
+          [class.cancelled]="appointment.cancelled"
+          [class.completed]="appointment.completed && !appointment.cancelled"
+          [style.--i]="$index"
+          [style.--state-color]="'var(--ion-color-' + stateColor(appointment) + ')'"
+        >
+          <div class="appt-body">
+            <div class="appt-header">
+              <!-- Time range on top, client name right below it. -->
+              <div class="appt-when">
+                <span class="appt-time">{{ appointment.time | timeRange }}</span>
+                <h2 class="appt-client">{{ appointment.clientName }}</h2>
+                @if (appointment.phone; as phone) {
+                  <!-- Opens the phone's dialer with the client's number. Not an <a>: Android turns a long press on
+                       a link into its own menu, which would steal the hold-to-swipe gesture. -->
+                  <span
+                    class="appt-phone"
+                    role="link"
+                    tabindex="0"
+                    [attr.aria-label]="'appointments.callClient' | t: { client: appointment.clientName }"
+                    (click)="callClient(phone)"
+                    (keyup.enter)="callClient(phone)"
+                  >
+                    <ion-icon name="call-outline" aria-hidden="true"></ion-icon>
+                    {{ displayPhone(phone) }}
+                  </span>
+                }
+              </div>
+              <div class="appt-badges tilt-3d-raise">
+                @if (appointment.walkIn) {
+                  <ion-badge color="tertiary">{{ 'appointments.walkIn.badge' | t }}</ion-badge>
+                }
+                <ion-badge [color]="stateColor(appointment)">{{ stateKey(appointment) | t }}</ion-badge>
+              </div>
+            </div>
+
+            <div class="appt-detail">
+              <p>{{ 'appointments.service' | t }}: {{ appointment.serviceCost | pesos }}</p>
+              @for (extra of appointment.extras; track extra.name) {
+                <p>+ {{ extra.name }}: {{ extra.price | pesos }}</p>
               }
             </div>
-            <div class="appt-badges">
-              @if (appointment.walkIn) {
-                <ion-badge color="tertiary">{{ 'appointments.walkIn.badge' | t }}</ion-badge>
-              }
-              <ion-badge [color]="stateColor(appointment)">{{ stateKey(appointment) | t }}</ion-badge>
+            <div class="appt-total">
+              <span>{{ 'appointments.total' | t }}</span>
+              <strong class="tilt-3d-raise">{{ total(appointment) | pesos }}</strong>
             </div>
-          </div>
 
-          <div class="appt-detail">
-            <p>{{ 'appointments.service' | t }}: ${{ appointment.serviceCost }}</p>
-            @for (extra of appointment.extras; track extra.name) {
-              <p>+ {{ extra.name }}: ${{ extra.price }}</p>
-            }
-          </div>
-          <div class="appt-total">
-            <span>{{ 'appointments.total' | t }}</span>
-            <strong>${{ total(appointment) }}</strong>
-          </div>
-
-          <div class="appt-actions">
-            <ion-button size="small" fill="clear" (click)="openEdit(appointment)">
-              <ion-icon slot="start" name="create-outline"></ion-icon>
-              {{ 'appointments.edit.button' | t }}
-            </ion-button>
-            @if (appointment.cancelled) {
-              <ion-button size="small" fill="outline" color="medium" (click)="confirmAction('reactivate', appointment)">
-                <ion-icon slot="start" name="refresh"></ion-icon>
-                {{ 'appointments.reactivate.button' | t }}
+            <div class="appt-actions">
+              <ion-button size="small" fill="clear" (click)="openEdit(appointment)">
+                <ion-icon slot="start" name="create-outline"></ion-icon>
+                {{ 'appointments.edit.button' | t }}
               </ion-button>
-            } @else if (appointment.completed) {
-              <ion-button size="small" fill="outline" color="medium" (click)="confirmAction('uncomplete', appointment)">
-                <ion-icon slot="start" name="refresh"></ion-icon>
-                {{ 'appointments.uncomplete.button' | t }}
-              </ion-button>
-            } @else {
-              <ion-button size="small" color="success" (click)="confirmAction('complete', appointment)">
-                <ion-icon slot="start" name="checkmark"></ion-icon>
-                {{ 'appointments.complete.button' | t }}
-              </ion-button>
-              <ion-button size="small" fill="outline" color="danger" (click)="confirmAction('cancel', appointment)">
-                <ion-icon slot="start" name="close"></ion-icon>
-                {{ 'appointments.cancel.button' | t }}
-              </ion-button>
-            }
+              @if (appointment.cancelled) {
+                <ion-button size="small" fill="outline" color="medium" (click)="confirmAction('reactivate', appointment)">
+                  <ion-icon slot="start" name="refresh"></ion-icon>
+                  {{ 'appointments.reactivate.button' | t }}
+                </ion-button>
+              } @else if (appointment.completed) {
+                <ion-button size="small" fill="outline" color="medium" (click)="confirmAction('uncomplete', appointment)">
+                  <ion-icon slot="start" name="refresh"></ion-icon>
+                  {{ 'appointments.uncomplete.button' | t }}
+                </ion-button>
+              } @else {
+                <!-- Completing and cancelling are done with the swipe; this reminds how. -->
+                <span class="swipe-tip">
+                  <ion-icon name="hand-left-outline" aria-hidden="true"></ion-icon>
+                  {{ 'appointments.swipe.tip' | t }}
+                </span>
+              }
+            </div>
           </div>
         </div>
-      </ion-item>
+      </div>
     } @empty {
       <ion-item lines="none">
         <ion-label class="ion-text-center">

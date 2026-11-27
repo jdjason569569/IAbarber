@@ -32,29 +32,495 @@
  * https://ionicframework.com/docs/theming/dark-mode
  */
 
-/* Always dark: the Space Barber Shop palette in theme/variables.scss is designed for it. */
+/* Always dark: the Cobalto & Ámbar palette in theme/variables.scss is designed for it. */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.always.css";
 
-/* Header titles: bold and slightly spaced, in the toolbar's white. */
+/* Header titles: bold and slightly spaced, in white. */
 ion-title {
   font-weight: 700;
   letter-spacing: 0.5px;
 }
 
-/* Main header bar: navy with the barber-pole red line under it, like the logo's ring. */
-ion-header ion-toolbar:first-of-type {
-  --border-color: var(--ion-color-secondary);
-  --border-width: 0 0 3px;
-  --border-style: solid;
+/* Glass header: translucent night blue that blurs the list scrolling under it (pages use
+   `ion-content [fullscreen]`). The toolbars are transparent so the blur is one layer. */
+ion-header {
+  background: rgba(var(--ion-background-color-rgb), 0.8);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Second bars of a header (day selector, period selector) take the page background, so the main bar
-   stands alone. */
-ion-header ion-toolbar:not(:first-of-type) {
-  --background: var(--ion-background-color);
+/* `fullscreen` only for the top: content scrolls under the glass header, but never under the
+   footer, the tab bar or the version line below it (that line sits outside Ionic's offset). */
+ion-content {
+  --offset-bottom: 0px !important;
+}
+
+ion-header ion-toolbar {
+  --background: transparent;
   --color: var(--ion-text-color);
   --border-color: var(--ion-border-color);
+}
+
+/* A hairline steel-blue line closes the header. */
+ion-header::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: rgba(130, 165, 215, 0.25);
+  pointer-events: none;
+}
+
+/* Segment (Hoy / Semana / Mes): amber text and underline on the chosen one. */
+ion-segment-button {
+  --color: var(--text-secondary);
+  --color-checked: var(--ion-color-primary);
+  --indicator-color: var(--ion-color-primary);
+  font-weight: 600;
+}
+
+/*
+ * 3D cobalt cards: lighter at the top, a lit cyan top edge (inner line + a glow that fades to the
+ * sides) and a drop shadow underneath. `.card-3d` gives the same look to any element.
+ * Usage:
+ *   <div class="card-3d">…</div>
+ */
+ion-card,
+.card-3d {
+  position: relative;
+  background: var(--app-card-gradient);
+  border: 1px solid var(--app-card-border);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-card-shadow);
+  /* Individual properties, so they add up with the tilt's `transform` instead of replacing it. */
+  transition:
+    translate 0.3s var(--app-ease-lift),
+    scale 0.3s var(--app-ease-lift),
+    box-shadow 0.3s var(--app-ease-lift);
+
+  /* Light reflected on the top edge: white-cyan in the middle, fading to the corners, with a halo. */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, rgba(127, 232, 255, 0.7) 25%, #e6fbff 50%, rgba(127, 232, 255, 0.7) 75%, transparent);
+    box-shadow:
+      0 0 10px 2px rgba(127, 232, 255, 0.55),
+      0 0 26px 6px rgba(80, 170, 255, 0.25);
+    pointer-events: none;
+    z-index: 3;
+  }
+}
+
+/* Lift on hover (mouse / web) … */
+@media (hover: hover) {
+  ion-card:not(.tilt-3d):hover,
+  .card-3d:not(.tilt-3d):hover {
+    translate: 0 -4px;
+    scale: 1.02;
+    box-shadow: var(--app-card-shadow-raised);
+  }
+}
+
+/* … and sink under the finger. Tilt cards already sink through --tilt-scale, and swipe cards own
+   `translate`, so neither takes this. */
+ion-card:not(.tilt-3d):active,
+.card-3d:not(.tilt-3d):not(.swipe-card):active {
+  translate: 0 1px;
+  scale: 0.97;
+}
+
+/* Press feedback: buttons and chips sink a little under the finger. */
+ion-button,
+ion-segment-button,
+ion-tab-button,
+ion-chip {
+  transition: transform 0.18s var(--app-ease-out);
+}
+ion-button:active,
+ion-segment-button:active,
+ion-tab-button:active,
+ion-chip:active {
+  transform: scale(0.97) translateY(1px);
+}
+
+/* Main buttons: amber gradient with an orange glow. `:where()` keeps the specificity at zero, so a
+   page class (the "Preguntar" button, for one) still sets its own colors. */
+:where(ion-button[color='primary']:not([fill]), ion-button:not([color]):not([fill])) {
+  --background: linear-gradient(180deg, var(--app-primary-light), var(--app-primary-deep));
+  --background-activated: linear-gradient(180deg, var(--ion-color-primary-shade), var(--app-primary-deep));
+  --box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
+}
+
+/* Outline buttons: thin rounded border, like "Cliente casual". */
+:where(ion-button[fill='outline']) {
+  --border-width: 1px;
+  --border-radius: 8px;
+}
+
+/* Status badges (ACTIVA, COMPLETADA…): small solid pill, dark text on the state color.
+   Plain properties: page styles beat the badge's own :host(.ion-color) colors. */
+ion-badge[color] {
+  background: rgba(var(--ion-color-base-rgb), 0.85);
+  color: var(--ion-color-primary-contrast);
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+/* Staggered fade-up for list items: set `--i` to the item index (`[style.--i]="$index"`). It plays
+   under `.stagger-play`, which replayStagger() puts back on the page each time it is shown (Ionic keeps
+   tab pages alive, so a plain animation would run only once).
+   `backwards` keeps items hidden until their turn and releases `transform` when done, so it can share
+   an element with .tilt-3d. */
+.stagger-play .stagger-item {
+  animation: stagger-fade-up 0.7s var(--app-ease-out) backwards;
+  animation-delay: calc(min(var(--i, 0), 10) * 90ms);
+}
+
+@keyframes stagger-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 40px, 0) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 3D tilt (Tilt3dDirective): it only writes --tilt-x/--tilt-y (degrees) and --glare-x/--glare-y (%),
+   so all motion runs on the GPU through transform and opacity. */
+.tilt-3d {
+  position: relative;
+  transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg))
+    scale(var(--tilt-scale, 1));
+  transform-style: preserve-3d;
+  transition: transform 0.6s var(--app-ease-out);
+  /* Vertical scrolling stays with ion-content; the tilt never blocks it. */
+  touch-action: pan-y;
+  will-change: transform;
+
+  /* Specular highlight that follows the finger. */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      circle at var(--glare-x, 50%) var(--glare-y, 50%),
+      rgba(255, 255, 255, 0.24),
+      rgba(var(--ion-color-secondary-rgb), 0.1) 35%,
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.4s var(--app-ease-out);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* While the finger moves the card follows it at once; on release it eases back. */
+  &.tilt-3d-active {
+    --tilt-scale: 0.98;
+    transition: transform 0.08s linear;
+    box-shadow:
+      inset 0 1px 0 0 rgba(var(--ion-color-secondary-rgb), 0.5),
+      0 18px 40px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(var(--ion-color-primary-rgb), 0.35);
+
+    &::after {
+      opacity: 1;
+    }
+  }
+}
+
+/* Inner elements raised toward the viewer (price, badges). */
+.tilt-3d-raise {
+  transform: translateZ(20px);
+}
+
+/* Hold-then-swipe card (SwipeActionDirective). The wrapper holds the card (`.swipe-card`) and, behind
+   it, the label of each direction. The directive toggles the state classes and writes --swipe-x. */
+.swipe-row {
+  position: relative;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+
+  > .swipe-card {
+    position: relative;
+    z-index: 1;
+    translate: var(--swipe-x, 0px) 0;
+    transition:
+      translate 0.45s var(--app-ease-out),
+      scale 0.3s var(--app-ease-out),
+      box-shadow 0.3s var(--app-ease-out);
+  }
+
+  /* Hold progress: a gold bar that fills along the bottom of the card. */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 8px;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--ion-color-secondary), var(--ion-color-primary));
+    transform: scaleX(0);
+    transform-origin: left;
+    opacity: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  /* Pill above the card: "keep holding" first, then which way does what. */
+  &::before {
+    position: absolute;
+    top: -13px;
+    left: 50%;
+    z-index: 4;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    translate: -50% 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  &.swipe-holding {
+    &::after {
+      opacity: 1;
+      animation: swipe-hold var(--hold-ms, 3000ms) linear forwards;
+    }
+
+    &::before {
+      content: attr(data-hold-label);
+      opacity: 1;
+      color: var(--ion-color-primary-contrast);
+      background: var(--ion-color-primary);
+    }
+  }
+
+  &.swipe-armed {
+    &::before {
+      content: attr(data-armed-label);
+      opacity: 1;
+      color: var(--ion-color-primary);
+      background: var(--app-surface);
+      border: 1px solid var(--ion-color-primary);
+      animation: swipe-pill-pulse 1s ease-in-out infinite;
+    }
+
+    > .swipe-card {
+      scale: 1.02;
+      box-shadow:
+        0 0 0 2px var(--ion-color-primary),
+        0 20px 44px rgba(0, 0, 0, 0.6);
+      /* The card follows the finger at once while armed. */
+      transition:
+        scale 0.3s var(--app-ease-out),
+        box-shadow 0.3s var(--app-ease-out);
+    }
+
+    /* No tilt while swiping: the card only slides. */
+    .tilt-3d {
+      --tilt-x: 0deg !important;
+      --tilt-y: 0deg !important;
+    }
+  }
+
+  /* Released past the threshold: thrown off the screen. */
+  &.swipe-leaving > .swipe-card {
+    transition: translate 0.26s cubic-bezier(0.55, 0, 0.75, 0.2);
+  }
+}
+
+/* What each direction does, revealed behind the card as it moves. */
+.swipe-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 24px;
+  border-radius: var(--app-radius);
+  font-size: 18px;
+  font-weight: 800;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  ion-icon {
+    font-size: 30px;
+    scale: calc(0.8 + 0.5 * var(--swipe-progress, 0));
+    transition: scale 0.1s linear;
+  }
+}
+
+/* Swipe right → complete (label on the left, uncovered as the card moves right). */
+.swipe-bg-right {
+  justify-content: flex-start;
+  color: var(--ion-color-success-contrast);
+  background: linear-gradient(90deg, var(--ion-color-success), rgba(var(--ion-color-success-rgb), 0.35));
+}
+
+/* Swipe left → cancel. */
+.swipe-bg-left {
+  justify-content: flex-end;
+  color: var(--ion-color-danger-contrast);
+  background: linear-gradient(270deg, var(--ion-color-danger), rgba(var(--ion-color-danger-rgb), 0.35));
+}
+
+.swipe-row.swipe-right .swipe-bg-right,
+.swipe-row.swipe-left .swipe-bg-left {
+  opacity: calc(0.45 + 0.55 * var(--swipe-progress, 0));
+}
+
+@keyframes swipe-hold {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes swipe-pill-pulse {
+  50% {
+    scale: 1.06;
+  }
+}
+
+/* Full-screen celebration (FeedbackService.celebrate): confetti canvas plus a big label. */
+.celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.celebration-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.celebration-label {
+  position: relative;
+  padding: 18px 30px;
+  border-radius: 22px;
+  font-size: 30px;
+  font-weight: 800;
+  text-align: center;
+  background: var(--app-surface);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+}
+
+.celebration-success .celebration-label {
+  color: var(--ion-color-primary);
+  border: 2px solid var(--ion-color-primary);
+  animation: celebration-pop 3.6s var(--app-ease-out) forwards;
+}
+
+.celebration-failure .celebration-label {
+  color: var(--ion-color-danger);
+  border: 2px solid var(--ion-color-danger);
+  animation: celebration-fail 3.2s ease forwards;
+}
+
+@keyframes celebration-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-6deg);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1.12) rotate(2deg);
+  }
+  22% {
+    transform: scale(1) rotate(0);
+  }
+  85% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes celebration-fail {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  10% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  14%,
+  22%,
+  30% {
+    transform: translateX(-12px);
+  }
+  18%,
+  26% {
+    transform: translateX(12px);
+  }
+  34% {
+    transform: translateX(0);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+/* Reduced motion: no 3D, no entrances, no press scaling. */
+@media (prefers-reduced-motion: reduce) {
+  .celebration-label {
+    animation: none !important;
+  }
+  .tilt-3d {
+    transform: none !important;
+    transition: none;
+
+    &::after {
+      display: none;
+    }
+  }
+  .tilt-3d-raise {
+    transform: none;
+  }
+  .stagger-play .stagger-item {
+    animation: none;
+  }
+  ion-button:active,
+  ion-segment-button:active,
+  ion-tab-button:active,
+  ion-chip:active {
+    transform: none;
+  }
+  ion-card,
+  .card-3d {
+    translate: none !important;
+    scale: none !important;
+  }
 }
 
 /* Card shown after the assistant saves an appointment (BookedSummaryComponent): centered,
@@ -75,7 +541,7 @@ ion-modal.booked-summary-modal .ion-page {
   contain: content;
 }
 
-/* Booking notice (push): solid white with navy text so it stands out on the dark app. */
+/* Booking notice (push): solid gold with charcoal text so it stands out on the dark app. */
 ion-alert.booking-alert {
   --background: var(--ion-color-primary);
 

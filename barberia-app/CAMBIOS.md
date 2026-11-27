@@ -1489,3 +1489,143 @@ npx ionic capacitor add android   # añadir plataforma Android
 **What was done**
 - `day-blocks-editor`: the assistant now opens in a centered `ion-modal` (auto height) instead of an inline panel. A big microphone is grey while the question is read, red with pulsing rings while listening, a spinner while saving, and a green check or red alert with the outcome, which stays a moment after it is read aloud. The popup also shows what was heard, examples and the typed-answer field.
 - New messages `settings.blocks.assistant.speaking` and `savingStatus`; `listening` is now "Te escucho... habla ahora".
+
+---
+
+## 2026-11-26 · Dark Luxury redesign: gold palette, 3D cards, glass header
+
+**What was done**
+- `src/theme/variables.scss`: the logo palette (navy, white, barber red) is replaced by "Dark Luxury Editorial": background `#0D0D10`, graphite surfaces `#17171C` with a `rgba(255,255,255,.08)` border, primary amber gold `#D9A441` (charcoal contrast), secondary copper `#C86D3B`, off-white text `#F4F4F6`, grey `#9E9EA9`. Tertiary is a cool steel blue (walk-ins); warning a light honey (reminder toasts). New tokens `--app-surface` and `--app-ease-out` (`cubic-bezier(0.22, 1, 0.36, 1)`).
+- `src/global.scss`: glass `ion-header` (`rgba(13,13,16,.8)` + `backdrop-filter: blur(12px)`, transparent toolbars, copper-to-gold hairline); graphite `ion-card`; buttons, segment and tab buttons scale to 0.97 when pressed; `.stagger-item` fade-up (`--i` = index, 60 ms steps, max 10); `.tilt-3d` / `.tilt-3d-raise` styles; everything disabled under `prefers-reduced-motion`.
+- `ion-content` uses `[fullscreen]` on Citas, Estadísticas and Configuración so lists scroll under the glass header; `--offset-bottom` is forced to 0 because otherwise the content also went under the tab bar and the version line.
+- `src/app/shared/directives/tilt-3d.directive.ts` (`appTilt3d`, optional max degrees, default 8): passive pointer listeners and one `requestAnimationFrame` per frame write `--tilt-x/y` and `--glare-x/y`; `touch-action: pan-y` plus `pointercancel` keep `ion-content` scrolling. A finger tilts while it is down; the mouse tilts on hover.
+- Citas: the appointment card is now a `div` (an `ion-item` shadow DOM flattens the 3D) with tilt, stagger, raised badges and gold total. `.assistant-bar` unsets `--ion-toolbar-color/background`: Ionic was painting the solid buttons in the footer toolbar with the toolbar color instead of their own.
+- Estadísticas: total cards tilt and stagger, figures in gold; insights and charts stagger in.
+- Configuración: each section is a graphite card with stagger (`settings.page.scss`); only the booking-link card tilts (a transformed parent would displace the availability popup and form fields).
+
+**Current state**
+- Installed on the phone (debug) and checked on Citas and Estadísticas screenshots.
+
+**Pending / notes**
+- The haircut advisor, onboarding and login screens take the new colors but have no stagger or tilt.
+
+---
+
+## 2026-11-26 · Animations made visible
+
+**What was done**
+- The stagger entrance ran only once (Ionic keeps tab pages alive) and was hidden behind the loading overlay. It now plays under `.stagger-play`, which `shared/utils/stagger.util.ts` (`replayStagger`) puts back on the page in `ionViewWillEnter` of Citas, Estadísticas and Configuración, so it replays every time a tab is shown.
+- Stronger entrance: 40 px rise with scale 0.95, 0.7 s, 90 ms between items.
+- Stronger tilt: default max 10°, the card sinks to 0.98 and gets a gold edge while pressed, brighter highlight.
+
+---
+
+## 2026-11-26 · Complete / cancel by holding and swiping the appointment card
+
+**What was done**
+- `shared/directives/swipe-action.directive.ts` (`appSwipeAction`): hold the card 3 s (a gold bar fills, pill "Sigue presionando…"), the phone bumps and the card is armed (gold edge, pill "← Cancelar · Completar →"); drag past a third of its width (max 140 px) and release: right emits `swipeRight`, left `swipeLeft`. The card flies off and slides back with its new state; a short drag springs back. Moving more than 12 px during the hold cancels it (scrolling still works); once armed, `touchmove` is prevented so the page does not scroll. Buttons and links inside the card never start a hold. Lifting the finger early emits `releasedEarly`.
+- `core/feedback/feedback.service.ts`: Web Audio sounds without audio files (rising arpeggio for success, "sad trombone" for failure), haptics with `@capacitor/haptics`, and a full-screen celebration (`celebrate`): a big label plus, on success, a canvas with confetti from both bottom corners and rising balloons for 3.6 s. No confetti under reduced motion.
+- Citas: each card is wrapped in `appSwipeAction` (active appointments only), with green "Completar" / red "Cancelar" labels behind it. Swipe right → complete, success sound, confetti and "¡Cita completada! 🎉"; swipe left → cancel, failure sound and a shaking "Cita cancelada". No confirmation dialog: the gesture is deliberate and both can be undone from the card ("Deshacer" / "Reactivar").
+- The Completar / Cancelar buttons were removed from active cards; in their place a "Mantén 3 s y desliza" tip next to Editar.
+- Hint above the list (with a swaying hand) explaining the gesture; it can be closed and stays hidden (`localStorage` `barberia.swipeHintHidden`). Releasing too early shows a toast that explains the gesture (at most every 4 s).
+- Styles in `global.scss` (`.swipe-row`, `.swipe-bg-*`, `.celebration*`); messages `appointments.swipe.*`.
+
+**Current state**
+- Installed on the phone. Checked by screenshots: the hint, the hold bar and the armed state. The swipe itself, the sounds and the confetti were not run, to avoid changing real appointments.
+
+---
+
+## 2026-11-26 · Swipe: 2 s hold, tolerant to a real finger
+
+**What was done**
+- `swipe-action.directive.ts`: hold time 3 s → 2 s. A real finger wobbles while holding, and the hold was dropped after 12 px or when a small vertical drift started scrolling the list. Now, after the first 250 ms on the card, the hold is "claimed": `touchmove` is prevented (the list stops scrolling under it) and the finger may wobble up to 40 px. Before those 250 ms, moving more than 10 px is still a normal scroll.
+- Texts changed to "2 segundos" / "Mantén 2 s y desliza".
+
+**Current state**
+- Checked on the phone with a simulated wobbling hold (±15 px) and a short drag: the card arms and follows the finger with "Completar" behind it, and springs back when released short.
+
+---
+
+## 2026-11-26 · Swipe also starts on the client's phone number
+
+**What was done**
+- Recorded the barber's real touches on the phone: both holds were on the phone number. It was an `<a href="tel:">`, which the gesture skipped, and Android turns a long press on a link into its own menu (`pointercancel` + `contextmenu` at ~600 ms), so the hold never started.
+- `appointment-list.page.html`: the number is now a `<span role="link">` that dials with `callClient()` (`window.location.href = 'tel:+…'`), so a long press on it is a normal hold.
+- `swipe-action.directive.ts`: after a hold (or a swipe) the click that follows the release is swallowed in the capture phase, so letting go never dials the client or taps a button. Reset on every new press.
+
+**Current state**
+- Checked on the phone: holding on the number arms the card and it follows the finger; releasing does not open the dialer; a short tap on the number still opens the dialer.
+
+---
+
+## 2026-11-26 · Swipe: 1 s hold, sideways movement allowed while holding
+
+**What was done**
+- Recorded the barber's real attempt: they start sliding right ~0.9 s into the hold; at 40 px of drift the hold was dropped as "wobble", so the card never armed.
+- `swipe-action.directive.ts`: hold 2 s → 1 s. After the first 250 ms, sideways movement during the hold no longer cancels it (only a vertical drift over 40 px does). When the hold completes, the card jumps straight to where the finger already is.
+- Texts changed to "1 segundo" / "Mantén 1 s y desliza".
+
+**Current state**
+- Replayed the recorded motion on the phone (slide starting at 0.8 s, short of the threshold): the card arms and follows the finger with "Completar" behind it.
+
+---
+
+## 2026-11-26 · Barbershop celebration
+
+**What was done**
+- `core/feedback/feedback.service.ts`: the success celebration now throws 22 barbershop things (💈 ✂️ 🪒 🧔 💇‍♂️ 🧴) up from under the label; they fall spinning. Balloons: 8 → 12, bigger (24–36 px radius). Drawing order: balloons, barbershop things, confetti.
+- Label "¡Cita completada! 💈✂️".
+
+**Current state**
+- Checked on the phone by running the same animation code in the WebView (DevTools) and taking screenshots: the emoji render on the phone and the balloons rise as expected.
+
+---
+
+## 2026-11-26 · Rediseño visual "Cobalto & Ámbar 3D"
+
+**Qué se hizo**
+- `theme/variables.scss`: nueva paleta. Fondo azul noche `#0A1224`, cards cobalto `#122244`, primario ámbar `#FF9E1B` (degradado a `#FF6D00` en `--app-primary-deep`), secundario cian `#00E5FF`, éxito `#00E676`, terciario violeta-azul `#7C8CFF`, textos `--text-primary` blanco y `--text-secondary` `#A5C0F3`. Tokens nuevos: `--app-card-gradient`, `--app-card-shadow(-raised)` (borde superior cian interno + sombra), `--app-ease-lift`.
+- `global.scss`:
+  - Header glass azul noche con borde inferior sutil y línea cian→ámbar.
+  - Clase `.card-3d` (y `ion-card`): degradado cobalto, borde 1px translúcido, reflejo cian en el borde superior, elevación al pasar el ratón (`translate -4px` + `scale 1.02`) y hundimiento al tocar. Usa `translate`/`scale` sueltos para no pisar el `transform` del tilt 3D ni el deslizamiento de las citas.
+  - Botones principales en degradado ámbar con brillo naranja; botones outline con borde ámbar fino; segment con ámbar en el elegido.
+  - Badges de estado translúcidos con borde y texto del color del estado.
+  - Microinteracción de presión `scale(0.97) translateY(1px)` en botones, segment, tabs y chips.
+- Citas: tarjetas con `.card-3d`, micrófono "Hablar" y botón "Preguntar" con volumen 3D (brillo superior, borde inferior oscuro y resplandor ámbar / violeta-cian), tarjeta del día en degradado ámbar.
+- Estadísticas: totales con cifra ámbar brillante, filas de "Lo importante" como cards 3D, colores de los gráficos al nuevo tema.
+- Configuración: secciones con `.card-3d`.
+- Confeti y globos con los colores nuevos.
+
+**Ejemplo de card 3D**
+```html
+<div class="card-3d ion-padding">
+  <h3>34</h3>
+  <p>Cortes</p>
+</div>
+```
+
+### Ajuste de colores a la imagen de referencia (`android/app/nuevo estilo.jpeg`)
+- Colores medidos sobre la imagen: ámbar dorado `#F2B55E` (degradado `#F8C868`→`#F89840`) en lugar del naranja `#FF9E1B`; fondo `#0A1527`; cards azul pizarra `#172941` con borde acero visible; texto secundario `#8FA7C4`; verde `#4CC08C`; cian del reflejo `#7FE8FF`.
+- Reflejo superior de las cards más brillante (centro blanco-cian) y con halo hacia fuera.
+- Badges sólidos con texto oscuro (como "COMPLETADA" y "ACTIVA" de la referencia).
+- "Preguntar" en degradado azul cielo→violeta: la regla global de botones principales pasó a `:where()` para no pisar los colores propios de cada botón.
+- Línea bajo el header ahora acero tenue, sin degradado.
+
+### Citas completadas con tono propio y discreto
+- `stateColor()` devuelve `medium` (gris azulado) para las completadas en lugar de `primary`: badge y borde izquierdo dejan de ser ámbar.
+- Clase `.completed` en la tarjeta: superficie pizarra más oscura y plana, sin reflejo cian ni brillo, hora y total en gris azulado y badge translúcido. Se distinguen de las activas sin llamar la atención.
+
+### Completadas y canceladas sin brillo; badge solo con el color en el texto
+- Completadas y canceladas ya no muestran el reflejo cian superior ni el destello del tilt al tocarlas.
+- Badge de ambas: fondo apenas teñido y texto del color del estado — "COMPLETADA" en verde (`stateColor()` vuelve a `success`) y "CANCELADA" en rojo.
+- La completada conserva su superficie pizarra apagada y el borde izquierdo gris azulado.
+
+### Dinero en pesos colombianos: "$20.000 COP"
+- Antes se veía "$20000": parecía dólares y, con el locale `es-ES`, los números de 5 cifras no llevaban punto de miles.
+- Nuevo `I18nService.money()` (formato `es-CO`, sin decimales) + texto `money.amount` en el catálogo (`'${amount} COP'`) + pipe `pesos` (`shared/pipes/pesos.pipe.ts`).
+- Usado en las tarjetas de citas (precio, extras, total), estadísticas (totales, promedio, "Lo importante", tooltip del gráfico), la revisión de la cita por voz y la vista previa del precio en Configuración. El límite de precio dice "$10.000.000 COP".
+- El eje del gráfico de ingresos sigue en formato compacto ("$200 mil") para que quepa.
+
+### La voz dice "pesos", no "dólares"
+- `VoiceService.speak()` pasa todo texto por `sayPesos()`: cualquier monto ("$20000", "$20.000 COP", "$1,500") se lee como "20000 pesos" (texto `money.spoken` del catálogo). Cubre también las respuestas del servidor, así que el resumen del cliente casual ya se oye en pesos sin esperar el despliegue de la API.
+- En la API también se cambiaron los textos (ver `barberia-api/CAMBIOS.md`).

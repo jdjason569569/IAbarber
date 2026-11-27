@@ -57,7 +57,8 @@ interface NativeAttempt {
 
 @Injectable({ providedIn: 'root' })
 export class VoiceService {
-  private readonly language = inject(I18nService).speechLocale;
+  private readonly i18n = inject(I18nService);
+  private readonly language = this.i18n.speechLocale;
   private webRecognition: WebSpeechRecognition | null = null;
   /** Set once the device recognizer rejected the app locale; later sessions use the device language. */
   private useDeviceLanguage = false;
@@ -69,7 +70,19 @@ export class VoiceService {
    * The Android WebView has no `speechSynthesis`, so the native app uses the phone's TTS engine.
    */
   speak(text: string): Promise<void> {
-    return Capacitor.isNativePlatform() ? this.speakNative(text) : this.speakWeb(text);
+    const spoken = this.sayPesos(text);
+    return Capacitor.isNativePlatform() ? this.speakNative(spoken) : this.speakWeb(spoken);
+  }
+
+  /**
+   * Money is Colombian pesos, but the voice reads "$20.000" as "20 000 dólares". Every amount
+   * ("$20000", "$20.000 COP", "$1,500") becomes "20000 pesos"; grouping dots/commas are dropped so the
+   * voice reads one whole number ("veinte mil").
+   */
+  private sayPesos(text: string): string {
+    return text.replace(/\$\s?(\d{1,3}(?:[.,]\d{3})+|\d+)(?:\s?COP\b)?/g, (_match, amount: string) =>
+      this.i18n.t('money.spoken', { amount: amount.replace(/[.,]/g, '') }),
+    );
   }
 
   /** Cuts off whatever is being read aloud; the pending `speak()` resolves. */

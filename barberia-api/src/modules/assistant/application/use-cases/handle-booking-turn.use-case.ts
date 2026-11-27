@@ -291,7 +291,9 @@ export class HandleBookingTurnUseCase {
 }
 
 function walkInReply(result: WalkInResult): string {
-  const parts = [`Listo. Cliente casual registrado ($${result.appointment.serviceCost}).`];
+  // Pesos written out: the phone's voice reads "$" as dollars.
+  const price = result.appointment.serviceCost.toLocaleString('es-CO', { maximumFractionDigits: 0 });
+  const parts = [`Listo. Cliente casual registrado (${price} pesos).`];
   if (result.shifted.length > 0) {
     const n = result.shifted.length;
     parts.push(

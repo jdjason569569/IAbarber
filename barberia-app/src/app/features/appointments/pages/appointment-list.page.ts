@@ -9,20 +9,25 @@ import {
   callOutline,
   chatbubbleEllipses,
   checkmark,
+  checkmarkCircle,
   chevronBack,
   chevronForward,
   close,
+  closeCircle,
   createOutline,
+  handLeftOutline,
   keypad,
   mic,
   refresh,
   send,
 } from 'ionicons/icons';
+import { FeedbackService } from '../../../core/feedback/feedback.service';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { PushNotificationsService } from '../../../core/notifications/push-notifications.service';
 import type { AppointmentReminder } from '../../../core/notifications/push-notifications.service';
 import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { PesosPipe } from '../../../shared/pipes/pesos.pipe';
 import { parseIsoDate, toLocalIsoDate } from '../../../shared/utils/date.util';
 import {
   BookedSummaryComponent,
@@ -46,6 +51,9 @@ import type { VoiceCommand } from '../utils/voice-commands';
 import { DayHours } from '../../settings/models/business-hours.model';
 import { BusinessHoursService } from '../../settings/services/business-hours.service';
 import { TimeRangePipe } from '../../../shared/pipes/time-range.pipe';
+import { SwipeActionDirective } from '../../../shared/directives/swipe-action.directive';
+import { Tilt3dDirective } from '../../../shared/directives/tilt-3d.directive';
+import { replayStagger } from '../../../shared/utils/stagger.util';
 import { APPOINTMENT_MINUTES, formatTime12, formatTimeRange, toMinutes } from '../../../shared/utils/time.util';
 
 /** Used when the business hours cannot be loaded: 07:00 to midnight. */
@@ -82,6 +90,11 @@ const SEND_RETRY_DELAY_MS = 1000;
 /** State changes offered on each appointment of the list; each one has its texts under `appointments.<action>`. */
 type RowAction = 'cancel' | 'reactivate' | 'complete' | 'uncomplete';
 
+/** Set once the barber hides the swipe hint; it is not shown again on this phone. */
+const SWIPE_HINT_HIDDEN_KEY = 'barberia.swipeHintHidden';
+/** The "hold longer" toast is not repeated within this time. */
+const SWIPE_TIP_COOLDOWN_MS = 4000;
+
 /** Thrown inside the dialog when the user presses cancel. */
 class DialogCancelled extends Error {}
 
@@ -90,7 +103,7 @@ class DialogCancelled extends Error {}
   templateUrl: 'appointment-list.page.html',
   styleUrls: ['appointment-list.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonicModule, TranslatePipe, TimeRangePipe, SendProgressComponent],
+  imports: [IonicModule, TranslatePipe, PesosPipe, TimeRangePipe, SendProgressComponent, Tilt3dDirective, SwipeActionDirective],
 })
 export class AppointmentListPage {
   private readonly appointmentService = inject(AppointmentService);
@@ -102,6 +115,15 @@ export class AppointmentListPage {
   private readonly modalController = inject(ModalController);
   private readonly toastController = inject(ToastController);
   private readonly pushNotifications = inject(PushNotificationsService);
+  private readonly host: HTMLElement = inject(ElementRef<HTMLElement>).nativeElement;
+  private readonly feedback = inject(FeedbackService);
+
+  /** Hint above the list on how to complete / cancel with the swipe, while there is something to swipe. */
+  private readonly swipeHintHidden = signal(localStorage.getItem(SWIPE_HINT_HIDDEN_KEY) === '1');
+  protected readonly showSwipeHint = computed(
+    () => !this.swipeHintHidden() && this.dayAppointments().some((a) => this.isActive(a)),
+  );
+  private lastSwipeTipAt = 0;
 
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -313,7 +335,22 @@ export class AppointmentListPage {
   private readonly answerInput = viewChild<ElementRef<HTMLIonInputElement>>('answerInput');
 
   constructor() {
-    addIcons({ callOutline, chatbubbleEllipses, checkmark, chevronBack, chevronForward, close, createOutline, keypad, mic, refresh, send });
+    addIcons({
+      callOutline,
+      chatbubbleEllipses,
+      checkmark,
+      checkmarkCircle,
+      chevronBack,
+      chevronForward,
+      close,
+      closeCircle,
+      createOutline,
+      handLeftOutline,
+      keypad,
+      mic,
+      refresh,
+      send,
+    });
     // A client just booked on WhatsApp (push received or tapped): show it without pulling to refresh.
     this.pushNotifications.bookingReceived$
       .pipe(takeUntilDestroyed())
@@ -339,6 +376,7 @@ export class AppointmentListPage {
 
   /** Ionic hook: reload every time the tab is shown, so appointments are never stale. */
   ionViewWillEnter(): void {
+    replayStagger(this.host);
     this.refresh();
   }
 
@@ -499,7 +537,7 @@ export class AppointmentListPage {
     );
   }
 
-  /** How a value of the draft reads in the review: "sábado, 31 de octubre de 2026", "$20.000". */
+  /** How a value of the draft reads in the review: "sábado, 31 de octubre de 2026", "$20.000 COP". */
   private formatDraftValue(step: BookingStep, draft: BookingDraft): string | null {
     switch (step) {
       case 'client':
@@ -512,7 +550,7 @@ export class AppointmentListPage {
         // The booking's half hour on the 12-hour clock: "1:00 – 1:30 p. m.".
         return draft.time ? formatTimeRange(draft.time, this.i18n.meridiemLabels()) : null;
       case 'price':
-        return draft.price === undefined ? null : `$${new Intl.NumberFormat(this.i18n.locale).format(draft.price)}`;
+        return draft.price === undefined ? null : this.i18n.money(draft.price);
     }
   }
 
@@ -884,8 +922,48 @@ export class AppointmentListPage {
     await alert.present();
   }
 
+  /** Only appointments still to be served can be swiped to complete or cancel. */
+  protected isActive(appointment: Appointment): boolean {
+    return !appointment.cancelled && !appointment.completed;
+  }
+
+  /**
+   * The barber held the card 1 s and swiped it: no confirmation (the gesture is deliberate and both
+   * actions can be undone from the card). Success plays a sound and a celebration.
+   */
+  protected onSwiped(action: 'complete' | 'cancel', appointment: Appointment): void {
+    this.runAction(action, appointment, () => {
+      if (action === 'complete') {
+        this.feedback.playSuccess();
+        this.feedback.celebrate(this.i18n.t('appointments.swipe.completed'), 'success');
+      } else {
+        this.feedback.playFailure();
+        this.feedback.celebrate(this.i18n.t('appointments.swipe.cancelled'), 'failure');
+      }
+    });
+  }
+
+  /** The finger was lifted before the 1 second: explain the gesture (not more than once in a while). */
+  protected async onSwipeTooShort(): Promise<void> {
+    const now = Date.now();
+    if (now - this.lastSwipeTipAt < SWIPE_TIP_COOLDOWN_MS) return;
+    this.lastSwipeTipAt = now;
+    const toast = await this.toastController.create({
+      message: this.i18n.t('appointments.swipe.tooShort'),
+      duration: 3000,
+      position: 'top',
+      icon: 'hand-left-outline',
+    });
+    await toast.present();
+  }
+
+  protected hideSwipeHint(): void {
+    localStorage.setItem(SWIPE_HINT_HIDDEN_KEY, '1');
+    this.swipeHintHidden.set(true);
+  }
+
   /** Cancel and complete can be undone, in case the barber tapped the wrong appointment. */
-  private runAction(action: RowAction, appointment: Appointment): void {
+  private runAction(action: RowAction, appointment: Appointment, onDone?: () => void): void {
     const request = {
       cancel: () => this.appointmentService.setCancelled(appointment.id, true),
       reactivate: () => this.appointmentService.setCancelled(appointment.id, false),
@@ -893,8 +971,10 @@ export class AppointmentListPage {
       uncomplete: () => this.appointmentService.setCompleted(appointment.id, false),
     }[action];
     request().subscribe({
-      next: (updated) =>
-        this.appointments.update((items) => items.map((a) => (a.id === updated.id ? updated : a))),
+      next: (updated) => {
+        this.appointments.update((items) => items.map((a) => (a.id === updated.id ? updated : a)));
+        onDone?.();
+      },
       error: (error: unknown) => {
         // Reactivating fails with 409/400 when the slot was taken or blocked meanwhile.
         const slotLost =
@@ -912,7 +992,13 @@ export class AppointmentListPage {
 
   protected stateColor(appointment: Appointment): string {
     if (appointment.cancelled) return 'danger';
-    return appointment.completed ? 'primary' : 'success';
+    // Completed is green too; its card (.completed) mutes everything but the badge text.
+    return 'success';
+  }
+
+  /** Opens the phone's dialer (Capacitor hands `tel:` links to Android). */
+  protected callClient(phone: string): void {
+    window.location.href = `tel:+${phone}`;
   }
 
   /** "573001234567" → "300 123 4567" (Colombian mobile); other numbers are shown with "+" as stored. */

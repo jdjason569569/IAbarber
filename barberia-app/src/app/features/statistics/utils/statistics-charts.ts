@@ -6,18 +6,18 @@ import type { DailyStatistic, HourlyStatistic, PeriodTotals } from '../models/st
 const TOP_HOURS = 6;
 
 /**
- * Made for barbers, not analysts: one color carries meaning (white = the best / above average,
+ * Made for barbers, not analysts: one color carries meaning (amber = the best / above average,
  * gray-blue = the rest) and every bar has its number written on it. Colors follow theme/variables.scss.
  */
 const COLORS = {
-  best: '#ffffff',
-  rest: '#4a5170',
+  best: '#f2b55e',
+  rest: '#2b3c56',
   text: '#ffffff',
-  muted: '#a3aac8',
-  grid: '#232a55',
-  tooltip: '#0f1330',
+  muted: '#8fa7c4',
+  grid: '#1d2f48',
+  tooltip: '#172941',
   tooltipText: '#ffffff',
-  border: 'rgba(227, 38, 58, 0.6)',
+  border: 'rgba(127, 232, 255, 0.5)',
 };
 
 /** Texts and formatters the charts need; the page gives them from the i18n catalog. */

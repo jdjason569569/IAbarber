@@ -17,15 +17,15 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content [fullscreen]="true">
   @if (stats()) {
     <ion-grid>
       <ion-row>
-        @for (total of totals(); track total.label) {
+        @for (total of totals(); track total.label; let i = $index) {
           <ion-col size="6">
-            <ion-card class="total-card">
+            <ion-card class="total-card stagger-item" appTilt3d [style.--i]="i">
               <ion-card-header>
-                <ion-card-title>{{ total.value }}</ion-card-title>
+                <ion-card-title class="total-value">{{ total.value }}</ion-card-title>
                 <ion-card-subtitle>{{ total.label | t }}</ion-card-subtitle>
               </ion-card-header>
             </ion-card>
@@ -37,8 +37,8 @@
     @if (hasCuts()) {
       <h2 class="section-title">{{ 'statistics.insights.title' | t }}</h2>
       <ion-list class="insights" lines="none">
-        @for (insight of insights(); track insight.icon) {
-          <ion-item>
+        @for (insight of insights(); track insight.icon; let i = $index) {
+          <ion-item class="card-3d stagger-item" [style.--i]="i + 4">
             <span slot="start" class="insight-icon" aria-hidden="true">{{ insight.icon }}</span>
             <ion-label class="ion-text-wrap">
               <h3>{{ insight.title }}</h3>
@@ -49,7 +49,7 @@
       </ion-list>
 
       @if (severalDays()) {
-        <ion-card class="chart-card">
+        <ion-card class="chart-card stagger-item" style="--i: 8">
           <ion-card-header>
             <ion-card-title>{{ 'statistics.charts.weekday.title' | t }}</ion-card-title>
             <ion-card-subtitle>{{ 'statistics.charts.weekday.subtitle' | t }}</ion-card-subtitle>
@@ -60,7 +60,7 @@
         </ion-card>
       }
 
-      <ion-card class="chart-card">
+      <ion-card class="chart-card stagger-item" style="--i: 8">
         <ion-card-header>
           <ion-card-title>{{ 'statistics.charts.hours.title' | t }}</ion-card-title>
           <ion-card-subtitle>{{ 'statistics.charts.hours.subtitle' | t }}</ion-card-subtitle>
@@ -71,7 +71,7 @@
       </ion-card>
 
       @if (severalDays()) {
-        <ion-card class="chart-card">
+        <ion-card class="chart-card stagger-item" style="--i: 8">
           <ion-card-header>
             <ion-card-title>{{ 'statistics.charts.revenue.title' | t }}</ion-card-title>
             <ion-card-subtitle>{{ 'statistics.charts.revenue.subtitle' | t }}</ion-card-subtitle>

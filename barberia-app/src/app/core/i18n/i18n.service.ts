@@ -16,6 +16,9 @@ export class I18nService {
    */
   readonly speechLocale = 'es-CO';
 
+  /** Money is Colombian pesos, grouped the Colombian way: 20000 → "20.000" (es-ES would leave "20000"). */
+  private readonly pesos = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 });
+
   private readonly messages: Record<MessageKey, string> = MESSAGES_ES;
 
   t(key: MessageKey, params?: MessageParams): string {
@@ -26,6 +29,11 @@ export class I18nService {
     return template.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
       name in params ? String(params[name]) : placeholder,
     );
+  }
+
+  /** 20000 → "$20.000 COP". */
+  money(value: number): string {
+    return this.t('money.amount', { amount: this.pesos.format(value) });
   }
 
   /** "a. m." / "p. m." for times shown on the 12-hour clock. */

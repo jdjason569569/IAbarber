@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal } from '@angular/core';
 import { IonicModule } from '@ionic/angular/lazy';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import type { MessageKey } from '../../../core/i18n/messages.es';
 import { ChartComponent } from '../../../shared/components/chart/chart.component';
+import { Tilt3dDirective } from '../../../shared/directives/tilt-3d.directive';
+import { replayStagger } from '../../../shared/utils/stagger.util';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { parseIsoDate } from '../../../shared/utils/date.util';
 import { formatTime12 } from '../../../shared/utils/time.util';
@@ -34,11 +36,12 @@ interface TotalBox {
   templateUrl: 'statistics.page.html',
   styleUrls: ['statistics.page.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonicModule, TranslatePipe, ChartComponent],
+  imports: [IonicModule, TranslatePipe, ChartComponent, Tilt3dDirective],
 })
 export class StatisticsPage {
   private readonly statisticsService = inject(StatisticsService);
   private readonly i18n = inject(I18nService);
+  private readonly host: HTMLElement = inject(ElementRef<HTMLElement>).nativeElement;
 
   protected readonly stats = signal<Statistics | null>(null);
   protected readonly loading = signal(false);
@@ -49,7 +52,7 @@ export class StatisticsPage {
   private readonly labels: ChartLabels = {
     locale: this.i18n.locale,
     hour: (hour) => formatTime12(`${hour}:00`, this.i18n.meridiemLabels()),
-    money: (value) => `$${value.toLocaleString(this.i18n.locale, { maximumFractionDigits: 0 })}`,
+    money: (value) => this.i18n.money(value),
     cuts: (count) =>
       count === 1 ? this.i18n.t('statistics.charts.oneCut') : this.i18n.t('statistics.charts.cuts', { count }),
   };
@@ -78,7 +81,7 @@ export class StatisticsPage {
   protected readonly weekdayChart = computed(() => weekdayOption(this.hourly(), this.labels));
   protected readonly hoursChart = computed(() => hoursOption(this.hourly(), this.labels));
   protected readonly revenueChart = computed(() => revenueOption(this.days(), this.labels));
-  /** "Promedio por día: $147.593", written over the chart next to a dashed sample of its line. */
+  /** "Promedio por día: $147.593 COP", written over the chart next to a dashed sample of its line. */
   protected readonly averageText = computed(() => {
     const average = averageRevenue(this.days());
     return average > 0 ? this.i18n.t('statistics.charts.average', { amount: this.labels.money(Math.round(average)) }) : '';
@@ -92,6 +95,7 @@ export class StatisticsPage {
 
   /** Ionic hook: reload every time the tab is shown so new appointments are counted. */
   ionViewWillEnter(): void {
+    replayStagger(this.host);
     this.load();
   }
 

@@ -1,6 +1,20 @@
 .total-card {
   margin: 0;
   text-align: center;
+
+  ion-card-subtitle {
+    color: var(--text-secondary);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 14px;
+  }
+}
+
+/* The figure in amber with a soft glow, as the card's highlight. */
+.total-value {
+  color: var(--ion-color-primary);
+  font-weight: 800;
+  text-shadow: 0 2px 12px rgba(var(--ion-color-primary-rgb), 0.35);
 }
 
 .chart-card {
@@ -36,12 +50,13 @@
   background: transparent;
   margin: 0 10px;
 
+  /* 3D cobalt rows (global .card-3d); the item's own background stays clear to show it. */
   ion-item {
-    --background: var(--ion-card-background);
-    --border-radius: 8px;
-    margin-bottom: 8px;
-    border: 1px solid var(--app-card-border);
-    border-radius: 8px;
+    --background: transparent;
+    --border-radius: 12px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    overflow: hidden;
   }
 
   h3 {

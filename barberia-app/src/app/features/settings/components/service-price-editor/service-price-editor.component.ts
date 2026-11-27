@@ -30,8 +30,8 @@ export class ServicePriceEditorComponent implements OnInit {
   protected readonly price = computed(() => Number(this.typed() || '0'));
   protected readonly valid = computed(() => /^\d+$/.test(this.typed()) && this.price() <= MAX_PRICE);
   protected readonly dirty = computed(() => this.price() !== this.saved());
-  /** "$20.000", shown under the field so a missing or extra zero is easy to spot. */
-  protected readonly preview = computed(() => `$${this.price().toLocaleString(this.i18n.locale)}`);
+  /** "$20.000 COP", shown under the field so a missing or extra zero is easy to spot. */
+  protected readonly preview = computed(() => this.i18n.money(this.price()));
 
   ngOnInit(): void {
     this.loading.set(true);
