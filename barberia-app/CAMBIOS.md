@@ -1654,3 +1654,70 @@ npx ionic capacitor add android   # añadir plataforma Android
   - Aparece mientras se mantiene presionado (se va mostrando a la par que se llena la barra) y queda completa al armarse.
   - Al deslizar, el lado elegido sigue encendido y su icono crece; el otro lado se desvanece.
 - La barra de progreso de la pulsación sigue abajo de la tarjeta, por encima de la guía.
+
+## 2026-11-27 · Horario de atención por voz
+
+### Nueva tarjeta "Horario de atención" en Configuración
+- `weekly-hours-editor` (antes de "Disponibilidad"): muestra lunes a domingo con su horario o "Cerrado" y un botón "Decirle al asistente mi horario".
+- El asistente pregunta "¿Qué días y a qué horas vas a atender?", escucha (o se escribe) y guarda la semana con `PUT /business-hours` (nuevo `BusinessHoursService.update()`; la API ya lo tenía). Luego lee lo guardado: "Listo. Guardé tu horario: lunes a viernes de 8:00 a. m. a 6:00 p. m.; sábado de 9:00 a. m. a 2:00 p. m.; domingo cerrado."
+- Frases que entiende (`utils/weekly-hours-phrase.ts`): "de lunes a viernes de 8 a 6, el sábado de 9 a 2 y el domingo cerrado", "lunes, miércoles y viernes de 8 a 12", "entre semana…", "fines de semana…", "todos los días de 7 a medianoche", "el domingo descanso / no trabajo", "los martes hasta las 5", "abro de 8 a 7 de lunes a viernes". Sin días nombrados, el horario se aplica a toda la semana. Solo cambian los días mencionados.
+- Horas sin a. m./p. m.: la apertura es en la mañana salvo antes de las 6 ("de 2 a 8" = 2 p. m. a 8 p. m.); el cierre es la primera lectura después de la apertura.
+- Si una parte no se entiende, no guarda nada y vuelve a preguntar (2 intentos).
+
+### Popup de voz compartido
+- El flujo pregunta → escucha → confirma pasó a `services/voice-prompt.service.ts` y el popup a `components/voice-prompt-modal/`; "Disponibilidad" y "Horario de atención" usan ambos (sin cambio visible en Disponibilidad).
+- La lectura de horas habladas pasó a `utils/spoken-time.ts`, compartida por los dos parsers.
+- Textos genéricos del popup movidos de `settings.blocks.assistant.*` a `settings.assistant.*`; nuevos `settings.hours.*`.
+
+### La X del popup de voz no cerraba
+- Causa: en Android, `TextToSpeech.stop()` no resuelve la promesa pendiente de `speak()`, así que el asistente seguía esperando a que terminara la voz y el popup nunca se cerraba.
+- `VoicePromptService`: la X cierra el popup al instante; cada espera (voz, escucha, pausa final) compite con una promesa que se rechaza al cerrar, así nada queda colgado. No se puede abrir otra conversación hasta que la anterior termine (lo hace enseguida al cerrar).
+- Si se cierra mientras se lee la confirmación, ya no aparece un error falso de "No se pudo conectar".
+- Probado en el teléfono: la X cierra mientras habla y mientras escucha, en "Horario de atención" y en "Disponibilidad", y el popup vuelve a abrir bien.
+
+## 2026-11-27 · Flechas animadas al completar o cancelar una cita
+
+- En la guía que aparece al mantener presionada una cita activa, debajo de "CANCELAR" y "COMPLETAR" hay ahora tres flechas (‹‹‹ / ›››) que se encienden una tras otra y se desplazan hacia el lado al que hay que deslizar.
+- Solo se animan mientras se mantiene presionada o ya está armada; al empezar a deslizar quedan fijas y encendidas en el lado elegido. Con "reducir movimiento" del sistema quedan quietas.
+- Se quitaron las flechas de texto "←" / "→" de las etiquetas (las reemplazan las animadas).
+- Estilos en `global.scss` (`.swipe-arrows`, `@keyframes swipe-arrow`); probado en el teléfono.
+
+## 2026-11-27 · Citas completadas y canceladas en tarjeta compacta
+
+- Pedido del usuario: las citas ya cerradas importan menos y deben ocupar menos.
+- Las citas **completadas y canceladas** se muestran compactas: hora (15px), nombre (14px), estado y total en dos filas, sin teléfono, sin desglose de precio y sin botones. Ocupan cerca de un tercio de la altura y van más tenues (60 % de opacidad) y más juntas (margen 8px).
+- **Al tocarla se abre** la tarjeta completa con "Editar" y "Deshacer"/"Reactivar" (los detalles entran con una animación corta); al tocarla otra vez se pliega. Solo una abierta a la vez (`expandedId`). Los toques en los botones o en el teléfono no la pliegan.
+- Las citas activas no cambian. El orden sigue siendo por hora.
+- Nuevo texto `appointments.details.toggle` (title y `aria-expanded` para accesibilidad).
+- Nota: `appointment-list.page.scss` pesa 11,5 kB (aviso desde 5 kB, error a 12 kB). Si crece más habrá que mover estilos a un parcial.
+
+### Despliegue lento al tocar una tarjeta compacta
+- Al tocar una cita completada o cancelada, la tarjeta crece despacio (0,9 s, curva suave) desde su altura compacta hasta la completa, y los detalles entran uno tras otro: teléfono, precio, total y botones (cada uno 0,15 s después del anterior). Al plegarla se encoge en 0,5 s.
+- Hecho con Web Animations (`unfold()` en `appointment-list.page.ts`): se mide la altura antes y después del cambio y se anima entre ambas. Con "reducir movimiento" del sistema cambia sin animación.
+- Los estilos de la tarjeta compacta se pasaron a `appointment-compact.scss` (segundo `styleUrls`), con lo que `appointment-list.page.scss` bajó a 10,8 kB y queda margen ante el límite de 12 kB.
+
+## 2026-11-27 · Popup de turnos que ya pasaron y siguen activos
+
+- La API avisa cada 3 horas y antes del cierre si hay turnos de hoy que ya terminaron y siguen activos (ver `barberia-api/CAMBIOS.md`).
+- `PushNotificationsService`: nuevo `overdueReceived$` (ReplaySubject de 10 s, por si llega en un arranque en frío). Se emite al recibir el push con la app abierta (con voz), al tocarlo, o al volver a la app con el aviso en la bandeja (sin voz: el teléfono ya lo leyó; se quita de la bandeja). No se mezcla con el modal de reservas nuevas.
+- Página de citas (`reviewOverdue`): recarga las citas, calcula los turnos vencidos (`utils/overdue-appointments.ts`) y, si hay, muestra un popup "Tienes N turnos sin cerrar" con la lista (hora · cliente) y la pregunta de completarlos o cancelarlos. Con la app abierta también lo dice en voz alta.
+- Botón **"Revisar ahora"**: muestra el día de hoy, se desplaza a la primera tarjeta vencida y las tarjetas vencidas laten en ámbar 6 s (`appointment-overdue.scss`). El barbero las cierra a mano deslizando. **"Después"** cierra el popup.
+- Textos `appointments.overdue.*`; estilo `.overdue-alert` en `global.scss` (una cita por línea).
+
+## 2026-11-27 · Avisos con estilo de barbería en 3D (adiós al amarillo)
+
+- Pedido del usuario: los modales de notificación amarillos no le gustaban.
+- Nuevo estilo `ion-alert.barber-notice` en `global.scss`, usado por el aviso de **reserva nueva** (antes fondo dorado sólido) y el de **turnos sin cerrar**:
+  - Tarjeta azul cobalto con degradado, borde dorado y sombras en capas (relieve y brillo dorado).
+  - Franja de **poste de barbería** (rojo, blanco, azul) arriba, que se desliza como si girara.
+  - **Moneda dorada 3D** con el símbolo: 💈 en reservas, ✂️ en turnos sin cerrar; se balancea suavemente.
+  - Entra girando desde atrás (`rotate: x`, perspectiva) y los botones tienen relieve: "Cerrar/Después" oscuro, la acción principal dorada; al tocarlos se hunden.
+  - Se quitó el contorno blanco de foco de Ionic y se centró el texto de los botones (la regla de Ionic los alineaba a la derecha).
+- Recordatorio de "cita en X minutos" (toast arriba): antes `color: 'warning'` (amarillo); ahora `barber-toast`, la misma tarjeta cobalto con el poste de barbería en el borde izquierdo e ícono de tijeras dorado.
+- Con "reducir movimiento" no hay animaciones. Probado en el teléfono abriendo los avisos por depuración remota.
+
+## 2026-11-27 · Completar o cancelar: mantener medio segundo
+
+- `SwipeActionDirective`: `DEFAULT_HOLD_MS` 1000 → 500. La barra de carga y la guía roja/verde se ajustan solas (usan `--hold-ms`).
+- Textos actualizados: pista ("mantenla presionada medio segundo y deslízala…"), etiqueta de la tarjeta ("Mantén ½ s y desliza") y aviso de toque corto ("Mantén el dedo medio segundo…").
+- Probado en el teléfono: a los 0,6 s la tarjeta ya queda armada (guía con flechas visible).

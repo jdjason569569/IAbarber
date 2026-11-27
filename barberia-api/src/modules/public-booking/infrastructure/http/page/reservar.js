@@ -65,6 +65,13 @@
     }
     return data;
   }
+  /** Opens the private link of a booking and remembers it on this phone. */
+  function openBooking(result) {
+    const link = `${location.origin}/reservar/cita/${result.booking.id}/${result.token}`;
+    localStorage.setItem(STORAGE_KEY, link);
+    history.replaceState(null, '', link);
+    return link;
+  }
   function alertBox(message) { return el('p', { class: 'alert', role: 'alert', text: message }); }
 
   /** Day tabs + slot buttons grouped by part of the day. Calls onPick(date, day, time). */
@@ -118,6 +125,10 @@
           el('a', { class: 'btn secondary', href: saved, text: 'Ver mi cita' }))
       : null;
 
+    const findCard = el('div', { class: 'card' },
+      el('p', { class: 'muted', text: '¿Ya reservaste y no encuentras tu cita?' }),
+      el('button', { class: 'btn secondary', type: 'button', text: 'Buscar mi cita', onclick: showFind }));
+
     const formSlot = el('div');
     const picker = slotPicker(data.days, (date, day, time) => put(formSlot, bookingForm(date, day, time)));
     render(
@@ -127,7 +138,62 @@
         data.price > 0 ? el('p', { class: 'price', text: `Valor del corte: ${money.format(data.price)}` }) : null,
         picker),
       formSlot,
+      findCard,
     );
+  }
+
+  // ---- find a booking (lost link) ----
+  function showFind() {
+    subtitle.textContent = 'Buscar mi cita';
+    const error = el('div');
+    const results = el('div');
+    const phone = el('input', {
+      id: 'find-phone', name: 'phone', type: 'tel', inputmode: 'numeric', autocomplete: 'tel',
+      required: true, maxlength: '20', placeholder: '300 123 4567',
+    });
+    const name = el('input', { id: 'find-name', name: 'name', autocomplete: 'given-name', required: true, maxlength: '60' });
+    const submit = el('button', { class: 'btn', type: 'submit', text: 'Buscar' });
+    const form = el('form', {
+      class: 'card', novalidate: true,
+      onsubmit: async (event) => {
+        event.preventDefault();
+        submit.disabled = true;
+        submit.textContent = 'Buscando…';
+        put(error);
+        put(results);
+        try {
+          const found = await call('/bookings/find', { body: { phone: phone.value, name: name.value } });
+          if (found.length === 1) {
+            openBooking(found[0]);
+            void showManage(found[0].booking.id, found[0].token, { booking: found[0].booking });
+            return;
+          }
+          put(results, el('section', { class: 'card' },
+            el('h2', { text: 'Tus citas' }),
+            found.map((result) => el('button', {
+              class: 'btn secondary', type: 'button', text: describe(null, result.booking.date, result.booking.time),
+              onclick: () => { openBooking(result); void showManage(result.booking.id, result.token, { booking: result.booking }); },
+            }))));
+        } catch (e) {
+          put(error, alertBox(e.message));
+        } finally {
+          submit.disabled = false;
+          submit.textContent = 'Buscar';
+        }
+      },
+    },
+      el('h2', { text: 'Buscar mi cita' }),
+      el('p', { class: 'muted', text: 'Escribe el celular y el nombre con los que reservaste.' }),
+      el('label', { for: 'find-phone', text: 'Celular' }), phone,
+      el('label', { for: 'find-name', text: 'Nombre' }), name,
+      error,
+      submit);
+    render(
+      form,
+      results,
+      el('a', { class: 'btn secondary', href: '/reservar', text: 'Volver a reservar' }),
+    );
+    setTimeout(() => phone.focus(), 50);
   }
 
   function bookingForm(date, day, time) {
@@ -150,9 +216,7 @@
           const result = await call('/bookings', {
             body: { name: name.value, phone: phone.value, date, time, website: trap.value },
           });
-          const link = `${location.origin}/reservar/cita/${result.booking.id}/${result.token}`;
-          localStorage.setItem(STORAGE_KEY, link);
-          history.replaceState(null, '', link);
+          openBooking(result);
           void showManage(result.booking.id, result.token, { justBooked: true, booking: result.booking });
         } catch (e) {
           put(error, alertBox(e.message));
@@ -165,8 +229,8 @@
       el('h2', { text: '2. Tus datos' }),
       el('p', { class: 'summary', text: describe(day, date, time) }),
       el('label', { for: 'name', text: 'Nombre' }), name,
-      el('label', { for: 'phone', text: 'Celular (WhatsApp)' }), phone,
-      el('p', { class: 'hint', text: 'Solo para avisarte si hay algún cambio. No necesitas correo.' }),
+      el('label', { for: 'phone', text: 'Celular' }), phone,
+      el('p', { class: 'hint', text: 'Con tu celular y tu nombre puedes volver a encontrar tu cita. No necesitas correo.' }),
       el('div', { class: 'trap', 'aria-hidden': 'true' }, el('label', { text: 'No llenar' }), trap),
       error,
       submit);
@@ -250,11 +314,6 @@
         catch { copy.textContent = 'Mantén presionado el enlace para copiarlo'; }
       },
     });
-    const share = el('a', {
-      class: 'btn secondary', target: '_blank', rel: 'noopener',
-      href: `https://wa.me/?text=${encodeURIComponent(`Mi cita en la barbería: ${link}`)}`,
-      text: 'Enviármelo por WhatsApp',
-    });
 
     render(
       options.justBooked ? el('p', { class: 'success', role: 'status', text: '✅ ¡Listo! Tu cita quedó reservada.' }) : null,
@@ -269,9 +328,9 @@
       booking.status === 'pending'
         ? el('section', { class: 'card' },
             el('h2', { text: 'Guarda este enlace' }),
-            el('p', { class: 'muted', text: 'Con él puedes ver, cambiar o cancelar tu cita.' }),
+            el('p', { class: 'muted', text: 'Con él puedes ver, cambiar o cancelar tu cita. Si lo pierdes, entra a la página de reservas y toca "Buscar mi cita".' }),
             el('div', { class: 'link-box', text: link }),
-            el('div', { class: 'row' }, copy, share))
+            copy)
         : null,
     );
   }

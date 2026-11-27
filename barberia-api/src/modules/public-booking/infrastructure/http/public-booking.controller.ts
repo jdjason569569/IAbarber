@@ -19,10 +19,13 @@ import { DomainError } from '../../../../shared/errors/domain.error.js';
 import { ADMIN_WORKSPACE, WorkspaceContext } from '../../../../shared/workspace/workspace-context.js';
 import { BookFromWebUseCase } from '../../application/use-cases/book-from-web.use-case.js';
 import { CancelWebBookingUseCase } from '../../application/use-cases/cancel-web-booking.use-case.js';
+import { FindWebBookingsUseCase } from '../../application/use-cases/find-web-bookings.use-case.js';
 import { GetPublicSlotsUseCase } from '../../application/use-cases/get-public-slots.use-case.js';
 import { GetWebBookingUseCase } from '../../application/use-cases/get-web-booking.use-case.js';
 import { RescheduleWebBookingUseCase } from '../../application/use-cases/reschedule-web-booking.use-case.js';
 import { InvalidBookingLinkError } from '../../domain/errors/invalid-booking-link.error.js';
+import { NoBookingFoundError } from '../../domain/errors/no-booking-found.error.js';
+import { TooManyLookupsError } from '../../domain/errors/too-many-lookups.error.js';
 import { InvalidWebBookingError } from '../../domain/errors/invalid-web-booking.error.js';
 import { RescheduleLimitError } from '../../domain/errors/reschedule-limit.error.js';
 import { TooLateToChangeError } from '../../domain/errors/too-late-to-change.error.js';
@@ -51,6 +54,8 @@ const MESSAGES = {
   tooLate: 'Tu cita ya no se puede cambiar por aquí (faltan menos de 30 minutos o ya pasó). Escríbenos por WhatsApp.',
   rescheduleLimit: 'Tu cita ya se cambió una vez. Para otro cambio escríbenos por WhatsApp.',
   invalid: 'No se pudo reservar. Revisa los datos e intenta de nuevo.',
+  notFound: 'No encontramos citas próximas con ese celular y nombre. Revisa que sean los mismos con los que reservaste.',
+  tooManyLookups: 'Hiciste muchos intentos. Espera un rato e intenta de nuevo.',
 };
 
 interface BookRequest {
@@ -60,6 +65,11 @@ interface BookRequest {
   time?: unknown;
   /** Honeypot: hidden on the page, only bots fill it. */
   website?: unknown;
+}
+
+interface FindRequest {
+  name?: unknown;
+  phone?: unknown;
 }
 
 interface RescheduleRequest {
@@ -80,6 +90,7 @@ export class PublicBookingController {
     private readonly getBooking: GetWebBookingUseCase,
     private readonly cancelBooking: CancelWebBookingUseCase,
     private readonly rescheduleBooking: RescheduleWebBookingUseCase,
+    private readonly findBookings: FindWebBookingsUseCase,
   ) {}
 
   @Get()
@@ -131,6 +142,15 @@ export class PublicBookingController {
     );
   }
 
+  /** A client who lost the private link finds their upcoming bookings with phone and first name. */
+  @Post('api/bookings/find')
+  @HttpCode(200)
+  find(@Body() body: FindRequest, @Req() req: Request) {
+    return this.run(() =>
+      this.findBookings.execute({ name: text(body?.name), phone: text(body?.phone), ip: clientIp(req) }),
+    );
+  }
+
   @Get('api/bookings/:id/:token')
   @Header('Cache-Control', 'no-store')
   show(@Param('id') id: string, @Param('token') token: string) {
@@ -162,6 +182,8 @@ export class PublicBookingController {
 function toHttpError(error: unknown): unknown {
   if (error instanceof InvalidWebBookingError) return new BadRequestException(MESSAGES[error.field]);
   if (error instanceof InvalidBookingLinkError) return new NotFoundException(MESSAGES.link);
+  if (error instanceof NoBookingFoundError) return new NotFoundException(MESSAGES.notFound);
+  if (error instanceof TooManyLookupsError) return new HttpException(MESSAGES.tooManyLookups, HttpStatus.TOO_MANY_REQUESTS);
   if (error instanceof TooManyBookingsError) return new HttpException(MESSAGES.tooMany, HttpStatus.TOO_MANY_REQUESTS);
   if (error instanceof TooLateToChangeError) return new ConflictException(MESSAGES.tooLate);
   if (error instanceof RescheduleLimitError) return new ConflictException(MESSAGES.rescheduleLimit);

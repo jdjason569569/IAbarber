@@ -1,0 +1,32 @@
+<ion-list-header>{{ 'settings.hours.title' | t }}</ion-list-header>
+<p class="hint">{{ 'settings.hours.hint' | t }}</p>
+
+@if (loading()) {
+  <ion-item lines="none">
+    <ion-label class="ion-text-center">{{ 'settings.loading' | t }}</ion-label>
+  </ion-item>
+} @else {
+  <ion-list>
+    @for (row of rows(); track row.weekday) {
+      <ion-item>
+        <ion-label class="day">{{ row.day }}</ion-label>
+        <ion-note slot="end" [class.closed]="!row.open">{{ row.hours }}</ion-note>
+      </ion-item>
+    }
+  </ion-list>
+
+  <div class="ion-padding">
+    <ion-button expand="block" [disabled]="saving() || assistant.open()" (click)="ask()">
+      <ion-icon slot="start" name="mic-outline"></ion-icon>
+      {{ 'settings.hours.assistant.open' | t }}
+    </ion-button>
+  </div>
+}
+
+@if (message(); as msg) {
+  <ion-text [color]="msg.error ? 'danger' : 'success'">
+    <p class="ion-padding-horizontal">{{ msg.text }}</p>
+  </ion-text>
+}
+
+<app-voice-prompt-modal [busy]="saving()" [example]="'settings.hours.assistant.example' | t" />

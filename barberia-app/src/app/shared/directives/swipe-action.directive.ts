@@ -2,7 +2,7 @@ import { DestroyRef, Directive, ElementRef, inject, input, output } from '@angul
 import { FeedbackService } from '../../core/feedback/feedback.service';
 
 /** Default time the finger must stay down before the card can be swiped. */
-const DEFAULT_HOLD_MS = 1000;
+const DEFAULT_HOLD_MS = 500;
 /**
  * At first a finger that moves is scrolling. After this long still on the card it is holding: the
  * page stops scrolling under it. From then on sideways movement is fine (people start swiping before

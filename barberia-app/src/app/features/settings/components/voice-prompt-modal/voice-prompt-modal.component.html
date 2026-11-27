@@ -1,0 +1,79 @@
+<!-- Popup of a settings voice assistant: big microphone that pulses while it listens. -->
+<ion-modal class="voice-prompt-modal" [isOpen]="assistant.open()" [backdropDismiss]="false">
+  <ng-template>
+    <div class="assistant">
+      <ion-button
+        class="assistant-close"
+        fill="clear"
+        color="medium"
+        [attr.aria-label]="'settings.assistant.cancel' | t"
+        (click)="assistant.cancel()"
+      >
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+
+      <p
+        class="assistant-prompt"
+        [class.ok]="assistant.result() === 'ok'"
+        [class.error]="assistant.result() === 'error'"
+      >
+        {{ assistant.prompt() }}
+      </p>
+
+      @switch (assistant.result()) {
+        @case ('ok') {
+          <div class="assistant-mic done ok"><ion-icon name="checkmark-circle"></ion-icon></div>
+        }
+        @case ('error') {
+          <div class="assistant-mic done error"><ion-icon name="alert-circle"></ion-icon></div>
+        }
+        @default {
+          <div class="assistant-mic" [class.listening]="assistant.listening()" [class.busy]="busy()">
+            @if (busy()) {
+              <ion-spinner name="crescent"></ion-spinner>
+            } @else {
+              <ion-icon name="mic"></ion-icon>
+            }
+          </div>
+        }
+      }
+
+      <p class="assistant-status" [class.active]="assistant.listening()">
+        @if (assistant.result()) {
+          &nbsp;
+        } @else if (busy()) {
+          {{ 'settings.assistant.savingStatus' | t }}
+        } @else if (assistant.listening()) {
+          {{ 'settings.assistant.listening' | t }}
+        } @else if (assistant.voiceHint(); as hint) {
+          {{ hint }}
+        } @else {
+          {{ 'settings.assistant.speaking' | t }}
+        }
+      </p>
+
+      @if (assistant.heard(); as said) {
+        <p class="assistant-heard">"{{ said }}"</p>
+      }
+
+      @if (!assistant.result() && !busy()) {
+        <p class="assistant-example">{{ example() }}</p>
+        <ion-item lines="full" class="assistant-input">
+          <ion-input
+            [placeholder]="'settings.assistant.placeholder' | t"
+            [(ngModel)]="typed"
+            (keyup.enter)="submitTyped()"
+          ></ion-input>
+          <ion-button
+            slot="end"
+            fill="clear"
+            [attr.aria-label]="'settings.assistant.send' | t"
+            (click)="submitTyped()"
+          >
+            <ion-icon slot="icon-only" name="send-outline"></ion-icon>
+          </ion-button>
+        </ion-item>
+      }
+    </div>
+  </ng-template>
+</ion-modal>

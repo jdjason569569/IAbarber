@@ -18,7 +18,7 @@
           slot="end"
           fill="clear"
           color="danger"
-          [disabled]="saving() || asking()"
+          [disabled]="saving() || assistant.open()"
           [attr.aria-label]="'settings.blocks.remove' | t"
           (click)="remove(i)"
         >
@@ -33,7 +33,7 @@
   </ion-list>
 
   <div class="ion-padding">
-    <ion-button expand="block" [disabled]="saving() || asking()" (click)="ask()">
+    <ion-button expand="block" [disabled]="saving() || assistant.open()" (click)="ask()">
       <ion-icon slot="start" name="mic-outline"></ion-icon>
       {{ 'settings.blocks.assistant.open' | t }}
     </ion-button>
@@ -46,78 +46,4 @@
   }
 }
 
-<!-- Popup of the availability assistant: big microphone that pulses while it listens. -->
-<ion-modal class="availability-modal" [isOpen]="asking()" [backdropDismiss]="false">
-  <ng-template>
-    <div class="assistant">
-      <ion-button
-        class="assistant-close"
-        fill="clear"
-        color="medium"
-        [attr.aria-label]="'settings.blocks.assistant.cancel' | t"
-        (click)="cancel()"
-      >
-        <ion-icon slot="icon-only" name="close"></ion-icon>
-      </ion-button>
-
-      <p class="assistant-prompt" [class.ok]="result() === 'ok'" [class.error]="result() === 'error'">
-        {{ prompt() }}
-      </p>
-
-      @switch (result()) {
-        @case ('ok') {
-          <div class="assistant-mic done ok"><ion-icon name="checkmark-circle"></ion-icon></div>
-        }
-        @case ('error') {
-          <div class="assistant-mic done error"><ion-icon name="alert-circle"></ion-icon></div>
-        }
-        @default {
-          <div class="assistant-mic" [class.listening]="listening()" [class.busy]="saving()">
-            @if (saving()) {
-              <ion-spinner name="crescent"></ion-spinner>
-            } @else {
-              <ion-icon name="mic"></ion-icon>
-            }
-          </div>
-        }
-      }
-
-      <p class="assistant-status" [class.active]="listening()">
-        @if (result()) {
-          &nbsp;
-        } @else if (saving()) {
-          {{ 'settings.blocks.assistant.savingStatus' | t }}
-        } @else if (listening()) {
-          {{ 'settings.blocks.assistant.listening' | t }}
-        } @else if (voiceHint(); as hint) {
-          {{ hint }}
-        } @else {
-          {{ 'settings.blocks.assistant.speaking' | t }}
-        }
-      </p>
-
-      @if (heard(); as said) {
-        <p class="assistant-heard">"{{ said }}"</p>
-      }
-
-      @if (!result() && !saving()) {
-        <p class="assistant-example">{{ 'settings.blocks.assistant.example' | t }}</p>
-        <ion-item lines="full" class="assistant-input">
-          <ion-input
-            [placeholder]="'settings.blocks.assistant.placeholder' | t"
-            [(ngModel)]="typed"
-            (keyup.enter)="submitTyped()"
-          ></ion-input>
-          <ion-button
-            slot="end"
-            fill="clear"
-            [attr.aria-label]="'settings.blocks.assistant.send' | t"
-            (click)="submitTyped()"
-          >
-            <ion-icon slot="icon-only" name="send-outline"></ion-icon>
-          </ion-button>
-        </ion-item>
-      }
-    </div>
-  </ng-template>
-</ion-modal>
+<app-voice-prompt-modal [busy]="saving()" [example]="'settings.blocks.assistant.example' | t" />

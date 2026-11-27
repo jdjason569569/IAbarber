@@ -3,6 +3,7 @@ import { isSupabaseConfigured } from '../../shared/supabase/supabase.provider.js
 import { NotifyBookingChangeUseCase } from './application/use-cases/notify-booking-change.use-case.js';
 import { ListNotifiedWorkspacesUseCase } from './application/use-cases/list-notified-workspaces.use-case.js';
 import { NotifyNewBookingUseCase } from './application/use-cases/notify-new-booking.use-case.js';
+import { NotifyOverdueAppointmentsUseCase } from './application/use-cases/notify-overdue-appointments.use-case.js';
 import { NotifyUpcomingAppointmentUseCase } from './application/use-cases/notify-upcoming-appointment.use-case.js';
 import { RegisterDeviceUseCase } from './application/use-cases/register-device.use-case.js';
 import { UnregisterDeviceUseCase } from './application/use-cases/unregister-device.use-case.js';
@@ -23,6 +24,7 @@ import { SupabaseDeviceTokenRepository } from './infrastructure/persistence/supa
     NotifyNewBookingUseCase,
     NotifyBookingChangeUseCase,
     NotifyUpcomingAppointmentUseCase,
+    NotifyOverdueAppointmentsUseCase,
     ListNotifiedWorkspacesUseCase,
     {
       provide: DEVICE_TOKEN_REPOSITORY,
@@ -34,6 +36,7 @@ import { SupabaseDeviceTokenRepository } from './infrastructure/persistence/supa
     NotifyNewBookingUseCase,
     NotifyBookingChangeUseCase,
     NotifyUpcomingAppointmentUseCase,
+    NotifyOverdueAppointmentsUseCase,
     ListNotifiedWorkspacesUseCase,
   ],
 })

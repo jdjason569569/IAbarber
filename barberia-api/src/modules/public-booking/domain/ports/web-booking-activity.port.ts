@@ -1,4 +1,6 @@
 export const WEB_BOOKING_ACTIVITY = Symbol('WEB_BOOKING_ACTIVITY');
+/** Same kind of record, for the attempts to find a booking by phone and name. */
+export const WEB_BOOKING_LOOKUPS = Symbol('WEB_BOOKING_LOOKUPS');
 
 /** Recent web bookings, used to stop someone from filling the agenda from the public page. */
 export interface WebBookingActivity {

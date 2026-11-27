@@ -5,7 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import type { PushNotificationSchema } from '@capacitor/push-notifications';
 import { AlertController } from '@ionic/angular/lazy';
-import { Subject, firstValueFrom } from 'rxjs';
+import { ReplaySubject, Subject, firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth/auth.service';
 import { I18nService } from '../i18n/i18n.service';
@@ -16,6 +16,15 @@ const BOOKINGS_CHANNEL_ID = 'bookings';
 
 /** Type (data) and Android tag prefix of the 10- and 5-minute appointment reminders (API). */
 const REMINDER_TYPE = 'appointment-reminder';
+
+/** Type (data) and Android tag prefix of the alert about appointments that ended and are still active (API). */
+const OVERDUE_TYPE = 'overdue-appointments';
+
+/** The API found appointments of today that already ended and are still active. */
+export interface OverdueAlert {
+  /** Read the alert aloud: false when the phone already read it (the push came with the app closed). */
+  speak: boolean;
+}
 
 /** An appointment about to start, announced by the API a few minutes before. */
 export interface AppointmentReminder {
@@ -59,6 +68,11 @@ export class PushNotificationsService {
   readonly reminderReceived$ = new Subject<AppointmentReminder>();
   /** Text the API asks to read aloud (e.g. "Nueva cita de Juan…") for a push received with the app open. */
   readonly speechReceived$ = new Subject<string>();
+  /**
+   * Emits when the API reports appointments left open (push received, tapped or found in the tray).
+   * Replayed for a few seconds: on a cold start it can fire before the appointments page subscribes.
+   */
+  readonly overdueReceived$ = new ReplaySubject<OverdueAlert>(1, 10_000);
 
   private token: string | null = null;
   private listening = false;
@@ -120,6 +134,10 @@ export class PushNotificationsService {
     // With the app open Android shows nothing, so a modal tells the barber and stays until seen.
     await PushNotifications.addListener('pushNotificationReceived', (notification) => {
       this.zone.run(() => {
+        if (notification.data?.type === OVERDUE_TYPE) {
+          this.overdueReceived$.next({ speak: true });
+          return;
+        }
         if (notification.data?.type === REMINDER_TYPE) {
           this.reminderReceived$.next({
             client: String(notification.data.client ?? ''),
@@ -137,6 +155,10 @@ export class PushNotificationsService {
       this.zone.run(() => {
         void this.router.navigateByUrl('/appointments');
         this.bookingReceived$.next();
+        if (notification.data?.type === OVERDUE_TYPE) {
+          this.overdueReceived$.next({ speak: false });
+          return;
+        }
         void this.addTappedBooking(notification);
       });
     });
@@ -159,7 +181,14 @@ export class PushNotificationsService {
     try {
       const { notifications } = await PushNotifications.getDeliveredNotifications();
       const known = this.unseen.size;
+      // The barber came back without tapping the overdue alert: show it in the app and clear the tray.
+      const overdue = notifications.filter((n) => n.tag?.startsWith(OVERDUE_TYPE));
+      if (overdue.length > 0) {
+        await PushNotifications.removeDeliveredNotifications({ notifications: overdue });
+        this.overdueReceived$.next({ speak: false });
+      }
       for (const notification of notifications) {
+        if (notification.tag?.startsWith(OVERDUE_TYPE)) continue;
         // Reminders are not bookings: by the time the barber looks, the appointment is starting.
         if (notification.tag?.startsWith(REMINDER_TYPE)) continue;
         // Android's auto-group summary has no text.
@@ -230,7 +259,7 @@ export class PushNotificationsService {
   /** Stays open (no timeout, no backdrop dismiss) until the barber acknowledges it. */
   private async openBookingAlert(): Promise<HTMLIonAlertElement> {
     const alert = await this.alertController.create({
-      cssClass: 'booking-alert',
+      cssClass: ['booking-alert', 'barber-notice'],
       message: '',
       backdropDismiss: false,
       buttons: [

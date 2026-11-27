@@ -1,16 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import type { OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
 import { SendAppointmentRemindersUseCase } from '../../application/use-cases/send-appointment-reminders.use-case.js';
+import { SendOverdueAppointmentsAlertUseCase } from '../../application/use-cases/send-overdue-appointments-alert.use-case.js';
 
 const CHECK_EVERY_MS = 30_000;
 
-/** Runs the reminder check every 30 seconds while the API is up. */
+/** Runs the reminder and overdue-appointment checks every 30 seconds while the API is up. */
 @Injectable()
 export class AppointmentReminderScheduler implements OnApplicationBootstrap, OnApplicationShutdown {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
 
-  constructor(private readonly sendReminders: SendAppointmentRemindersUseCase) {}
+  constructor(
+    private readonly sendReminders: SendAppointmentRemindersUseCase,
+    private readonly sendOverdueAlert: SendOverdueAppointmentsAlertUseCase,
+  ) {}
 
   onApplicationBootstrap(): void {
     this.timer = setInterval(() => void this.tick(), CHECK_EVERY_MS);
@@ -31,6 +35,11 @@ export class AppointmentReminderScheduler implements OnApplicationBootstrap, OnA
       await this.sendReminders.execute();
     } catch (error) {
       console.error('Reminder check failed:', error instanceof Error ? error.message : error);
+    }
+    try {
+      await this.sendOverdueAlert.execute();
+    } catch (error) {
+      console.error('Overdue check failed:', error instanceof Error ? error.message : error);
     } finally {
       this.running = false;
     }

@@ -14,6 +14,11 @@ export class BusinessHoursService {
     return this.http.get<DayHours[]>(this.url);
   }
 
+  /** Replaces the opening hours of the week. Fails with 400 if a day closes before it opens. */
+  update(week: DayHours[]): Observable<DayHours[]> {
+    return this.http.put<DayHours[]>(this.url, week);
+  }
+
   /** Hours the barber blocked on `date` (`YYYY-MM-DD`). */
   getBlocks(date: string): Observable<TimeBlock[]> {
     return this.http.get<TimeBlock[]>(`${this.url}/blocks/${date}`);

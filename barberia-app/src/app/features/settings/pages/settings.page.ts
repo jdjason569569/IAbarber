@@ -10,6 +10,7 @@ import { BarberNameEditorComponent } from '../components/barber-name-editor/barb
 import { BookingLinkCardComponent } from '../components/booking-link-card/booking-link-card.component';
 import { DayBlocksEditorComponent } from '../components/day-blocks-editor/day-blocks-editor.component';
 import { ServicePriceEditorComponent } from '../components/service-price-editor/service-price-editor.component';
+import { WeeklyHoursEditorComponent } from '../components/weekly-hours-editor/weekly-hours-editor.component';
 
 @Component({
   selector: 'app-settings',
@@ -24,6 +25,7 @@ import { ServicePriceEditorComponent } from '../components/service-price-editor/
     BookingLinkCardComponent,
     DayBlocksEditorComponent,
     ServicePriceEditorComponent,
+    WeeklyHoursEditorComponent,
   ],
 })
 export class SettingsPage {

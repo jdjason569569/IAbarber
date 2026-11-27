@@ -1,0 +1,18 @@
+.hint {
+  margin: 0 16px 4px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.day {
+  text-transform: capitalize;
+}
+
+ion-note {
+  font-size: 14px;
+  color: var(--ion-text-color);
+
+  &.closed {
+    color: var(--ion-color-medium);
+  }
+}

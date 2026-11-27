@@ -1,0 +1,98 @@
+/* Completed and cancelled appointments shown small (see `isCompact()`), and their slow unfold. */
+
+/* Total shown in the header only while the card is compact. */
+.appt-compact-total {
+  display: none;
+  font-size: 15px;
+  color: var(--ion-color-medium-tint);
+}
+
+/* The dimming changes slowly, together with the height animated from the component (`unfold()`).
+   Sizes and padding change at once, so the final height can be measured right away. */
+.appt-card:is(.completed, .cancelled) {
+  transition:
+    opacity 0.7s ease,
+    translate 0.45s var(--app-ease-out),
+    scale 0.3s var(--app-ease-out);
+}
+
+.appt-swipe {
+  transition: margin 0.7s var(--app-ease-out);
+}
+
+/* Compact card: time, client, state and total in two short rows. Tapping it unfolds the full card. */
+.appt-card.compact {
+  cursor: pointer;
+
+  .appt-body {
+    padding: 8px 0;
+  }
+
+  .appt-time {
+    font-size: 15px;
+  }
+
+  .appt-client {
+    font-size: 14px;
+  }
+
+  .appt-badges {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .appt-compact-total {
+    display: block;
+  }
+
+  .appt-phone,
+  .appt-detail,
+  .appt-total,
+  .appt-actions {
+    display: none;
+  }
+}
+
+/* A compact card sits closer to its neighbours. */
+.appt-swipe:has(> .appt-card.compact) {
+  margin-block: 8px;
+}
+
+/* Unfolded: the phone, the price, the total and the buttons come in one after another. */
+.appt-card.unfolding {
+  .appt-phone,
+  .appt-detail,
+  .appt-total,
+  .appt-actions {
+    animation: appt-unfold 0.5s var(--app-ease-out) backwards;
+  }
+
+  .appt-phone {
+    animation-delay: 0.15s;
+  }
+
+  .appt-detail {
+    animation-delay: 0.3s;
+  }
+
+  .appt-total {
+    animation-delay: 0.45s;
+  }
+
+  .appt-actions {
+    animation-delay: 0.6s;
+  }
+}
+
+@keyframes appt-unfold {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appt-card.unfolding * {
+    animation: none !important;
+  }
+}

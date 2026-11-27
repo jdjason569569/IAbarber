@@ -401,8 +401,12 @@
 }
 
 /* A cancelled appointment stays in the list, dimmed and struck through. */
-.appt-card.cancelled {
+.appt-card.cancelled,
+.appt-card.completed.compact {
   opacity: 0.6;
+}
+
+.appt-card.cancelled {
 
   .appt-client {
     text-decoration: line-through;

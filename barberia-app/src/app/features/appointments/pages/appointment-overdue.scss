@@ -1,0 +1,20 @@
+/* After "Revisar ahora" in the overdue popup: the cards of the appointments left open pulse in amber
+   for a few seconds, so the barber sees which ones to complete or cancel. */
+.appt-swipe.attention > .appt-card {
+  animation: appt-attention 1.2s ease-in-out 5;
+}
+
+@keyframes appt-attention {
+  50% {
+    box-shadow:
+      0 0 0 3px var(--ion-color-warning),
+      0 0 26px rgba(var(--ion-color-warning-rgb), 0.65);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appt-swipe.attention > .appt-card {
+    animation: none;
+    box-shadow: 0 0 0 3px var(--ion-color-warning);
+  }
+}

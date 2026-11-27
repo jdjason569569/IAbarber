@@ -1,12 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { AlertController, IonicModule, ModalController, ToastController } from '@ionic/angular/lazy';
 import type { RefresherCustomEvent } from '@ionic/core';
 import { addIcons } from 'ionicons';
 import {
   callOutline,
+  cut,
   chatbubbleEllipses,
   checkmark,
   checkmarkCircle,
@@ -24,7 +25,7 @@ import {
 import { FeedbackService } from '../../../core/feedback/feedback.service';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { PushNotificationsService } from '../../../core/notifications/push-notifications.service';
-import type { AppointmentReminder } from '../../../core/notifications/push-notifications.service';
+import type { AppointmentReminder, OverdueAlert } from '../../../core/notifications/push-notifications.service';
 import { MessageKey } from '../../../core/i18n/messages.es';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { PesosPipe } from '../../../shared/pipes/pesos.pipe';
@@ -46,6 +47,7 @@ import { Appointment } from '../models/appointment.model';
 import { AssistantService } from '../../assistant/services/assistant.service';
 import { VoiceService } from '../../assistant/services/voice.service';
 import { AppointmentService } from '../services/appointment.service';
+import { overdueToday } from '../utils/overdue-appointments';
 import { detectCommand } from '../utils/voice-commands';
 import type { VoiceCommand } from '../utils/voice-commands';
 import { DayHours } from '../../settings/models/business-hours.model';
@@ -98,10 +100,17 @@ const SWIPE_TIP_COOLDOWN_MS = 4000;
 /** Thrown inside the dialog when the user presses cancel. */
 class DialogCancelled extends Error {}
 
+/** How long the overdue cards pulse after "Revisar ahora". */
+const OVERDUE_ATTENTION_MS = 6000;
+
+/** How long a compact appointment takes to unfold, and to fold back. */
+const UNFOLD_MS = 900;
+const FOLD_MS = 500;
+
 @Component({
   selector: 'app-appointment-list',
   templateUrl: 'appointment-list.page.html',
-  styleUrls: ['appointment-list.page.scss'],
+  styleUrls: ['appointment-list.page.scss', 'appointment-compact.scss', 'appointment-overdue.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IonicModule, TranslatePipe, PesosPipe, TimeRangePipe, SendProgressComponent, Tilt3dDirective, SwipeActionDirective],
 })
@@ -116,6 +125,7 @@ export class AppointmentListPage {
   private readonly toastController = inject(ToastController);
   private readonly pushNotifications = inject(PushNotificationsService);
   private readonly host: HTMLElement = inject(ElementRef<HTMLElement>).nativeElement;
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly feedback = inject(FeedbackService);
 
   /** Hint above the list on how to complete / cancel with the swipe, while there is something to swipe. */
@@ -126,6 +136,12 @@ export class AppointmentListPage {
   private lastSwipeTipAt = 0;
 
   protected readonly loading = signal(false);
+  /** Completed or cancelled appointment the barber opened to edit or undo; the others stay compact. */
+  protected readonly expandedId = signal<number | null>(null);
+  /** Overdue appointments pointed out after "Revisar ahora": their cards pulse for a few seconds. */
+  protected readonly attentionIds = signal<number[]>([]);
+  /** The overdue popup is open: a second alert while it is shown does not stack another one. */
+  private overdueAlertOpen = false;
   protected readonly error = signal<string | null>(null);
   protected readonly listening = signal(false);
   protected readonly countdown = signal(LISTEN_SECONDS);
@@ -337,6 +353,7 @@ export class AppointmentListPage {
   constructor() {
     addIcons({
       callOutline,
+      cut,
       chatbubbleEllipses,
       checkmark,
       checkmarkCircle,
@@ -359,6 +376,10 @@ export class AppointmentListPage {
     this.pushNotifications.reminderReceived$
       .pipe(takeUntilDestroyed())
       .subscribe((reminder) => void this.announceReminder(reminder));
+    // Appointments that ended and are still active: popup, voice and a shortcut to close them by hand.
+    this.pushNotifications.overdueReceived$
+      .pipe(takeUntilDestroyed())
+      .subscribe((alert) => void this.reviewOverdue(alert));
     // A client just booked: say who (unless the assistant is talking).
     this.pushNotifications.speechReceived$
       .pipe(takeUntilDestroyed())
@@ -880,7 +901,8 @@ export class AppointmentListPage {
       // The API's phrase calls the barber by name; the catalog text covers older APIs.
       message: message ?? this.i18n.t('notifications.reminder', { client, minutes }),
       duration: 8000,
-      color: 'warning',
+      cssClass: 'barber-toast',
+      icon: 'cut',
       position: 'top',
     });
     await toast.present();
@@ -892,6 +914,69 @@ export class AppointmentListPage {
         ? this.i18n.t('notifications.reminderSpeechOne', { client })
         : this.i18n.t('notifications.reminderSpeech', { client, minutes }));
     await this.voice.speak(speech);
+  }
+
+  /**
+   * The API found appointments of today that already ended and are still active. With fresh data,
+   * the popup lists them, the assistant says it aloud (unless the phone already read the push) and
+   * "Revisar ahora" takes the barber to the cards, to complete or cancel each one by swiping.
+   */
+  private async reviewOverdue({ speak }: OverdueAlert): Promise<void> {
+    if (this.overdueAlertOpen) return;
+    let items: Appointment[];
+    try {
+      items = await firstValueFrom(this.appointmentService.getAppointments());
+    } catch {
+      return;
+    }
+    this.appointments.set(items);
+    const overdue = overdueToday(items);
+    if (overdue.length === 0 || this.overdueAlertOpen) return;
+
+    const labels = this.i18n.meridiemLabels();
+    const lines = overdue.map((a) =>
+      this.i18n.t('appointments.overdue.line', { time: formatTime12(a.time, labels), client: a.clientName }),
+    );
+    this.overdueAlertOpen = true;
+    const alert = await this.alertController.create({
+      header: this.i18n.t(overdue.length === 1 ? 'appointments.overdue.titleOne' : 'appointments.overdue.title', {
+        count: overdue.length,
+      }),
+      message: this.i18n.t('appointments.overdue.message', { list: lines.join('\n') }),
+      cssClass: ['overdue-alert', 'barber-notice'],
+      backdropDismiss: false,
+      buttons: [
+        { text: this.i18n.t('appointments.overdue.later'), role: 'cancel' },
+        { text: this.i18n.t('appointments.overdue.review'), handler: () => this.goToOverdue(overdue) },
+      ],
+    });
+    void alert.onDidDismiss().then(() => {
+      this.overdueAlertOpen = false;
+      this.voice.stopSpeaking();
+    });
+    await alert.present();
+    if (speak && !this.dialogActive()) {
+      const list = new Intl.ListFormat(this.i18n.locale, { type: 'conjunction' }).format(
+        overdue.map((a) =>
+          this.i18n.t('appointments.overdue.speechItem', { client: a.clientName, time: formatTime12(a.time, labels) }),
+        ),
+      );
+      const key: MessageKey = overdue.length === 1 ? 'appointments.overdue.speechOne' : 'appointments.overdue.speechMany';
+      await this.voice.speak(this.i18n.t(key, { count: overdue.length, list }));
+    }
+  }
+
+  /** Shows today and scrolls to the first overdue card; the overdue cards pulse for a few seconds. */
+  private goToOverdue(overdue: Appointment[]): void {
+    this.selectedDate.set(toLocalIsoDate(new Date()));
+    const ids = overdue.map((a) => a.id);
+    this.attentionIds.set(ids);
+    setTimeout(() => {
+      this.host
+        .querySelector(`[data-appt-id="${ids[0]}"]`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+    setTimeout(() => this.attentionIds.set([]), OVERDUE_ATTENTION_MS);
   }
 
   private async showError(key: MessageKey): Promise<void> {
@@ -924,13 +1009,52 @@ export class AppointmentListPage {
     await alert.present();
   }
 
+  /** Completed and cancelled appointments matter less: they show as a small card until tapped. */
+  protected isCompact(appointment: Appointment): boolean {
+    return !this.isActive(appointment) && this.expandedId() !== appointment.id;
+  }
+
+  /** Tapping a closed appointment opens its details and actions; tapping it again folds it back. */
+  protected toggleDetails(appointment: Appointment, event: Event): void {
+    if (this.isActive(appointment)) return;
+    // The buttons and the phone inside an open card do their own thing.
+    if ((event.target as HTMLElement).closest('ion-button, .appt-phone')) return;
+    const card = event.currentTarget as HTMLElement;
+    const opening = this.expandedId() !== appointment.id;
+    const from = card.offsetHeight;
+    this.expandedId.set(opening ? appointment.id : null);
+    // Applies the new size now, so the height it ends at can be measured and animated to.
+    this.changeDetector.detectChanges();
+    this.unfold(card, from, opening);
+  }
+
+  /**
+   * Slow unfold: the card grows from its compact height to the full one (or shrinks back) while the
+   * details come in one after another (`.unfolding` in appointment-compact.scss).
+   */
+  private unfold(card: HTMLElement, from: number, opening: boolean): void {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    card.classList.toggle('unfolding', opening);
+    const to = card.offsetHeight;
+    card.getAnimations().filter((a) => a.id === 'unfold').forEach((a) => a.cancel());
+    const animation = card.animate([{ height: `${from}px`, overflow: 'hidden' }, { height: `${to}px`, overflow: 'hidden' }], {
+      duration: opening ? UNFOLD_MS : FOLD_MS,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      id: 'unfold',
+    });
+    animation.finished.then(
+      () => card.classList.remove('unfolding'),
+      () => undefined,
+    );
+  }
+
   /** Only appointments still to be served can be swiped to complete or cancel. */
   protected isActive(appointment: Appointment): boolean {
     return !appointment.cancelled && !appointment.completed;
   }
 
   /**
-   * The barber held the card 1 s and swiped it: no confirmation (the gesture is deliberate and both
+   * The barber held the card 0.5 s and swiped it: no confirmation (the gesture is deliberate and both
    * actions can be undone from the card). Success plays a sound and a celebration.
    */
   protected onSwiped(action: 'complete' | 'cancel', appointment: Appointment): void {

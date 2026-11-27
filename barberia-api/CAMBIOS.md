@@ -930,3 +930,27 @@ This file records, in chronological order, every change made to the backend.
   - La frase va en `body` y `speech` del push: el teléfono la lee en voz alta (en segundo plano la lee el servicio nativo; con la app abierta, la app).
 - **Antes de desplegar**: ejecutar la migración 007 en Supabase; sin ella falla leer/guardar el nombre (los recordatorios siguen saliendo, sin nombre).
 - **Hecho (2026-11-26):** la migración 007 ya se aplicó en Supabase (columna `barber_name text not null default ''` verificada en `shop_settings`). Solo falta desplegar la API en Render.
+
+## 2026-11-27 · /reservar: que el cliente no pierda su cita (sin Meta)
+
+Decisión del usuario: la solución no debe depender de nada de Meta (ni WhatsApp). Se quitó el botón "Enviármelo por WhatsApp" (`wa.me`).
+
+### Buscar mi cita (celular + nombre)
+- `POST /reservar/api/bookings/find` `{ phone, name }` → lista `{ booking, token }` de las citas próximas pendientes de ese celular cuyo **primer nombre** coincide (sin importar tildes ni mayúsculas). Si no hay, 404 con mensaje en español.
+- Se pide el nombre para que saber un número no baste para cancelar la cita de otro. Límite: 10 búsquedas por IP por hora (429), en memoria (`WEB_BOOKING_LOOKUPS`, misma clase que el límite de reservas).
+- En la página: tarjeta "¿Ya reservaste y no encuentras tu cita? → Buscar mi cita" al final de `/reservar`. Con una cita abre su enlace privado (y lo guarda en el navegador); con varias, las lista.
+
+### Tarjeta "Guarda este enlace"
+- Queda como antes (enlace + "Copiar enlace"), sin el botón de WhatsApp, y avisa que si se pierde el enlace se puede usar "Buscar mi cita".
+- Se probó un botón "Agregar a mi calendario" (Google Calendar / `.ics`), pero el usuario no quiso esa forma y se quitó por completo (endpoint `cita.ics` incluido).
+- El campo "Celular (WhatsApp)" ahora dice "Celular".
+
+## 2026-11-27 · Aviso de turnos que ya pasaron y siguen activos
+
+- Nuevo `SendOverdueAppointmentsAlertUseCase` (módulo reminders), llamado en el mismo ciclo de 30 s que los recordatorios (`AppointmentReminderScheduler`).
+- Revisiones del día según el horario de atención de hoy (`overdue-checkpoints.ts`): cada 3 horas desde la apertura y 30 min antes del cierre; una revisión normal a menos de 90 min de la del cierre se omite. Ej.: 8–21 → 11:00, 14:00, 17:00, 20:30; 7–24 → 10:00, 13:00, 16:00, 19:00, 22:00, 23:30. Días cerrados no se revisan.
+- Cada revisión se hace una vez (clave en `SENT_REMINDER_STORE`) y solo dentro de los 15 min siguientes a su hora, para que un reinicio o despliegue no dispare avisos viejos.
+- Si hay citas de hoy que ya terminaron (inicio + 30 min) y siguen activas, `NotifyOverdueAppointmentsUseCase` manda un push con voz (data-only, el teléfono lo lee aunque la app esté cerrada): "Andrés, tienes 2 turnos que ya pasaron y siguen activos: Ana a las 3 de la tarde y Pedro a las 4 y media de la tarde. ¿Los completaste o los cancelas? Entra a la app y desliza cada tarjeta." Nombra hasta 4 clientes y cuenta el resto. Tag `overdue-appointments:<fecha>`, data `type: overdue-appointments`.
+- Si no hay turnos pendientes, no se manda nada.
+- **Probado de punta a punta (2026-11-27, 16:52)**: con el código nuevo corriendo en el PC contra Supabase y Firebase reales, se forzó la revisión de las 17:00. Llegó el push al teléfono, la app mostró el popup "Tienes 4 turnos sin cerrar" (Prueba2 7:30 a. m., Prueba 4 8:30 a. m., jj 4:00 p. m., Cliente casual 4:18 p. m.) y lo dijo en voz alta; "Revisar ahora" llevó a las tarjetas y las 4 latieron en ámbar.
+- Decisión tomada en la prueba (deslizando a mano): **canceladas** Prueba2, Prueba 4 y jj (reservas que pasaron hace horas sin confirmarse; no se suma plata no cobrada) y **completado** el Cliente casual (un casual solo se registra cuando ya está en la silla). Al repetir la revisión ya no se envió nada.

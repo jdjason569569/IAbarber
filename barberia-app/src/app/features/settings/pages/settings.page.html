@@ -11,10 +11,11 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <!-- Each section is a graphite card. Only the link card tilts: the other two hold form fields and
+  <!-- Each section is a graphite card. Only the link card tilts: the others hold form fields and
        the availability popup, which a transformed parent would displace. The barber's name goes first. -->
   <app-barber-name-editor class="settings-card card-3d stagger-item" style="--i: 0" />
   <app-booking-link-card class="settings-card card-3d stagger-item" appTilt3d="5" style="--i: 1" />
   <app-service-price-editor class="settings-card card-3d stagger-item" style="--i: 2" />
-  <app-day-blocks-editor class="settings-card card-3d stagger-item" style="--i: 3" />
+  <app-weekly-hours-editor class="settings-card card-3d stagger-item" style="--i: 3" />
+  <app-day-blocks-editor class="settings-card card-3d stagger-item" style="--i: 4" />
 </ion-content>

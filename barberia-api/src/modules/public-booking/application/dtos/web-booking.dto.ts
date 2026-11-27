@@ -21,6 +21,13 @@ export interface BookFromWebInput {
   ip: string;
 }
 
+export interface FindWebBookingsInput {
+  name: string;
+  phone: string;
+  /** Client IP, for the per-IP limit. */
+  ip: string;
+}
+
 /** What the booking page shows about one booking. The phone is never sent back. */
 export interface WebBookingDto {
   id: number;
