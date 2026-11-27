@@ -1,7 +1,24 @@
 @if (visible()) {
   <div class="loading-overlay" role="status" aria-live="polite" [attr.aria-label]="'loading.sending' | t">
     <div class="loading-overlay__box">
-      <ion-spinner name="crescent" color="primary"></ion-spinner>
+      <!-- Scissors that cut along a dotted line, from one side to the other and back. -->
+      <div class="cut-track" aria-hidden="true">
+        <div class="cut-line"></div>
+        <div class="scissors-run">
+          <svg class="scissors" viewBox="0 0 64 40">
+            <g class="blade blade--top">
+              <circle cx="11" cy="10" r="7" />
+              <path d="M17 13 L32 20 L60 17 Q62 16.5 60 15.6 L30 15.5 Z" />
+            </g>
+            <g class="blade blade--bottom">
+              <circle cx="11" cy="30" r="7" />
+              <path d="M17 27 L32 20 L60 23 Q62 23.5 60 24.4 L30 24.5 Z" />
+            </g>
+            <circle class="pivot" cx="32" cy="20" r="2.4" />
+          </svg>
+        </div>
+      </div>
+      <p class="loading-overlay__text">{{ 'loading.wait' | t }}</p>
     </div>
   </div>
 }

@@ -5,17 +5,134 @@
   z-index: 30000;
   display: grid;
   place-items: center;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(4, 10, 20, 0.55);
   animation: loading-overlay-in 180ms ease-out;
 }
 
+/* Raised cobalt card with a gold edge, like the rest of the app's notices. */
 .loading-overlay__box {
   display: grid;
-  place-items: center;
-  padding: 18px;
-  border-radius: 14px;
-  background: var(--ion-background-color, #fff);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  justify-items: center;
+  gap: 10px;
+  padding: 22px 26px 16px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, #1f3a5f 0%, #142843 60%, #0d1b30 100%);
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 18px 40px rgba(0, 0, 0, 0.6),
+    0 0 24px rgba(var(--ion-color-primary-rgb), 0.18);
+}
+
+.loading-overlay__text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* --run: how far the scissors travel (track width minus their own width). */
+.cut-track {
+  --run: 160px;
+  position: relative;
+  width: 230px;
+  height: 52px;
+}
+
+/* Dotted cut line the scissors follow. */
+.cut-line {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 50%;
+  border-top: 2px dashed rgba(var(--ion-color-primary-rgb), 0.45);
+}
+
+/* Goes right, turns around, comes back left, turns around again. */
+.scissors-run {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 70px;
+  height: 52px;
+  animation: scissors-run 2.4s ease-in-out infinite;
+}
+
+.scissors {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Handles are gold rings, blades are silver. */
+.blade {
+  transform-origin: 32px 20px;
+  animation: scissors-snip 0.4s ease-in-out infinite alternate;
+
+  circle {
+    fill: none;
+    stroke: var(--ion-color-primary);
+    stroke-width: 3.2;
+  }
+
+  path {
+    fill: #dfe6ef;
+    stroke: #9fb0c4;
+    stroke-width: 0.8;
+    stroke-linejoin: round;
+  }
+}
+
+.blade--bottom {
+  animation-name: scissors-snip-bottom;
+}
+
+.pivot {
+  fill: var(--ion-color-primary-shade);
+}
+
+@keyframes scissors-run {
+  0% {
+    translate: 0 0;
+    scale: 1 1;
+  }
+  45% {
+    translate: var(--run) 0;
+    scale: 1 1;
+  }
+  50% {
+    translate: var(--run) 0;
+    scale: -1 1;
+  }
+  95% {
+    translate: 0 0;
+    scale: -1 1;
+  }
+  100% {
+    translate: 0 0;
+    scale: 1 1;
+  }
+}
+
+/* The blades open and close around the pivot while the scissors move. */
+@keyframes scissors-snip {
+  from {
+    rotate: -16deg;
+  }
+  to {
+    rotate: 2deg;
+  }
+}
+
+@keyframes scissors-snip-bottom {
+  from {
+    rotate: 16deg;
+  }
+  to {
+    rotate: -2deg;
+  }
 }
 
 @keyframes loading-overlay-in {
@@ -28,7 +145,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loading-overlay {
+  .loading-overlay,
+  .scissors-run,
+  .blade {
     animation: none;
+  }
+
+  .scissors-run {
+    left: calc(50% - 35px);
   }
 }

@@ -1,18 +1,17 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
-import { IonicModule } from '@ionic/angular/lazy';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { LoadingService } from './loading.service';
 
 /** Requests shorter than this never show the overlay, so fast answers do not flicker. */
 const SHOW_DELAY_MS = 250;
 
-/** Full-screen dimmed layer with a spinner while an API request is being sent. */
+/** Full-screen dimmed layer with scissors cutting back and forth while an API request is in flight. */
 @Component({
   selector: 'app-loading-overlay',
   templateUrl: 'loading-overlay.component.html',
   styleUrls: ['loading-overlay.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IonicModule, TranslatePipe],
+  imports: [TranslatePipe],
 })
 export class LoadingOverlayComponent {
   private readonly loading = inject(LoadingService);

@@ -51,6 +51,7 @@ export const MESSAGES_ES = {
 
   // Global loading overlay (every API request except assistant booking turns)
   'loading.sending': 'Enviando…',
+  'loading.wait': 'Un momento…',
 
   // Haircut advisor (photo analyzed by Gemini in the API; cuts and example pictures from the catalog)
   'haircutAdvisor.title': 'Asesor de cortes',
