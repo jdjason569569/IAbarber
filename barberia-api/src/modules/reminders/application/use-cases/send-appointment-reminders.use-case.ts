@@ -7,14 +7,15 @@ import { NotifyUpcomingAppointmentUseCase } from '../../../notifications/applica
 import { SENT_REMINDER_STORE } from '../../domain/ports/sent-reminder.store.js';
 import type { SentReminderStore } from '../../domain/ports/sent-reminder.store.js';
 
-/** How long before an appointment the barber is reminded. */
-export const REMINDER_LEAD_MINUTES = 5;
+/** How long before an appointment the barber is reminded: twice, 10 and 5 minutes before. Ascending. */
+export const REMINDER_LEAD_MINUTES = [5, 10] as const;
 
 const MINUTE_MS = 60_000;
 
 /**
- * Pushes "appointment in 5 minutes" for every booking of today that starts within the lead time,
- * once per appointment slot (a moved appointment is reminded again at its new time).
+ * Pushes "appointment in 10 minutes" and then "in 5 minutes" for every booking of today, each once per
+ * appointment slot (a moved appointment is reminded again at its new time). An appointment booked
+ * closer than 10 minutes only gets the reminders still ahead of it.
  * Walk-ins, completed and cancelled appointments are skipped.
  */
 @Injectable()
@@ -45,8 +46,10 @@ export class SendAppointmentRemindersUseCase {
       if (a.date !== today || a.cancelled || a.completed || a.walkIn) continue;
       // Parsed as local time: `process.env.TZ` is the shop's time zone.
       const msLeft = new Date(`${a.date}T${a.time}:00`).getTime() - now.getTime();
-      if (msLeft <= 0 || msLeft > REMINDER_LEAD_MINUTES * MINUTE_MS) continue;
-      const key = `${workspaceId}:${a.id}:${a.date}:${a.time}`;
+      // The tightest reminder window the appointment is in: ≤ 5 min → the 5-minute one, ≤ 10 → the 10.
+      const lead = REMINDER_LEAD_MINUTES.find((minutes) => msLeft <= minutes * MINUTE_MS);
+      if (msLeft <= 0 || lead === undefined) continue;
+      const key = `${workspaceId}:${a.id}:${a.date}:${a.time}:${lead}`;
       if (await this.sent.has(key)) continue;
       const minutes = Math.max(1, Math.ceil(msLeft / MINUTE_MS));
       if (await this.notifyUpcoming.execute({ client: a.client, date: a.date, time: a.time, minutes })) {

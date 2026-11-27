@@ -1629,3 +1629,11 @@ npx ionic capacitor add android   # añadir plataforma Android
 ### La voz dice "pesos", no "dólares"
 - `VoiceService.speak()` pasa todo texto por `sayPesos()`: cualquier monto ("$20000", "$20.000 COP", "$1,500") se lee como "20000 pesos" (texto `money.spoken` del catálogo). Cubre también las respuestas del servidor, así que el resumen del cliente casual ya se oye en pesos sin esperar el despliegue de la API.
 - En la API también se cambiaron los textos (ver `barberia-api/CAMBIOS.md`).
+
+### La voz dice las horas en palabras
+- Problema: al guardar "no disponible de 10 a 11 de la noche" la voz decía "10 de la mañana…": el motor de voz del teléfono lee mal "10:00 p. m.". El horario guardado sí era correcto.
+- `VoiceService.sayTimes()`: antes de hablar, toda hora "H:MM a. m./p. m." (o "am/pm" del servidor) se dice como "10 de la noche", "2 y media de la tarde", "7 y cuarto de la mañana"; los ":00" sin meridiano quedan como la hora sola y "–" entre horas se dice "a". Textos en el catálogo (`speech.*`).
+- Aplica a toda la voz de la app (disponibilidad, asistente de citas, respuestas del servidor). Lo que se ve en pantalla no cambia.
+
+### Recordatorios a los 10 y 5 minutos
+- El servidor ahora avisa dos veces antes de cada cita (ver `barberia-api/CAMBIOS.md`). La app ya leía los minutos del push, así que no necesitó cambios de lógica; solo se actualizó la descripción de notificaciones en Configuración ("10 y 5 minutos antes de cada cita").

@@ -70,7 +70,7 @@ export class VoiceService {
    * The Android WebView has no `speechSynthesis`, so the native app uses the phone's TTS engine.
    */
   speak(text: string): Promise<void> {
-    const spoken = this.sayPesos(text);
+    const spoken = this.sayTimes(this.sayPesos(text));
     return Capacitor.isNativePlatform() ? this.speakNative(spoken) : this.speakWeb(spoken);
   }
 
@@ -83,6 +83,44 @@ export class VoiceService {
     return text.replace(/\$\s?(\d{1,3}(?:[.,]\d{3})+|\d+)(?:\s?COP\b)?/g, (_match, amount: string) =>
       this.i18n.t('money.spoken', { amount: amount.replace(/[.,]/g, '') }),
     );
+  }
+
+  /**
+   * The voice misreads "10:00 p. m." (it said "10 de la mañana"), so every clock time is said in words:
+   * "10:00 p. m." -> "10 de la noche", "2:30 p. m." -> "2 y media de la tarde". In a range whose first
+   * end has no meridiem ("1:00 – 1:30 p. m.") that end is said as a bare hour.
+   */
+  private sayTimes(text: string): string {
+    const withMeridiem = text.replace(
+      /\b(\d{1,2}):(\d{2})\s*([ap])(?:\.\s?m\.?|m\b)/gi,
+      (_match, hour: string, minutes: string, meridiem: string) =>
+        this.i18n.t('speech.time', {
+          hour: Number(hour),
+          minutes: this.spokenMinutes(minutes),
+          period: this.spokenPeriod(Number(hour), meridiem.toLowerCase() === 'p'),
+        }),
+    );
+    return withMeridiem
+      .replace(/\b(\d{1,2}):(\d{2})\b/g, (_match, hour: string, minutes: string) => `${Number(hour)}${this.spokenMinutes(minutes)}`)
+      .replace(/\s*–\s*(?=\d)/g, this.i18n.t('speech.range'));
+  }
+
+  private spokenMinutes(minutes: string): string {
+    const value = Number(minutes);
+    if (value === 0) return '';
+    if (value === 30) return this.i18n.t('speech.minutes.half');
+    if (value === 15) return this.i18n.t('speech.minutes.quarter');
+    return this.i18n.t('speech.minutes.other', { minutes: value });
+  }
+
+  /** Part of the day for a 12-hour clock time: 10 p. m. -> "de la noche". */
+  private spokenPeriod(hour12: number, pm: boolean): string {
+    const hour = (hour12 % 12) + (pm ? 12 : 0);
+    if (hour < 6) return this.i18n.t('speech.period.dawn');
+    if (hour < 12) return this.i18n.t('speech.period.morning');
+    if (hour < 13) return this.i18n.t('speech.period.noon');
+    if (hour < 19) return this.i18n.t('speech.period.afternoon');
+    return this.i18n.t('speech.period.night');
   }
 
   /** Cuts off whatever is being read aloud; the pending `speak()` resolves. */

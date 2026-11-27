@@ -906,3 +906,10 @@ This file records, in chronological order, every change made to the backend.
   - Estadísticas para el asistente (`appointment-statistics.repository.ts`): formato `es-CO` sin decimales y "pesos" en lugar de `$` con formato `en-US`.
 - Los mensajes de WhatsApp a clientes siguen con "$20.000" (texto escrito, no hablado).
 - Requiere desplegar la API en Render para que el cambio llegue al teléfono; mientras tanto la app ya corrige la lectura por su lado.
+
+## 2026-11-26 · Dos recordatorios por cita: 10 y 5 minutos antes
+
+- `REMINDER_LEAD_MINUTES` pasa de `5` a `[5, 10]`. Cada cita de hoy recibe un push "Cita en 10 minutos" y después "Cita en 5 minutos" (la voz lo lee igual que antes).
+- Cada aviso se recuerda por separado (la clave del `SentReminderStore` lleva los minutos), así uno no bloquea al otro. Una cita agendada con menos de 10 minutos de anticipación solo recibe los avisos que le quedan.
+- Ambos pushes usan el mismo `tag`, así el de 5 minutos reemplaza en la bandeja al de 10 en vez de acumularse.
+- Requiere desplegar en Render.

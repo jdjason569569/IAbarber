@@ -328,7 +328,7 @@ export const MESSAGES_ES = {
   'commands.next.later': 'La siguiente cita es a las {time}, con {client}.',
   'notifications.channelName': 'Citas',
   'notifications.channelDescription':
-    'Avisos cuando un cliente agenda, cambia o cancela una cita, y 5 minutos antes de cada cita',
+    'Avisos cuando un cliente agenda, cambia o cancela una cita, y 10 y 5 minutos antes de cada cita',
   'notifications.dismiss': 'Entendido',
   'notifications.viewAppointments': 'Ver citas',
   'notifications.unseenTitle': '💈 Novedades en tu agenda',
@@ -338,6 +338,17 @@ export const MESSAGES_ES = {
   'notifications.reminderSpeechOne': 'Atención: en un minuto tienes cita con {client}.',
   'time.am': 'a. m.',
   'time.pm': 'p. m.',
+  /** Times read aloud: the voice misreads "a. m." / "p. m.", so it says "10 de la noche". */
+  'speech.time': '{hour}{minutes} {period}',
+  'speech.minutes.half': ' y media',
+  'speech.minutes.quarter': ' y cuarto',
+  'speech.minutes.other': ' y {minutes}',
+  'speech.period.dawn': 'de la madrugada',
+  'speech.period.morning': 'de la mañana',
+  'speech.period.noon': 'del mediodía',
+  'speech.period.afternoon': 'de la tarde',
+  'speech.period.night': 'de la noche',
+  'speech.range': ' a ',
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_ES;
