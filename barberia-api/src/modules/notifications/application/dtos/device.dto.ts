@@ -28,4 +28,6 @@ export interface UpcomingAppointmentInput {
   time: string;
   /** Minutes left until the appointment starts. */
   minutes: number;
+  /** What the barber hears and reads ("¡Pilas Andrés! En 10 minuticos…"); a plain notice when missing. */
+  message?: string;
 }

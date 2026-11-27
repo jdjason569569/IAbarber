@@ -1,0 +1,17 @@
+.hint {
+  margin: 0 16px 8px;
+  font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+/* How the reminder will sound, in a quote bubble under the field. */
+.preview {
+  margin: 10px 16px 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--ion-color-primary);
+  border-radius: 8px;
+  background: rgba(var(--ion-color-primary-rgb), 0.08);
+  font-size: 14px;
+  font-style: italic;
+  color: var(--ion-text-color);
+}

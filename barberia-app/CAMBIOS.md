@@ -1637,3 +1637,13 @@ npx ionic capacitor add android   # añadir plataforma Android
 
 ### Recordatorios a los 10 y 5 minutos
 - El servidor ahora avisa dos veces antes de cada cita (ver `barberia-api/CAMBIOS.md`). La app ya leía los minutos del push, así que no necesitó cambios de lógica; solo se actualizó la descripción de notificaciones en Configuración ("10 y 5 minutos antes de cada cita").
+
+### La voz dice las fechas en forma natural
+- `VoiceService.sayDates()`: "2026-11-26" o "26/11/2026" se dicen "jueves 26 de noviembre del 2026" (texto `speech.date`).
+- `sayTimes()` también convierte horas de 24 h del servidor: "14:00" → "2 de la tarde".
+- Resultado de la confirmación actual del servidor: "Listo. Cita creada para Ana el jueves 26 de noviembre del 2026 a las 2 de la tarde." — funciona ya, sin esperar el despliegue de la API.
+
+### "Tu nombre" en Configuración y recordatorios personalizados
+- Nueva tarjeta `barber-name-editor` (primera en Configuración): campo del nombre, botón Guardar y vista previa de cómo suena el aviso ("¡Pilas Andrés! En 10 minuticos le toca con Juliana."). `ShopSettingsService.getBarberName()/saveBarberName()` contra `/settings/barber-name`.
+- Con la app abierta, el recordatorio usa la frase que manda la API (campo `speech` del push) en el toast y en la voz; si la API es antigua y no la manda, usa el texto de siempre.
+- Requiere desplegar la API y ejecutar la migración 007 en Supabase (ver `barberia-api/CAMBIOS.md`).

@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { Tilt3dDirective } from '../../../shared/directives/tilt-3d.directive';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { replayStagger } from '../../../shared/utils/stagger.util';
+import { BarberNameEditorComponent } from '../components/barber-name-editor/barber-name-editor.component';
 import { BookingLinkCardComponent } from '../components/booking-link-card/booking-link-card.component';
 import { DayBlocksEditorComponent } from '../components/day-blocks-editor/day-blocks-editor.component';
 import { ServicePriceEditorComponent } from '../components/service-price-editor/service-price-editor.component';
@@ -19,6 +20,7 @@ import { ServicePriceEditorComponent } from '../components/service-price-editor/
     IonicModule,
     TranslatePipe,
     Tilt3dDirective,
+    BarberNameEditorComponent,
     BookingLinkCardComponent,
     DayBlocksEditorComponent,
     ServicePriceEditorComponent,

@@ -875,9 +875,10 @@ export class AppointmentListPage {
     });
   }
 
-  private async announceReminder({ client, minutes }: AppointmentReminder): Promise<void> {
+  private async announceReminder({ client, minutes, message }: AppointmentReminder): Promise<void> {
     const toast = await this.toastController.create({
-      message: this.i18n.t('notifications.reminder', { client, minutes }),
+      // The API's phrase calls the barber by name; the catalog text covers older APIs.
+      message: message ?? this.i18n.t('notifications.reminder', { client, minutes }),
       duration: 8000,
       color: 'warning',
       position: 'top',
@@ -886,9 +887,10 @@ export class AppointmentListPage {
     // Speaking now would cut off the assistant's own question.
     if (this.dialogActive()) return;
     const speech =
-      minutes === 1
+      message ??
+      (minutes === 1
         ? this.i18n.t('notifications.reminderSpeechOne', { client })
-        : this.i18n.t('notifications.reminderSpeech', { client, minutes });
+        : this.i18n.t('notifications.reminderSpeech', { client, minutes }));
     await this.voice.speak(speech);
   }
 

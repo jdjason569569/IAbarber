@@ -269,6 +269,15 @@ export const MESSAGES_ES = {
   'settings.bookingLink.copyError': 'No se pudo copiar el enlace.',
   'settings.bookingLink.shareTitle': 'Reserva tu cita',
   'settings.bookingLink.shareText': 'Reserva tu cita en la barbería aquí:',
+  'settings.barberName.title': 'Tu nombre',
+  'settings.barberName.hint': 'Así te llamo en los recordatorios de 10 y 5 minutos antes de cada cita.',
+  'settings.barberName.label': 'Nombre del barbero',
+  'settings.barberName.placeholder': 'Ej: Andrés',
+  'settings.barberName.save': 'Guardar nombre',
+  'settings.barberName.saved': 'Nombre guardado.',
+  'settings.barberName.loadError': 'No se pudo cargar tu nombre.',
+  'settings.barberName.preview': '"¡Pilas {name}! En 10 minuticos le toca con Juliana."',
+  'settings.barberName.previewNoName': '"¡Pilas! En 10 minuticos le toca con Juliana."',
   'settings.price.title': 'Valor del servicio',
   'settings.price.hint': 'Precio del corte. Las citas que se agendan por WhatsApp se guardan con este valor.',
   'settings.price.label': 'Valor del corte',
@@ -349,6 +358,8 @@ export const MESSAGES_ES = {
   'speech.period.afternoon': 'de la tarde',
   'speech.period.night': 'de la noche',
   'speech.range': ' a ',
+  /** Dates read aloud: "jueves 26 de noviembre del 2026". */
+  'speech.date': '{weekday} {day} de {month} del {year}',
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_ES;

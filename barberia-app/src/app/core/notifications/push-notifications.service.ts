@@ -14,13 +14,15 @@ import { parseIsoDate } from '../../shared/utils/date.util';
 /** Must match ANDROID_CHANNEL_ID in the API (FirebasePushSender). */
 const BOOKINGS_CHANNEL_ID = 'bookings';
 
-/** Type (data) and Android tag prefix of the "appointment in 5 minutes" push (API). */
+/** Type (data) and Android tag prefix of the 10- and 5-minute appointment reminders (API). */
 const REMINDER_TYPE = 'appointment-reminder';
 
 /** An appointment about to start, announced by the API a few minutes before. */
 export interface AppointmentReminder {
   client: string;
   minutes: number;
+  /** The API's phrase for the barber ("¡Pilas Andrés! En 10 minuticos…"); missing from older APIs. */
+  message?: string;
 }
 
 /** Text right after the client name in a booking push (API) and in `notifications.bookingLine`. */
@@ -122,6 +124,7 @@ export class PushNotificationsService {
           this.reminderReceived$.next({
             client: String(notification.data.client ?? ''),
             minutes: Number(notification.data.minutes) || 5,
+            message: (notification.data.speech as string | undefined) || undefined,
           });
           return;
         }

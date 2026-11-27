@@ -4,7 +4,7 @@ import { SUPABASE_CLIENT } from '../../../../shared/supabase/supabase.provider.j
 import { WorkspaceContext } from '../../../../shared/workspace/workspace-context.js';
 import type { ShopSettingsRepository } from '../../domain/ports/shop-settings.repository.js';
 
-/** Table created by docs/migrations/004_shop_settings.sql. */
+/** Table created by docs/migrations/004_shop_settings.sql (barber_name: 007). */
 const TABLE = 'shop_settings';
 
 @Injectable()
@@ -24,6 +24,25 @@ export class SupabaseShopSettingsRepository implements ShopSettingsRepository {
   async saveServicePrice(price: number): Promise<void> {
     const { error } = await this.supabase.from(TABLE).upsert(
       { workspace_id: WorkspaceContext.currentId(), service_price: price, updated_at: new Date().toISOString() },
+      { onConflict: 'workspace_id' },
+    );
+    if (error) throw new Error(error.message);
+  }
+
+  async getBarberName(): Promise<string> {
+    const { data, error } = await this.supabase
+      .from(TABLE)
+      .select('barber_name')
+      .eq('workspace_id', WorkspaceContext.currentId())
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as { barber_name: string | null } | null)?.barber_name ?? '';
+  }
+
+  /** Upserts only this column, so the saved price is kept. */
+  async saveBarberName(name: string): Promise<void> {
+    const { error } = await this.supabase.from(TABLE).upsert(
+      { workspace_id: WorkspaceContext.currentId(), barber_name: name, updated_at: new Date().toISOString() },
       { onConflict: 'workspace_id' },
     );
     if (error) throw new Error(error.message);

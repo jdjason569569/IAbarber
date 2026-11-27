@@ -16,6 +16,7 @@ import { GetDayBlocksUseCase } from '../../../business-hours/application/use-cas
 import type { TimeBlock } from '../../../business-hours/domain/entities/day-blocks.entity.js';
 import type { DayHours } from '../../../business-hours/domain/entities/weekly-hours.entity.js';
 import { localIsoDate } from '../../../../shared/utils/local-date.js';
+import { clockTime12, spokenDate } from '../../../../shared/utils/spoken-date.js';
 import { LLM_PORT } from '../../domain/ports/llm.port.js';
 import type { LlmPort, LlmTool } from '../../domain/ports/llm.port.js';
 import type {
@@ -208,7 +209,7 @@ export class HandleBookingTurnUseCase {
         extras: [],
       });
       return {
-        reply: `Listo. Cita creada para ${appointment.client} el ${appointment.date} a las ${appointment.time}.`,
+        reply: `Listo. Cita creada para ${appointment.client} el ${spokenDate(appointment.date)} a las ${clockTime12(appointment.time)}.`,
         draft: {},
         status: 'created',
         appointment,

@@ -913,3 +913,19 @@ This file records, in chronological order, every change made to the backend.
 - Cada aviso se recuerda por separado (la clave del `SentReminderStore` lleva los minutos), así uno no bloquea al otro. Una cita agendada con menos de 10 minutos de anticipación solo recibe los avisos que le quedan.
 - Ambos pushes usan el mismo `tag`, así el de 5 minutos reemplaza en la bandeja al de 10 en vez de acumularse.
 - Requiere desplegar en Render.
+
+## 2026-11-26 · Confirmación de cita con fecha y hora naturales
+
+- Antes: "Listo. Cita creada para Ana el 2026-11-26 a las 14:00." y la voz leía los números.
+- Ahora: "Listo. Cita creada para Ana el jueves 26 de noviembre del 2026 a las 2:00 p. m.".
+- Nuevo `shared/utils/spoken-date.ts` con `spokenDate()` y `clockTime12()`.
+- Requiere desplegar en Render.
+
+## 2026-11-26 · Nombre del barbero y recordatorios con frases colombianas al azar
+
+- **Nombre del barbero** en Configuración: columna `shop_settings.barber_name` (`docs/migrations/007_shop_settings_barber_name.sql`), endpoints `GET/PUT /settings/barber-name` (`{ name }`, máx. 40 caracteres, vacío = sin nombre), use cases `GetBarberNameUseCase` / `UpdateBarberNameUseCase`.
+- **Recordatorios de 10 y 5 minutos**: cada uno elige al azar una de 8 frases semiformales colombianas (`reminders/domain/reminder-phrases.ts`), nunca la misma dos veces seguidas. Ej.: "¡Pilas Andrés! En 10 minuticos le toca con Juliana.", "Andrés, ya mismo llega Juliana. Quedan 5 minuticos.".
+  - Sin nombre configurado la frase sale sin él ("¡Pilas! En 10 minuticos…").
+  - Con 1 minuto restante se ajusta el singular ("Queda 1 minutico").
+  - La frase va en `body` y `speech` del push: el teléfono la lee en voz alta (en segundo plano la lee el servicio nativo; con la app abierta, la app).
+- **Antes de desplegar**: ejecutar la migración 007 en Supabase; sin ella falla leer/guardar el nombre (los recordatorios siguen saliendo, sin nombre).

@@ -23,11 +23,12 @@ export class NotifyUpcomingAppointmentUseCase {
       if (tokens.length === 0) return false;
       const { invalidTokens } = await this.push.send(tokens, {
         title: `⏰ Cita en ${upcoming.minutes} minutos`,
-        body: `${upcoming.client} a las ${upcoming.time}`,
+        body: upcoming.message ?? `${upcoming.client} a las ${upcoming.time}`,
         speech:
-          upcoming.minutes === 1
+          upcoming.message ??
+          (upcoming.minutes === 1
             ? `Atención: en un minuto tienes cita con ${upcoming.client}.`
-            : `Atención: en ${upcoming.minutes} minutos tienes cita con ${upcoming.client}.`,
+            : `Atención: en ${upcoming.minutes} minutos tienes cita con ${upcoming.client}.`),
         // The app leaves these out of the unseen-bookings modal by this tag prefix.
         tag: `appointment-reminder:${upcoming.date}:${upcoming.time}`,
         data: {

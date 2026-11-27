@@ -8,6 +8,7 @@ import { environment } from '../../../../environments/environment';
 export class ShopSettingsService {
   private readonly http = inject(HttpClient);
   private readonly url = `${environment.apiUrl}/settings/service-price`;
+  private readonly nameUrl = `${environment.apiUrl}/settings/barber-name`;
 
   /** Value of the haircut; WhatsApp bookings are created with it. 0 = not configured. */
   getServicePrice(): Observable<number> {
@@ -16,5 +17,14 @@ export class ShopSettingsService {
 
   saveServicePrice(price: number): Observable<number> {
     return this.http.put<{ price: number }>(this.url, { price }).pipe(map((r) => r.price));
+  }
+
+  /** Name the appointment reminders call the barber by. '' = not configured. */
+  getBarberName(): Observable<string> {
+    return this.http.get<{ name: string }>(this.nameUrl).pipe(map((r) => r.name));
+  }
+
+  saveBarberName(name: string): Observable<string> {
+    return this.http.put<{ name: string }>(this.nameUrl, { name }).pipe(map((r) => r.name));
   }
 }

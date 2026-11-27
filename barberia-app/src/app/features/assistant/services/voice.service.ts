@@ -70,7 +70,7 @@ export class VoiceService {
    * The Android WebView has no `speechSynthesis`, so the native app uses the phone's TTS engine.
    */
   speak(text: string): Promise<void> {
-    const spoken = this.sayTimes(this.sayPesos(text));
+    const spoken = this.sayTimes(this.sayDates(this.sayPesos(text)));
     return Capacitor.isNativePlatform() ? this.speakNative(spoken) : this.speakWeb(spoken);
   }
 
@@ -101,8 +101,42 @@ export class VoiceService {
         }),
     );
     return withMeridiem
-      .replace(/\b(\d{1,2}):(\d{2})\b/g, (_match, hour: string, minutes: string) => `${Number(hour)}${this.spokenMinutes(minutes)}`)
+      .replace(/\b(\d{1,2}):(\d{2})\b/g, (_match, hour: string, minutes: string) => {
+        const value = Number(hour);
+        // 24-hour times from the server ("14:00") carry their own part of the day: "2 de la tarde".
+        if (value === 0 || value > 12) {
+          return this.i18n.t('speech.time', {
+            hour: value % 12 === 0 ? 12 : value % 12,
+            minutes: this.spokenMinutes(minutes),
+            period: this.spokenPeriod(value % 12, value >= 12),
+          });
+        }
+        return `${value}${this.spokenMinutes(minutes)}`;
+      })
       .replace(/\s*–\s*(?=\d)/g, this.i18n.t('speech.range'));
+  }
+
+  /**
+   * The voice reads "2026-11-26" or "26/11/2026" digit by digit; every date is said as
+   * "jueves 26 de noviembre del 2026".
+   */
+  private sayDates(text: string): string {
+    const say = (year: number, month: number, day: number, match: string): string => {
+      // Noon UTC: the weekday of the calendar date, whatever the time zone.
+      const date = new Date(Date.UTC(year, month - 1, day, 12));
+      if (Number.isNaN(date.getTime()) || date.getUTCMonth() !== month - 1) return match;
+      const part = (options: Intl.DateTimeFormatOptions) =>
+        new Intl.DateTimeFormat(this.i18n.locale, { ...options, timeZone: 'UTC' }).format(date);
+      return this.i18n.t('speech.date', {
+        weekday: part({ weekday: 'long' }),
+        day,
+        month: part({ month: 'long' }),
+        year,
+      });
+    };
+    return text
+      .replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (match, y: string, m: string, d: string) => say(+y, +m, +d, match))
+      .replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g, (match, d: string, m: string, y: string) => say(+y, +m, +d, match));
   }
 
   private spokenMinutes(minutes: string): string {

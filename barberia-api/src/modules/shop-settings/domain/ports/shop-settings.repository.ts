@@ -5,4 +5,7 @@ export interface ShopSettingsRepository {
   /** Value of the haircut; 0 while it was never configured. */
   getServicePrice(): Promise<number>;
   saveServicePrice(price: number): Promise<void>;
+  /** Name the reminders call the barber by; '' while it was never configured. */
+  getBarberName(): Promise<string>;
+  saveBarberName(name: string): Promise<void>;
 }

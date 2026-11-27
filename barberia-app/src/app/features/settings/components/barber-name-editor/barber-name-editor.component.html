@@ -1,0 +1,33 @@
+<ion-list-header>{{ 'settings.barberName.title' | t }}</ion-list-header>
+<p class="hint">{{ 'settings.barberName.hint' | t }}</p>
+
+@if (loading()) {
+  <ion-item lines="none">
+    <ion-label class="ion-text-center">{{ 'settings.loading' | t }}</ion-label>
+  </ion-item>
+} @else {
+  <ion-item>
+    <ion-input
+      type="text"
+      autocapitalize="words"
+      labelPlacement="stacked"
+      [maxlength]="maxLength"
+      [label]="'settings.barberName.label' | t"
+      [placeholder]="'settings.barberName.placeholder' | t"
+      [value]="typed()"
+      (ionInput)="onInput($event.detail.value)"
+      (keyup.enter)="save()"
+    ></ion-input>
+  </ion-item>
+  <p class="preview">{{ preview() }}</p>
+  @if (message(); as msg) {
+    <ion-text [color]="msg.error ? 'danger' : 'success'">
+      <p class="ion-padding-horizontal">{{ msg.text }}</p>
+    </ion-text>
+  }
+  <div class="ion-padding">
+    <ion-button expand="block" [disabled]="!dirty() || saving()" (click)="save()">
+      {{ 'settings.barberName.save' | t }}
+    </ion-button>
+  </div>
+}
