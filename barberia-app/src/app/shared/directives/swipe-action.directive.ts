@@ -29,8 +29,8 @@ const INTERACTIVE = 'ion-button, button, a, ion-input, input, textarea, ion-sele
  *
  * Put it on a wrapper that holds the card and, behind it, the `.swipe-bg-right` / `.swipe-bg-left`
  * labels; the styles live in global.scss (`.swipe-row`). The directive only toggles classes and
- * writes `--swipe-x`, so the movement runs on the GPU. The holding / armed texts come from the
- * `data-hold-label` and `data-armed-label` attributes.
+ * writes `--swipe-x`, so the movement runs on the GPU. While held, a `.swipe-guide` inside the card
+ * shows which side does what (red left = cancel, green right = complete).
  */
 @Directive({
   selector: '[appSwipeAction]',

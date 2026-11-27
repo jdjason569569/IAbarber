@@ -929,3 +929,4 @@ This file records, in chronological order, every change made to the backend.
   - Con 1 minuto restante se ajusta el singular ("Queda 1 minutico").
   - La frase va en `body` y `speech` del push: el teléfono la lee en voz alta (en segundo plano la lee el servicio nativo; con la app abierta, la app).
 - **Antes de desplegar**: ejecutar la migración 007 en Supabase; sin ella falla leer/guardar el nombre (los recordatorios siguen saliendo, sin nombre).
+- **Hecho (2026-11-26):** la migración 007 ya se aplicó en Supabase (columna `barber_name text not null default ''` verificada en `shop_settings`). Solo falta desplegar la API en Render.

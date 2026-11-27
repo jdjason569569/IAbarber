@@ -318,8 +318,6 @@ export const MESSAGES_ES = {
     'Para completar o cancelar una cita, mantenla presionada 1 segundo y deslízala: a la derecha la completas, a la izquierda la cancelas.',
   'appointments.swipe.hintClose': 'Ocultar la pista',
   'appointments.swipe.tip': 'Mantén 1 s y desliza',
-  'appointments.swipe.holding': 'Sigue presionando…',
-  'appointments.swipe.armed': '← Cancelar  ·  Completar →',
   'appointments.swipe.complete': 'Completar',
   'appointments.swipe.cancel': 'Cancelar',
   'appointments.swipe.tooShort': 'Mantén el dedo 1 segundo sobre la cita y luego deslízala: → completar, ← cancelar.',

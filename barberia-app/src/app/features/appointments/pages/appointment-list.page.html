@@ -46,8 +46,6 @@
       <div
         class="appt-swipe"
         [appSwipeAction]="isActive(appointment)"
-        [attr.data-hold-label]="'appointments.swipe.holding' | t"
-        [attr.data-armed-label]="'appointments.swipe.armed' | t"
         (swipeRight)="onSwiped('complete', appointment)"
         (swipeLeft)="onSwiped('cancel', appointment)"
         (releasedEarly)="onSwipeTooShort()"
@@ -135,6 +133,19 @@
               }
             </div>
           </div>
+          <!-- Swipe guide over the card while it is held: red left half = cancel, green right = complete. -->
+          @if (isActive(appointment)) {
+            <div class="swipe-guide" aria-hidden="true">
+              <div class="swipe-guide-half swipe-guide-cancel">
+                <ion-icon name="close-circle"></ion-icon>
+                <span>← {{ 'appointments.swipe.cancel' | t }}</span>
+              </div>
+              <div class="swipe-guide-half swipe-guide-complete">
+                <ion-icon name="checkmark-circle"></ion-icon>
+                <span>{{ 'appointments.swipe.complete' | t }} →</span>
+              </div>
+            </div>
+          }
         </div>
       </div>
     } @empty {

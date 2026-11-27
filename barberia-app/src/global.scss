@@ -279,47 +279,12 @@ ion-badge[color] {
     pointer-events: none;
   }
 
-  /* Pill above the card: "keep holding" first, then which way does what. */
-  &::before {
-    position: absolute;
-    top: -13px;
-    left: 50%;
-    z-index: 4;
-    padding: 4px 12px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-    translate: -50% 0;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-
-  &.swipe-holding {
-    &::after {
-      opacity: 1;
-      animation: swipe-hold var(--hold-ms, 3000ms) linear forwards;
-    }
-
-    &::before {
-      content: attr(data-hold-label);
-      opacity: 1;
-      color: var(--ion-color-primary-contrast);
-      background: var(--ion-color-primary);
-    }
+  &.swipe-holding::after {
+    opacity: 1;
+    animation: swipe-hold var(--hold-ms, 3000ms) linear forwards;
   }
 
   &.swipe-armed {
-    &::before {
-      content: attr(data-armed-label);
-      opacity: 1;
-      color: var(--ion-color-primary);
-      background: var(--app-surface);
-      border: 1px solid var(--ion-color-primary);
-      animation: swipe-pill-pulse 1s ease-in-out infinite;
-    }
-
     > .swipe-card {
       scale: 1.02;
       box-shadow:
@@ -391,10 +356,68 @@ ion-badge[color] {
   }
 }
 
-@keyframes swipe-pill-pulse {
-  50% {
-    scale: 1.06;
+/*
+ * Guide inside the held card: the left half glows red with "← Cancelar", the right half green with
+ * "Completar →". It fades in while the finger holds, is fully shown once armed, and the side the card
+ * is dragged toward stays lit while the other fades.
+ */
+.swipe-guide {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: inherit;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.swipe-guide-half {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.15s linear;
+
+  ion-icon {
+    font-size: 34px;
+    scale: calc(1 + 0.3 * var(--swipe-progress, 0));
+    transition: scale 0.1s linear;
   }
+}
+
+.swipe-guide-cancel {
+  background: linear-gradient(90deg, rgba(var(--ion-color-danger-rgb), 0.9), rgba(var(--ion-color-danger-rgb), 0.55));
+  border-right: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.swipe-guide-complete {
+  background: linear-gradient(270deg, rgba(var(--ion-color-success-rgb), 0.9), rgba(var(--ion-color-success-rgb), 0.55));
+}
+
+/* Holding: the guide fades in as the hold bar fills; armed: fully shown. */
+.swipe-row.swipe-holding .swipe-guide {
+  opacity: 0.85;
+  transition: opacity var(--hold-ms, 1000ms) ease-in;
+}
+
+.swipe-row.swipe-armed .swipe-guide {
+  opacity: 1;
+}
+
+/* Dragging: the chosen side stays lit, the other one fades away. */
+.swipe-row.swipe-right .swipe-guide-cancel,
+.swipe-row.swipe-left .swipe-guide-complete {
+  opacity: calc(1 - var(--swipe-progress, 0));
 }
 
 /* Full-screen celebration (FeedbackService.celebrate): confetti canvas plus a big label. */

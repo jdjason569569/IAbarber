@@ -1647,3 +1647,10 @@ npx ionic capacitor add android   # añadir plataforma Android
 - Nueva tarjeta `barber-name-editor` (primera en Configuración): campo del nombre, botón Guardar y vista previa de cómo suena el aviso ("¡Pilas Andrés! En 10 minuticos le toca con Juliana."). `ShopSettingsService.getBarberName()/saveBarberName()` contra `/settings/barber-name`.
 - Con la app abierta, el recordatorio usa la frase que manda la API (campo `speech` del push) en el toast y en la voz; si la API es antigua y no la manda, usa el texto de siempre.
 - Requiere desplegar la API y ejecutar la migración 007 en Supabase (ver `barberia-api/CAMBIOS.md`).
+
+### Guía de deslizar dentro de la tarjeta (rojo cancelar / verde completar)
+- Se quitó la "pastilla" pequeña encima de la tarjeta ("Sigue presionando…" / "← Cancelar · Completar →") y sus textos `appointments.swipe.holding` / `.armed`.
+- Nueva `.swipe-guide` dentro de cada tarjeta activa: mitad izquierda roja con ✕ "← CANCELAR" y mitad derecha verde con ✓ "COMPLETAR →", texto grande.
+  - Aparece mientras se mantiene presionado (se va mostrando a la par que se llena la barra) y queda completa al armarse.
+  - Al deslizar, el lado elegido sigue encendido y su icono crece; el otro lado se desvanece.
+- La barra de progreso de la pulsación sigue abajo de la tarjeta, por encima de la guía.
